@@ -27,7 +27,7 @@
 
 			<propertygroup name="coreProperties" caption="Core Definition">
 						
-				<property control="integer" name="segAngle" caption="Segmentation angle"  default="5">
+				<property control="integer" name="segAngle" caption="Segmentation angle"  default="0">
                     <callbacks>
                             <OnValidate>segAngCheck</OnValidate>			
                     </callbacks>
@@ -135,7 +135,14 @@
 
 			
 			<propertygroup name="windingProperties" caption="Winding Definition">
-				<propertygroup control="boolean" name="drawWinding" caption="Draw Winding"  default="true" display="property">			
+				<propertygroup control="boolean" name="drawWinding" caption="Draw Winding"  default="true" display="property">	
+                    <property name="layerType" caption="Transformer:" control="select" default="Wound" visibleon="True">
+						<attributes options="Planar,Wound" />
+                        <callbacks>
+							<OnValidate>changeCaptions</OnValidate>		
+						 </callbacks>
+					</property>
+                    
 					<property name="numLayers" caption="No. of Layers:" control="integer" default="1" visibleon="True">
                         <callbacks>
 							<OnValidate>addRows</OnValidate>		
@@ -148,7 +155,7 @@
 						</callbacks>
 					</property>
 					
-					<property name="bobThickness" caption="Bobbing thickness:" control="float" default="0.1" visibleon="True">
+					<property name="bobThickness" caption="Bobbin thickness:" control="float" default="0.1" visibleon="True">
                         <callbacks>
 							<OnValidate>GThenZero</OnValidate>			
 						</callbacks>
@@ -166,9 +173,7 @@
 						</callbacks>
 					</property>
 					
-					<property name="layerType" caption="Layer type:" control="select" default="TopDown" visibleon="True">
-						<attributes options="TopDown,Concentric" />
-					</property>
+					
 									
 					<property control="boolean" name="includeBobbin" caption="Include bobbin in geometry:"  default="False" visibleon="True"/>
 					

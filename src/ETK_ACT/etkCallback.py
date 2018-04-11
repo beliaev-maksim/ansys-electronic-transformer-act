@@ -10,7 +10,7 @@ from Microsoft.VisualBasic.Constants import vbOKOnly,vbYesNo
 from Microsoft.VisualBasic.Interaction import MsgBox
 def M(string1='',string2='',string3='',string4='',string5='',string6=''):
     return MsgBox(str(string1)+'\n'+ str(string2)+'\n'+str(string3)+'\n'+str(string4)+'\n'+str(string5)+'\n'+str(string6))
-    
+
 #***************   ***************   ***************   ***************   ***************   --------#
 def createModel(step):
     global designName, oProject
@@ -18,7 +18,7 @@ def createModel(step):
     # read custom material file and dataset points for it
     libPath = oDesktop.GetPersonalLibDirectory() + '\Materials\\'
     if os.path.isfile(libPath + 'matdata.tab'):
-        with open(libPath + 'matdata.tab','r') as Inmat: 
+        with open(libPath + 'matdata.tab','r') as Inmat:
             next(Inmat)
             for line in Inmat:
                 line = line.split('\t')
@@ -34,7 +34,7 @@ def createModel(step):
                         try:
                             bufferList.append([float(str(a).replace(',','.')) for a in lineArray])
                         except:
-                            raise UserErrorMessageException('Wrong values in file {}'.format(line[0]+'.tab')) 
+                            raise UserErrorMessageException('Wrong values in file {}'.format(line[0]+'.tab'))
                 datasheet.close()
                 matKeyPoints[line[0]]=bufferList
     else:
@@ -43,46 +43,46 @@ def createModel(step):
         file = open(libPath + 'matdata.tab','w')
         file.write('Material Name\tConductivity\tCm\tx\ty\tdensity\n')
         file.close()
-        
+
     getTime = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
     designName = 'Transformer_' + getTime
     oProject = oDesktop.GetActiveProject()
     if oProject == None:
         oProject = oDesktop.NewProject()
     oProject.InsertDesign("Maxwell 3D", designName , "EddyCurrent", "")
-        
-    oDesign = oProject.SetActiveDesign(designName)    
+
+    oDesign = oProject.SetActiveDesign(designName)
     oEditor = oDesign.SetActiveEditor("3D Modeler")
-    
-    allCores={'E':ECore(), 'EI':EICore(), 'U':UCore(), 'UI':UICore(), 'PQ':PQCore(), 
+
+    allCores={'E':ECore(), 'EI':EICore(), 'U':UCore(), 'UI':UICore(), 'PQ':PQCore(),
           'ETD':ETDCore(),'EQ':ETDCore(),'EC':ETDCore(), 'RM':RMCore(), 'EP':EPCore(),
-          'EFD':EFDCore(), 'ER':ETDCore(), 'P':PCore(), 'PT':PCore(), 'PH':PCore()}    
-          
-    coresArguments = {'EC':'EC', 'ETD':'ETD', 'EQ':'EQ', 'ER':'ER','P':'P','PT':'PT', 'PH':'PH'} 
-    
+          'EFD':EFDCore(), 'ER':ETDCore(), 'P':PCore(), 'PT':PCore(), 'PH':PCore()}
+
+    coresArguments = {'EC':'EC', 'ETD':'ETD', 'EQ':'EQ', 'ER':'ER','P':'P','PT':'PT', 'PH':'PH'}
+
     if oDesktop.GetAutoSaveEnabled() == 1:
         flagAutoSave = 1
         oDesktop.EnableAutoSave(0)
         oDesktop.AddMessage(oProject.GetName(), '',1,'Autosave was disabled! It would be enabled back after model creation!')
-     
+
     tryCore = str(step1.Properties["coreProperties/coreType"].Value)
     a=allCores[tryCore]
     if tryCore in coresArguments:
-        a.drawGeometry(coresArguments[tryCore]) 
+        a.drawGeometry(coresArguments[tryCore])
     else:
         a.drawGeometry()
-        
+
     if flagAutoSave > 0:
         oDesktop.EnableAutoSave(1)
         oDesktop.AddMessage(oProject.GetName(), '',0,'Autosave was enabled!')
-        
+
 def setupAnalysis(step):
-    oDesign = oProject.SetActiveDesign(designName)    
+    oDesign = oProject.SetActiveDesign(designName)
     oEditor = oDesign.SetActiveEditor("3D Modeler")
-    
+
     coreMaterial = step.Properties["defineSetup/coreMaterial"].Value
     coilMaterial = step.Properties["defineSetup/coilMaterial"].Value
-    
+
     ObjList = oEditor.GetObjectsInGroup('Solids')
     LayList = []
     LaySecList = []
@@ -121,10 +121,10 @@ def setupAnalysis(step):
                 "core_loss_kdc:="   , "0",
                 "mass_density:="    , matDict[coreMaterial][4]
             ])
-            
+
     assignMaterial(oEditor, ','.join(CoreList), '"Material_'+coreMaterial+'"')
     assignMaterial(oEditor, ','.join(LayList), '"'+coilMaterial+'"')
-    
+
     if coilMaterial == 'Copper':
         changeColor(oEditor,LayList,255,128,64)
     else:
@@ -139,7 +139,7 @@ def setupAnalysis(step):
                             "NAME:Selections",
                             "Selections:="      , ','.join(LayList),
                             "NewPartsModelFlag:="   , "Model"
-                        ], 
+                        ],
                         [
                             "NAME:SectionToParameters",
                             "CreateNewObjects:="    , True,
@@ -154,17 +154,17 @@ def setupAnalysis(step):
                         ])
     oEditor.Delete(["NAME:Selections","Selections:=",','.join(LayDelList)])
 
-    oModule = oDesign.GetModule("BoundarySetup")    
+    oModule = oDesign.GetModule("BoundarySetup")
     ExcDict = {}
     for EachSec in LaySecList:
         SecList = EachSec.split("_")
         if SecList[0] in WdgSet.FinalPrimList:
             ExCName = SecList[0].replace("Layer","Primary")
-            
+
             if ExCName not in ExcDict:
                 ExcDict[ExCName] = []
             ExcDict[ExCName].append(EachSec.replace("Layer","Primary"))
-                
+
             oModule.AssignCurrent(
                                 [
                                     "NAME:"+EachSec.replace("Layer","Primary"),
@@ -176,11 +176,11 @@ def setupAnalysis(step):
                                 ])
         if SecList[0] in WdgSet.FinalSecList:
             ExCName = SecList[0].replace("Layer","Secondary")
-            
+
             if ExCName not in ExcDict:
                 ExcDict[ExCName] = []
             ExcDict[ExCName].append(EachSec.replace("Layer","Secondary"))
-            
+
             oModule.AssignCurrent(
                                 [
                                     "NAME:"+EachSec.replace("Layer","Secondary"),
@@ -197,10 +197,10 @@ def setupAnalysis(step):
     for eachExG in ExcDict:
         for eachExIn in ExcDict[eachExG]:
             MatrixList.append(["NAME:MatrixEntry","Source:=", eachExIn,"NumberOfTurns:=", "1"])
-                        
+
     if ConnSet != None:
         # go through windings and set a group for matrix
-        if len(ConnSet.FinalGroupDict.keys()) > 0:                
+        if len(ConnSet.FinalGroupDict.keys()) > 0:
             FGroupDict = {}
             FPDict = {}
             for Eachgr in ConnSet.FinalGroupDict:
@@ -210,10 +210,10 @@ def setupAnalysis(step):
                     FGroupDict[Eachgr] = FGroupDict[Eachgr] + ExcDict[EachInG]
             for EachGxP in FGroupDict:
                 MatrxGList.append(["NAME:MatrixGroup","GroupName:=", EachGxP,"NumberOfBranches:=", FPDict[EachGxP],"Sources:=",','.join(FGroupDict[EachGxP])])
-    
+
     oModule = oDesign.GetModule("MaxwellParameterSetup")
     oModule.AssignMatrix(["NAME:Matrix1",MatrixList,MatrxGList])
-    
+
     offset = int(step.Properties["defineSetup/offset"].Value)
     oEditor.CreateRegion(
         [
@@ -230,7 +230,7 @@ def setupAnalysis(step):
             "+ZPadding:="       , offset,
             "-ZPaddingType:="   , "Percentage Offset",
             "-ZPadding:="       , offset
-        ], 
+        ],
         [
             "NAME:Attributes",
             "Name:="        , "Region",
@@ -243,31 +243,31 @@ def setupAnalysis(step):
             "SolveInside:="     , True
         ])
     oEditor.FitAll()
-    
+
     maxNumPasses     = int(step.Properties["defineSetup/numPasses"].Value)
     percentError     = float(step.Properties["defineSetup/percError"].Value)
     frequency         = str(step.Properties["defineSetup/adaptFreq"].Value)+'Hz'
-    
+
     startSweepFreq     = (str(step.Properties["defineSetup/freqSweep/startFreq"].Value)+
                        str(step.Properties["defineSetup/freqSweep/freqSelect1"].Value))
-                       
+
     stopSweepFreq     = (str(step.Properties["defineSetup/freqSweep/stopFreq"].Value)+
-                       str(step.Properties["defineSetup/freqSweep/freqSelect2"].Value))    
-                       
+                       str(step.Properties["defineSetup/freqSweep/freqSelect2"].Value))
+
     samples         = int(step.Properties["defineSetup/freqSweep/samples"].Value)
-    
+
 
     if step.Properties["defineSetup/freqSweep"].Value==True:
         if step.Properties["defineSetup/freqSweep/scale"].Value == 'Linear':
             insertSetup(oDesign, maxNumPasses, percentError, frequency, True, 'LinearCount', startSweepFreq, stopSweepFreq, samples)
         else:
-            insertSetup(oDesign, maxNumPasses, percentError, frequency, True, 'LogScale', startSweepFreq, stopSweepFreq, samples)            
+            insertSetup(oDesign, maxNumPasses, percentError, frequency, True, 'LogScale', startSweepFreq, stopSweepFreq, samples)
     else:
         insertSetup(oDesign, maxNumPasses, percentError, frequency, False)
-        
+
     EddyList = ["NAME:EddyEffectVector"]
     for EachLay in LayList:
-        EddyList.append(        
+        EddyList.append(
         [
             "NAME:Data",
             "Object Name:="     , EachLay,
@@ -301,18 +301,18 @@ def setupAnalysis(step):
             "RestrictLength:="  , True,
             "MaxLength:="       , str(MeshOpSz)+"mm"
         ])
-    
+
     PrjPath=step.Properties["defineSetup/projPath"].Value
-    
+
     if PrjPath == None:
         # that means that we are here due to auto run after reading a file
         return
-        
+
     if PrjPath[-1:] != '/':
       PrjPath = PrjPath + '/'
-    
+
     writeData(step)
-      
+
     oProject.SaveAs(PrjPath+designName+'.aedt',True)
     step3.UserInterface.GetComponent("setupAnalysisButton").SetEnabledFlag("setupAnalysisButton", False)
     step3.UserInterface.GetComponent("defineConnectionsButton").SetEnabledFlag("defineConnectionsButton", False)
@@ -324,16 +324,16 @@ def assignMaterial(oEditor, selection, material):
                             [
                                 "NAME:Selections",
                                 "Selections:="      , selection
-                            ], 
+                            ],
                             [
                                 "NAME:Attributes",
                                 "MaterialValue:="   , material,
                                 "SolveInside:="     , True
-                            ])  
-                            
+                            ])
+
 def insertSetup(oDesign, maxNumPasses, percentError, frequency, hasSweep, sweepType = '', startSweepFreq = '', stopSweepFreq = '', samples = ''):
     oModule = oDesign.GetModule("AnalysisSetup")
-    oModule.InsertSetup("EddyCurrent", 
+    oModule.InsertSetup("EddyCurrent",
                 [
                     "NAME:Setup1",
                     "Enabled:="     , True,
@@ -358,30 +358,30 @@ def insertSetup(oDesign, maxNumPasses, percentError, frequency, hasSweep, sweepT
                     "SaveAllFields:="   , True,
                     "UseHighOrderShapeFunc:=", False
                 ])
-    
-def analyze(step):    
+
+def analyze(step):
     if flagAnalysisSet != True:
         setupAnalysis(step)
         oDesign = oProject.SetActiveDesign(designName)
         oDesign.Analyze("Setup1")
-    else:    
+    else:
         try:
-            oDesign = oProject.SetActiveDesign(designName)    
+            oDesign = oProject.SetActiveDesign(designName)
             oDesign.Analyze("Setup1")
         except:
             return MsgBox('Check all parameters!',vbOKOnly ,"Error")
-        
-# write data to file    
+
+# write data to file
 def writeData(step):
     global designName,filledDict
     WritePath = step3.Properties["defineSetup/projPath"].Value + '\\' + designName+ '_parameters.tab'
-    
+
     txt= (str(step1.Properties["coreProperties/segAngle"].Value) + '\t\t\t%Segmentation Angle: should be between 0 to 20\n'+
           "mm\t\t\t%Model Units: mm\n"+
           step1.Properties["coreProperties/supplier"].Value + '\t\t\t%Supplier Name\n'+
           step1.Properties["coreProperties/coreType"].Value + '\t\t\t%Core Type\n'+
           '\t'.join(coreDimensionsSetup)+'\t\t\t%CoreDimensions: D_1..D_8\n')
-          
+
     if bool(step1.Properties["coreProperties/defAirgap"].Value) == True:
         AirGapOn = step1.Properties["coreProperties/defAirgap/airgapOn"].Value
         if AirGapOn =='Center Leg':
@@ -393,7 +393,7 @@ def writeData(step):
         txt+=str(step1.Properties["coreProperties/defAirgap/airgapValue"].Value) + "\t\t\t% Airgap Value\n"
     else:
         txt+='0\t\t\t%Include Airgap: 0 to exclude, 1 for Airgap on central leg, 2 for Side leg, 3 for both\n'
-          
+
     if bool(step2.Properties["windingProperties/drawWinding"].Value) == True:
         txt+=("1\t\t\t%Winding Status: 1 for Create Winding, 0 for exclude winding\n"+
               str(step2.Properties["windingProperties/drawWinding/numLayers"].Value)+'\t\t\t%Number of Layers\n'+
@@ -409,12 +409,12 @@ def writeData(step):
                 txt+='0\t\t\t%Bobbin Status 0:Exclude bobbin from Geometry 1:Include Bobbin in Geometry\n'
         else:
             '0\t\t\t%Bobbin Status 0:Exclude bobbin from Geometry 1:Include Bobbin in Geometry\n'
-        
-        if step2.Properties["windingProperties/drawWinding/layerType"].Value == 'TopDown':
-            txt+='1\t\t\t%Winding Type 1:TopDown 2:Concentric\n'
+
+        if step2.Properties["windingProperties/drawWinding/layerType"].Value == 'Planar':
+            txt+='1\t\t\t%Winding Type 1:Planar 2:Wound\n'
         else:
-            txt+='2\t\t\t%Winding Type 1:TopDown 2:Concentric\n'
-            
+            txt+='2\t\t\t%Winding Type 1:Planar 2:Wound\n'
+
         if step2.Properties["windingProperties/drawWinding/conductorType"].Value == 'Rectangular':
             txt+='1\t\t\t%Conductor Type 1:Rectangular 2:Circular\n'
             for i in range(1,int(step2.Properties["windingProperties/drawWinding/numLayers"].Value)+1):
@@ -425,14 +425,14 @@ def writeData(step):
                 txt+='\t'.join([str(filledDict[i][0]),str(filledDict[i][2]),str(filledDict[i][3]),str(filledDict[i][1])])+'\t\t\t%Layer '+str(i)+' specifications :Conductor Diameter, Number of Turns, Insulation Thickness, Number of Segments\n'
     else:
         txt+='0\t\t\t%Winding Status: 1 for Create Winding, 0 for exclude winding\n'
-    
+
     txt+=('1\t\t\t%Setup Defined: 0 for No, 1 for Define setup\n'+
           step.Properties["defineSetup/coreMaterial"].Value+'\t'+
           step.Properties["defineSetup/coilMaterial"].Value+'\t\t\t% Core Material and Coil Material\n')
 
     txt += '\t'.join([WrP.replace("Layer","") for WrP in WdgSet.FinalPrimList])+'\t\t\t%Layers Defined as Primary\n'
     txt += '\t'.join([WrS.replace("Layer","") for WrS in WdgSet.FinalSecList])+'\t\t\t%Layers Defined as Secondary\n'
- 
+
     if ConnSet != None:
         if len(ConnSet.FinalGroupDict.keys()) == 0:
             txt+='0\t\t\t%No. of Winding Groups Defined: 0 for no definition\n'
@@ -465,7 +465,7 @@ def writeData(step):
     txt+=(str(step.Properties["defineSetup/numPasses"].Value)+'\t'+str(step.Properties["defineSetup/percError"].Value)+'\t\t\t%Solution Setup:Maximum No. of Passes and Percentage Error\n')
     txt += (str(step.Properties["defineSetup/offset"].Value) + '\t\t\t%Region offset (can be skipped only with skipping of next step)\n')
     txt += ('0' + '\t\t\t%1 for run model after read; 0 - read file, manual click to invoke next steps (can be skipped)\n')
-    
+
     file = open(WritePath,"w")
     file.write(txt)
     file.close()
@@ -473,27 +473,27 @@ def writeData(step):
 #read data from file
 def readData():
     path = ExtAPI.UserInterface.UIRenderer.ShowFileOpenDialog('Text Files(*.txt;*.tab;)|*.txt;*.tab;')
-    
+
     if path == None:
         return
-   
+
     file = open(path, 'r')
     Inparams = file.read().split("\n")
     file.close()
-   
+
     SegAngle = Inparams.pop(0).split("\t")[0]
     try:
         float(SegAngle)
     except:
         return MsgBox("Incorrect Segment angle in text file", vbOKOnly, "Invalid Input")
-        
+
     if float(SegAngle) > 20:
         return MsgBox("Incorrect Segment angle in text file", vbOKOnly, "Invalid Input")
-        
+
     ModelUnits = Inparams.pop(0).split("\t")[0]
     if ModelUnits != "mm" and ModelUnits != "inches":
         return MsgBox("Incorrect model units in text file", vbOKOnly, "Invalid Input")
-        
+
     SupName = Inparams.pop(0).split("\t")[0]
     if SupName.lower() == 'ferroxcube':
         SupName='Ferroxcube'
@@ -501,56 +501,56 @@ def readData():
         SupName = 'Phillips'
     else:
         return MsgBox("Incorrect Supplier name in text file", vbOKOnly, "Invalid Input")
-        
+
     CoreType = Inparams.pop(0).split("\t")[0]
     if CoreType not in Ferroxcube.keys():           #dangerous, if added core type in philips and not to feroxcube
         return MsgBox("Incorrect Core type in text file", vbOKOnly, "Invalid Input")
-        
+
     #Read Core Dimensions
     Dim = Inparams.pop(0).split('\t')
-    
-                
+
+
     # Read Airgap
     AgStat = Inparams.pop(0).split("\t")[0]
     try:
         int(AgStat)
     except:
         return MsgBox("Incorrect Airgap status in text file", vbOKOnly, "Invalid Input")
-                
+
     if int(AgStat) > 0:
         AgVal = Inparams.pop(0).split("\t")[0]
         try:
             float(AgVal)
         except:
             return MsgBox("Incorrect Airgap value in text file", vbOKOnly, "Invalid Input")
-            
-           
+
+
     # Read Winding Status   (stepTwo)
     WdgStat = Inparams.pop(0).split("\t")[0]
     try:
         int(WdgStat)
     except:
         return MsgBox("Incorrect Winding status in text file", vbOKOnly, "Invalid Input")
-                
+
     if int(WdgStat) > 0:
         if len(Inparams) == 0:
             return MsgBox("No winding parameters are added", vbOKOnly, "Invalid Input")
-            
+
     #Read Number of Layers
         NumWdg = Inparams.pop(0).split("\t")[0]
         try:
             int(NumWdg)
         except:
             return MsgBox("Incorrect input for number of layers in text file", vbOKOnly, "Invalid Input")
-                    
+
         if int(NumWdg) <= 0:
             return MsgBox("Incorrect input for number of layers in text file", vbOKOnly, "Invalid Input")
-            
+
         # Read Winding Margins
         Marg1List = Inparams.pop(0).split('\t')
         if len(Marg1List) < 4:
             return MsgBox("Margin Parameters are incorrect", vbOKOnly, "Invalid Input")
-            
+
         MargList = Marg1List[:4]
         # Read Bobbin Status
         BobStat = Inparams.pop(0).split("\t")[0]
@@ -558,27 +558,27 @@ def readData():
             int(BobStat)
         except:
             return MsgBox("Incorrect Bobbin status in text file", vbOKOnly, "Invalid Input")
-            
+
         # Read Winding Type
         WdgType = Inparams.pop(0).split('\t')[0]
         try:
             int(WdgType)
         except:
             return MsgBox("Incorrect input for winding type in text file", vbOKOnly, "Invalid Input")
-            
+
         if int(WdgType) != 1 and int(WdgType) != 2:
             return MsgBox("Incorrect input for winding type in text file", vbOKOnly, "Invalid Input")
-            
+
         # Read Conductor Type
         CondType = Inparams.pop(0).split('\t')[0]
         try:
             int(CondType)
         except:
             return MsgBox("Incorrect input for Conductor type in text file", vbOKOnly, "Invalid Input")
-                    
+
         if int(CondType) != 1 and int(CondType) != 2:
             return MsgBox("Incorrect input for Conductor type in text file", vbOKOnly, "Invalid Input")
-            
+
         # Read winding Parameters
         LayerSpecDict = {}
         for EachLay in range(0,int(float(NumWdg))):
@@ -587,31 +587,31 @@ def readData():
                 LayerSpecDict[EachLay+1] = TempSpecList[:4]
             except:
                 return MsgBox("Incorrect specifications for winding layers in text file", vbOKOnly, "Invalid Input")
-                
-                
+
+
     # Read Solution Setup Flag
     SetupDef = Inparams.pop(0).split('\t')[0]
     try:
         int(SetupDef)
     except:
         return MsgBox("Incorrect Setup status in text file", vbOKOnly, "Invalid Input")
-                
+
     if int(SetupDef) > 0:
         Mat1List = Inparams.pop(0).split('\t')
         MatList = Mat1List[:2]
         if len(MatList)< 2:
             return MsgBox("Incorrect Material definition in text file", vbOKOnly, "Invalid Input")
-            
+
         if MatList[0] not in matDict.keys():
             return MsgBox("Defined core material not available in library", vbOKOnly, "Invalid Input")
-            
+
         if MatList[1].lower() == 'copper':
             MatList[1]='Copper'
         elif MatList[1].lower() == 'aluminum':
             MatList[1] == 'Aluminum'
         else:
             return MsgBox("Defined coil material not available in library", vbOKOnly, "Invalid Input")
-            
+
         Prim1List = filter(None,Inparams.pop(0).split('\t'))
         Prim1List.pop(-1)
         PrimList = []
@@ -624,7 +624,7 @@ def readData():
             SecList.append('Layer'+ESec)
         if len(PrimList)+len(SecList) != int(NumWdg):
             return MsgBox("Incomplete primary and secondary definition", vbOKOnly, "Invalid Input")
-            
+
         DefGrpDict = {}
         UndefList = []
         RDefList = []
@@ -649,40 +649,40 @@ def readData():
                     UndefList.remove("Secondary"+EGpL)
                 else:
                     return MsgBox("Incorrect definition of groups", vbOKOnly, "Invalid Input")
-                    
+
             RDefList.append(TempKy+":"+(",".join(TempGpF)))
             TempPBr = Inparams.pop(0).split('\t')[0]
             try:
                 float(TempPBr)
             except:
                 return MsgBox("Incorrect definition of groups", vbOKOnly, "Invalid Input")
-                
+
             if not (float(BobStat).is_integer()):
                 return MsgBox("Incorrect definition of groups", vbOKOnly, "Invalid Input")
-                
+
             DefGrpDict[TempKy] = [TempPBr,TempGpF[:]]
         AdFr1 = Inparams.pop(0).split('\t')[0]
         AdFrList = filter(None,re.split(r'([\d\.\d]+)',AdFr1))
         if not (AdFrList[1] in ["Hz", "kHz","MHz"]):
             return MsgBox("Incorrect frequency unit specified", vbOKOnly, "Invalid Input")
-        
+
         if AdFrList[1] == 'kHz':
             AdFrVal = float(AdFrList[0]) * 1000
         elif AdFrList[1] == 'MHz':
             AdFrVal = float(AdFrList[0]) * 1000000
         elif AdFrList[1] == 'Hz':
             AdFrVal = float(AdFrList[0])
-        
+
         FrsStat1 = Inparams.pop(0).split('\t')[0]
         try:
             int(FrsStat1)
         except:
             return MsgBox("Incorrect Frequency Sweep Status", vbOKOnly, "Invalid Input")
-          
-   
+
+
         FrsStat = int(FrsStat1)
         if FrsStat> 0:
-            FrsList1 = filter(None,Inparams.pop(0).split('\t'))[0:3]    
+            FrsList1 = filter(None,Inparams.pop(0).split('\t'))[0:3]
             FrsList = [None]*6
             FrsList[3]= FrsStat-1
             TempFrList = []
@@ -692,15 +692,15 @@ def readData():
                     float(TFrList[0])
                 except:
                     return MsgBox("Incorrect Frequency Sweep Definition", vbOKOnly, "Invalid Input")
-                    
+
                 if FrsList1.index(EFr) == 2:
                     if not (float(TFrList[0]).is_integer()):
                         return MsgBox("Incorrect Frequency Sweep Definition", vbOKOnly, "Invalid Input")
-                        
+
                 else:
                     if not (TFrList[1] in ["Hz", "kHz","MHz"]):
                         return MsgBox("Incorrect frequency unit specified", vbOKOnly, "Invalid Input")
-                        
+
                 TempFrList = TempFrList+TFrList
             FrsList[0] = TempFrList[0]
             FrsList[1] = TempFrList[2]
@@ -713,10 +713,10 @@ def readData():
             float(SolSetL[1])
         except:
             return MsgBox("Incorrect Solution settings specified", vbOKOnly, "Invalid Input")
-            
+
         if not (float(SolSetL[0]).is_integer()):
             return MsgBox("Incorrect Solution settings specified", vbOKOnly, "Invalid Input")
-         
+
         if len(Inparams) != 0:
             offset = filter(None,Inparams.pop(0).split('\t'))[0]
             try:
@@ -725,68 +725,68 @@ def readData():
                 return MsgBox("Incorrect offset settings specified", vbOKOnly, "Invalid Input")
         else:
             offset = None
-                
+
         if len(Inparams) != 0:
             runSetSetup = filter(None,Inparams.pop(0).split('\t'))[0]
             try:
                 float(runSetSetup)
             except:
-                return MsgBox("Incorrect value for running setup specified", vbOKOnly, "Invalid Input")    
-           
+                return MsgBox("Incorrect value for running setup specified", vbOKOnly, "Invalid Input")
+
     # Update GUI
     # Step One
     step1.Properties["coreProperties/segAngle"].Value = int(float(SegAngle))
     step1.Properties["coreProperties/supplier"].Value = SupName
     step1.Properties["coreProperties/coreType"].Value = CoreType
-    
+
     try:
         for i in range(1,9):
             if Dim[i-1] != '':
                 step1.Properties["coreProperties/coreType/D_" + str(i)].Value = float(Dim[i-1]) if ModelUnits != "inches" else float(Dim[i-1])*1.0/25.4
-    except:           
+    except:
         return MsgBox("Incorrect Core dimensions in text file", vbOKOnly, "Invalid Input")
-        
+
     step1.UserInterface.GetComponent("Properties").UpdateData() # need to hide show D6..D8
     step1.UserInterface.GetComponent("Properties").Refresh()
-    
+
     if int(AgStat)>0:
-        step1.Properties["coreProperties/defAirgap"].Value = True 
+        step1.Properties["coreProperties/defAirgap"].Value = True
         if int(AgStat) ==1:
             AirGapOn ='Center Leg'
         elif int(AgStat) ==2:
             AirGapOn ='Side Leg'
         elif int(AgStat) ==3:
             AirGapOn ='Both'
-        step1.Properties["coreProperties/defAirgap/airgapOn"].Value = AirGapOn 
+        step1.Properties["coreProperties/defAirgap/airgapOn"].Value = AirGapOn
         step1.Properties["coreProperties/defAirgap/airgapValue"].Value = float(AgVal)
     else:
         step1.Properties["coreProperties/defAirgap"].Value = False
-        
+
     step1.UserInterface.GetComponent("Properties").UpdateData()
     step1.UserInterface.GetComponent("Properties").Refresh()
-    
+
     # Step Two
-    step2 = step1.Wizard.Steps["Winding"] 
+    step2 = step1.Wizard.Steps["Winding"]
     if int(WdgStat)>0:
         step2.Properties["windingProperties/drawWinding"].Value = True
 
         step2.Properties["windingProperties/drawWinding/numLayers"].Value      = int(NumWdg)
-        step2.Properties["windingProperties/drawWinding/numLayers"].ReadOnly = True
+        step2.Properties["windingProperties/drawWinding/numLayers"].ReadOnly   = True
         step2.Properties["windingProperties/drawWinding/topMargin"].Value      = float(MargList[0])
         step2.Properties["windingProperties/drawWinding/sideMargin"].Value     = float(MargList[1])
         step2.Properties["windingProperties/drawWinding/layerSpacing"].Value   = float(MargList[2])
         step2.Properties["windingProperties/drawWinding/bobThickness"].Value   = float(MargList[3])
         step2.Properties["windingProperties/drawWinding/includeBobbin"].Value  = True if int(BobStat)==1 else False
 
-        step2.Properties["windingProperties/drawWinding/layerType"].Value == 'TopDown' if int(WdgType) == 1 else 'Concentric'
-        
+        step2.Properties["windingProperties/drawWinding/layerType"].Value = 'Planar' if int(WdgType) == 1 else 'Wound'
+
         if int(CondType) == 1:
             step2.Properties["windingProperties/drawWinding/conductorType"].Value = 'Rectangular'
             table = step2.Properties["windingProperties/drawWinding/conductorType/tableLayers"]
-            rowNum = table.RowCount 
+            rowNum = table.RowCount
             for i in range(rowNum):
                 table.DeleteRow(0)
-                
+
             for i in range(1,int(NumWdg)+1):
                 table.AddRow()
                 table.Properties["conductorWidth"].Value    = LayerSpecDict[i][0]
@@ -794,14 +794,14 @@ def readData():
                 table.Properties["turnsNumber"].Value       = LayerSpecDict[i][2]
                 table.Properties["insulationThick"].Value   = LayerSpecDict[i][3]
                 table.Properties["layer"].Value             = 'Layer_' + str(i)
-                table.SaveActiveRow() 
+                table.SaveActiveRow()
         else:
             step2.Properties["windingProperties/drawWinding/conductorType"].Value = 'Circular'
             table = step2.Properties["windingProperties/drawWinding/conductorType/tableLayersCircles"]
-            rowNum = table.RowCount 
+            rowNum = table.RowCount
             for i in range(rowNum):
                 table.DeleteRow(0)
-                
+
             for i in range(1,int(NumWdg)+1):
                 table.AddRow()
                 table.Properties["conductorDiameter"].Value = LayerSpecDict[i][0]
@@ -809,10 +809,10 @@ def readData():
                 table.Properties["turnsNumber"].Value       = LayerSpecDict[i][1]
                 table.Properties["insulationThick"].Value   = LayerSpecDict[i][2]
                 table.Properties["layer"].Value             = 'Layer_' + str(i)
-                table.SaveActiveRow()                
+                table.SaveActiveRow()
     else:
         step2.Properties["windingProperties/drawWinding"].Value = False
-    
+
     # Step Three
     if int(SetupDef) > 0:
         step3 = step1.Wizard.Steps["setup"]
@@ -821,10 +821,10 @@ def readData():
         step3.Properties["defineSetup/adaptFreq"].Value = AdFrVal
         step3.Properties["defineSetup/percError"].Value = float(SolSetL[1])
         step3.Properties["defineSetup/numPasses"].Value = float(SolSetL[0])
-        
+
         if offset != None:
             step3.Properties["defineSetup/offset"].Value = int(float(offset))
-        
+
         if FrsStat> 0:
             step3.Properties["defineSetup/freqSweep"].Value = True
             step3.Properties["defineSetup/freqSweep/startFreq"].Value   = float(FrsList[0])
@@ -833,29 +833,29 @@ def readData():
             step3.Properties["defineSetup/freqSweep/freqSelect2"].Value = FrsList[5]
             step3.Properties["defineSetup/freqSweep/samples"].Value     = int(float(FrsList[2]))
             step3.Properties["defineSetup/freqSweep/scale"].Value = 'Logarithmic' if FrsStat== 2 else 'Linear'
-                                                       
+
         global WdgSet, ConnSet
         WdgSet = WdgForm()
-        
+
         WdgSet.FinalPrimList = PrimList[:]
-        WdgSet.FinalSecList = SecList[:]       
+        WdgSet.FinalSecList = SecList[:]
         WdgSet.FinalWdgList = []
-        
+
         WdgSet.FinalDefList = ([ExDef.replace("Layer","Primary") for ExDef in PrimList]+
                                [ExDef2.replace("Layer","Secondary") for ExDef2 in SecList])
-                       
+
         if len(DefGrpDict.keys()) >0:
-            if ConnSet == None:                    
+            if ConnSet == None:
                 ConnSet = ConnForm()
             ConnSet.FinalInWdgList = UndefList
-            ConnSet.FinalConnList = RDefList 
+            ConnSet.FinalConnList = RDefList
             ConnSet.FinalGroupDict = DefGrpDict.copy()
-                
+
         if int(float(runSetSetup))==1:
             createModel(step2)
             setupAnalysis(step3)
             MsgBox("Analysis was set up successfully!", vbOKOnly, "Done!")
-           
+
 def changeColor(oEditor,selection,R,G,B):
     oEditor.ChangeProperty(
             ["NAME:AllTabs",["NAME:Geometry3DAttributeTab",
@@ -874,17 +874,17 @@ def addRows(step, prop):
             prop.Value = 1
             MsgBox(str(prop.Caption) + ' should be greater or eqaul then 1',vbOKOnly ,"Error")
             return False
-            
+
     numLayersNew     = int(step.Properties["windingProperties/drawWinding/numLayers"].Value)    # number of slices
-    
+
     if step.Properties["windingProperties/drawWinding/conductorType"].Value == 'Rectangular':
-        table = step.Properties["windingProperties/drawWinding/conductorType/tableLayers"]    
+        table = step.Properties["windingProperties/drawWinding/conductorType/tableLayers"]
         flag = 'rect'
     else:
         table = step.Properties["windingProperties/drawWinding/conductorType/tableLayersCircles"]
         flag= 'circ'
-                
-    rowNum = table.RowCount    
+
+    rowNum = table.RowCount
     if numLayersNew<rowNum:
         for i in range(0, rowNum-numLayersNew+1):
             table.DeleteRow(rowNum-i)
@@ -897,7 +897,7 @@ def addRows(step, prop):
                 table.Properties["turnsNumber"].Value         =table.Value["windingProperties/drawWinding/conductorType/tableLayers/turnsNumber"][rowNum-1]
                 table.Properties["insulationThick"].Value     =table.Value["windingProperties/drawWinding/conductorType/tableLayers/insulationThick"][rowNum-1]
                 table.Properties["layer"].Value             = 'Layer_' + str(i)
-                table.SaveActiveRow()    
+                table.SaveActiveRow()
         elif flag == 'circ':
             for i in range(rowNum+1,numLayersNew+1):
                 table.AddRow()
@@ -906,8 +906,8 @@ def addRows(step, prop):
                 table.Properties["turnsNumber"].Value         =table.Value["windingProperties/drawWinding/conductorType/tableLayersCircles/turnsNumber"][rowNum-1]
                 table.Properties["insulationThick"].Value     =table.Value["windingProperties/drawWinding/conductorType/tableLayersCircles/insulationThick"][rowNum-1]
                 table.Properties["layer"].Value             = 'Layer_' + str(i)
-                table.SaveActiveRow()    
-           
+                table.SaveActiveRow()
+
 # initialize tables in step two
 def InitTabularData(step):
     table = step.Properties["windingProperties/drawWinding/conductorType/tableLayers"]
@@ -918,21 +918,21 @@ def InitTabularData(step):
     table.Properties["insulationThick"].Value = 0.05
     table.Properties["layer"].Value = 'Layer_1'
     table.SaveActiveRow()
-    
+
     table = step.Properties["windingProperties/drawWinding/conductorType/tableLayersCircles"]
     table.AddRow()
     table.Properties["conductorDiameter"].Value = 0.2
-    table.Properties["layerSegNumber"].Value = 36
+    table.Properties["layerSegNumber"].Value = 8
     table.Properties["turnsNumber"].Value = 2
     table.Properties["insulationThick"].Value = 0.05
     table.Properties["layer"].Value = 'Layer_1'
     table.SaveActiveRow()
 
-# invoked to change inmage and core dimensions when supplier or core type changed    
+# invoked to change inmage and core dimensions when supplier or core type changed
 def showCoreIMG(step,prop):
     step.Properties["coreProperties/coreType/coreModel"].Options.Clear()
     supl = step.Properties["coreProperties/supplier"].Value
-    HTMLData = '<img width="300" src="' + str(ExtAPI.Extension.InstallDir) + '/images/'  
+    HTMLData = '<img width="300" src="' + str(ExtAPI.Extension.InstallDir) + '/images/'
     prop = step.Properties["coreProperties/coreType"].Value
     report = step.UserInterface.GetComponent("coreImage")
     report.SetHtmlContent(HTMLData + prop + 'Core.png"/>')#set core names
@@ -940,8 +940,8 @@ def showCoreIMG(step,prop):
     coreList = coreTypes(prop, supl)
     for i in range(len(coreList)):
         step.Properties["coreProperties/coreType/coreModel"].Options.Add(coreList[i][0])
-    step.Properties["coreProperties/coreType/coreModel"].Value = coreList[0][0]    
-    
+    step.Properties["coreProperties/coreType/coreModel"].Value = coreList[0][0]
+
     #set core values for selected type
     for j in range(1,9):
         try:
@@ -953,13 +953,13 @@ def showCoreIMG(step,prop):
     step.UserInterface.GetComponent("Properties").UpdateData()
     step.UserInterface.GetComponent("Properties").Refresh()
 
-# invoke when Core Model is changed    
+# invoke when Core Model is changed
 def insertDefaultValues(step,prop):
     supl = step.Properties["coreProperties/supplier"].Value
     prop = step.Properties["coreProperties/coreType"].Value
-    
+
     #set core names
-    coreList = coreTypes(prop, supl) 
+    coreList = coreTypes(prop, supl)
     for i in range(len(coreList)):
         if coreList[i][0]==step.Properties["coreProperties/coreType/coreModel"].Value:
             #set core values for selected type
@@ -971,10 +971,10 @@ def insertDefaultValues(step,prop):
                     step.Properties["coreProperties/coreType/D_"+str(j)].Value = -1
                     step.Properties["coreProperties/coreType/D_"+str(j)].Visible = False
             step.UserInterface.GetComponent("Properties").UpdateData()
-            step.UserInterface.GetComponent("Properties").Refresh()    
-            break    
+            step.UserInterface.GetComponent("Properties").Refresh()
+            break
 
-# invoke on step initialisation            
+# invoke on step initialisation
 def initializeData(step):
     step.Properties["coreProperties/coreType/coreModel"].Options.Clear()
     supl = step.Properties["coreProperties/supplier"].Value
@@ -984,54 +984,70 @@ def initializeData(step):
     coreList = coreTypes(prop, supl)
     for i in range(len(coreList)):
         step.Properties["coreProperties/coreType/coreModel"].Options.Add(coreList[i][0])
-    step.Properties["coreProperties/coreType/coreModel"].Value = coreList[0][0]    
-    
+    step.Properties["coreProperties/coreType/coreModel"].Value = coreList[0][0]
+
     #set core values for selected type
     for j in range(1,9):
         step.Properties["coreProperties/coreType/D_"+str(j)].Value = float(coreList[0][j])
-   
-# create buttons and HTML data for first step            
+
+# change captions depending on Wound or Planar transformer
+def changeCaptions(step,prop):
+    if prop.Value == 'Planar':
+      step.Properties["windingProperties/drawWinding/bobThickness"].Caption = 'Board thickness:'
+      step.Properties["windingProperties/drawWinding/includeBobbin"].Caption = 'Include board in geometry:'
+      step.Properties["windingProperties/drawWinding/conductorType"].Value = 'Rectangular'
+      step.Properties["windingProperties/drawWinding/conductorType"].ReadOnly = True
+    else:
+      # wounded transformer
+      step.Properties["windingProperties/drawWinding/bobThickness"].Caption = 'Bobbin thickness:'
+      step.Properties["windingProperties/drawWinding/includeBobbin"].Caption = 'Include bobbin in geometry:'
+      step.Properties["windingProperties/drawWinding/conductorType"].ReadOnly = False
+      
+    step.UserInterface.GetComponent("Properties").UpdateData()
+    step.UserInterface.GetComponent("Properties").Refresh()
+
+# create buttons and HTML data for first step
 def CreateButtonsCore(step):
-    global step1 
+    global step1
     step1 = step
-                
+
     updateBtnSession = step.UserInterface.GetComponent("readData")
     updateBtnSession.AddButton("readButton", "Read Settings File", ButtonPositionType.Left)
     updateBtnSession.ButtonClicked += readDataClick
-    
+
     updateBtnSession = step.UserInterface.GetComponent("helpButton")
     updateBtnSession.AddButton("helpButton", "Help", ButtonPositionType.Center)
     updateBtnSession.ButtonClicked += helpClick
     updateBtnSession.AddCSSProperty("background-color", "#3383ff", "button")
     updateBtnSession.AddCSSProperty("color", "white", "button")
-    
+
     # set core dimensions image according to core type
-    prop = step.Properties["coreProperties/coreType"].Value    
+    prop = step.Properties["coreProperties/coreType"].Value
     HTMLData = '<img width="300" height="200" src="' + str(ExtAPI.Extension.InstallDir) + '/images/'
     image = step.UserInterface.GetComponent("coreImage")
-    image.SetHtmlContent(HTMLData + prop + 'Core.png"/>')    
+    image.SetHtmlContent(HTMLData + prop + 'Core.png"/>')
     image.Refresh()
-    
-    # set core names    
+
+    # set core names
     step.Properties["coreProperties/coreType/coreModel"].Options.Clear()
     supl = step.Properties["coreProperties/supplier"].Value
     coreList = coreTypes(prop, supl)
     for i in range(len(coreList)):
         step.Properties["coreProperties/coreType/coreModel"].Options.Add(coreList[i][0])
-    step.Properties["coreProperties/coreType/coreModel"].Value = coreList[0][0]    
-    
+    step.Properties["coreProperties/coreType/coreModel"].Value = coreList[0][0]
+
     # set core values for selected type
     try:
         for j in range(1,9):
             step.Properties["coreProperties/coreType/D_"+str(j)].Value = float(coreList[0][j])
     except:
         pass
-    
+
     global ConnSet,WdgSet,flagAnalysisSet
     ConnSet = WdgSet = flagAnalysisSet = None
-        
+
 def CreateButtonsWinding(step):
-    global step2 
+    global step2
     step2 = step
 
     updateBtnSession = step.UserInterface.GetComponent("helpButton")
@@ -1039,12 +1055,12 @@ def CreateButtonsWinding(step):
     updateBtnSession.ButtonClicked += helpClick
     updateBtnSession.AddCSSProperty("background-color", "#3383ff", "button")
     updateBtnSession.AddCSSProperty("color", "white", "button")
-    
+
     step.UserInterface.GetComponent("Properties").UpdateData()
     step.UserInterface.GetComponent("Properties").Refresh()
-       
+
 def CreateButtonsSetup(step):
-    global step3 
+    global step3
     step3 = step
 
     updateBtnSession = step.UserInterface.GetComponent("helpButton")
@@ -1052,42 +1068,42 @@ def CreateButtonsSetup(step):
     updateBtnSession.ButtonClicked += helpClick
     updateBtnSession.AddCSSProperty("background-color", "#3383ff", "button")
     updateBtnSession.AddCSSProperty("color", "white", "button")
-    
+
     updateBtnSession = step.UserInterface.GetComponent("analyzeButton")
     updateBtnSession.AddButton("analyzeButton", "Analyze", ButtonPositionType.Center, False)
     updateBtnSession.ButtonClicked += analyzeClick
-                
+
     updateBtnSession = step.UserInterface.GetComponent("setupAnalysisButton")
     updateBtnSession.AddButton("setupAnalysisButton", "Setup Analysis", ButtonPositionType.Center, False)
     updateBtnSession.ButtonClicked += setupAnalysisClick
-    
+
     updateBtnSession = step.UserInterface.GetComponent("defineWindingsButton")
     updateBtnSession.AddButton("defineWindingsButton", "Define Windings", ButtonPositionType.Center, False)
     updateBtnSession.ButtonClicked += defineWindingsClick
-    
+
     updateBtnSession = step.UserInterface.GetComponent("defineConnectionsButton")
     updateBtnSession.AddButton("defineConnectionsButton", "Define Connections", ButtonPositionType.Center, False)
     updateBtnSession.ButtonClicked += defineConnectionsClick
-    
+
     # insert path to the saved project as default path to label
-    oProject = oDesktop.GetActiveProject()    
+    oProject = oDesktop.GetActiveProject()
     path=oProject.GetPath()
     if oProject== None:
         path=oDesktop.GetProjectPath()
     step.Properties["defineSetup/projPath"].Value = str(path)
-    
+
     # add materials from vocabulary
     step.Properties["defineSetup/coreMaterial"].Options.Clear()
     for key in sorted(matDict):
         step.Properties["defineSetup/coreMaterial"].Options.Add(key)
-    step.Properties["defineSetup/coreMaterial"].Value = key   
+    step.Properties["defineSetup/coreMaterial"].Value = key
 
     if step2.Properties["windingProperties/drawWinding"].Value == True:
         step3.UserInterface.GetComponent("defineWindingsButton").SetEnabledFlag("defineWindingsButton", True)
-        
+
     step.UserInterface.GetComponent("Properties").UpdateData()
     step.UserInterface.GetComponent("Properties").Refresh()
-    
+
     global WdgSet,step2
     if WdgSet==None or step2.Properties["windingProperties/drawWinding/numLayers"].ReadOnly != True:
         WdgSet = WdgForm()
@@ -1096,22 +1112,22 @@ def CreateButtonsSetup(step):
 
         WdgSet.FinalPrimList = []
         WdgSet.FinalSecList = []
-    
+
         for NumLay in range(0, int(step2.Properties["windingProperties/drawWinding/numLayers"].Value)):
             WdgSet.FinalWdgList.append('Layer'+str(NumLay+1))
-            
+
     if len(WdgSet._WgList.Items) == 0 and len(WdgSet.FinalDefList) !=0:
         step3.UserInterface.GetComponent("analyzeButton").SetEnabledFlag("analyzeButton", True)
         step3.UserInterface.GetComponent("setupAnalysisButton").SetEnabledFlag("setupAnalysisButton", True)
         step3.UserInterface.GetComponent("defineConnectionsButton").SetEnabledFlag("defineConnectionsButton", True)
-                   
+
 def showConnectionDialog(allNamesList):
     global ConnSet
-    if ConnSet == None:       
+    if ConnSet == None:
         ConnSet = ConnForm()
         ConnSet.FinalInWdgList = []
         ConnSet.FinalConnList = []
-        
+
         for EachConn in allNamesList:
             ConnSet.FinalInWdgList.append(EachConn)
         ConnSet.FinalGroupDict = {}
@@ -1128,7 +1144,7 @@ def defineWindingsClick(sender, args):
     if ConnSet != None:
         if len(ConnSet.FinalConnList) > 0:
             if MsgBox('Changing Winding definition will remove defined connection\n'+
-                      'Do you wish to continue?', vbYesNo ,"Warning!") == 'No':            
+                      'Do you wish to continue?', vbYesNo ,"Warning!") == 'No':
                 return
             orDefList = WdgSet.FinalDefList [:]
     WdgSet._WgList.Items.Clear()
@@ -1145,7 +1161,7 @@ def defineWindingsClick(sender, args):
         step3.UserInterface.GetComponent("analyzeButton").SetEnabledFlag("analyzeButton", True)
         step3.UserInterface.GetComponent("setupAnalysisButton").SetEnabledFlag("setupAnalysisButton", True)
         step3.UserInterface.GetComponent("defineConnectionsButton").SetEnabledFlag("defineConnectionsButton", True)
-    
+
     if ConnSet != None:
         if len(ConnSet.FinalConnList) > 0:
             ModDList = list(set(orDefList).difference(set(WdgSet.FinalDefList)))
@@ -1162,28 +1178,28 @@ def defineWindingsClick(sender, args):
                     for EachRem in RemList[1]:
                         if EachRem == OrText:
                             if "Primary" in OrText:
-                                AddRem = EachRem.replace("Primary","Secondary")                                    
+                                AddRem = EachRem.replace("Primary","Secondary")
                             elif "Secondary" in OrText:
                                 AddRem = EachRem.replace("Secondary","Primary")
                         else:
                             AddRem= EachRem
                         ConnSet.FinalInWdgList.append(AddRem)
-    
+
 def helpClick(sender, args):
     webopen(str(ExtAPI.Extension.InstallDir) + '/help/help.html')
-            
+
 def defineConnectionsClick(sender, args):
-    listOfWindings= ([winding.replace("Layer","Secondary") for winding in WdgSet.FinalSecList] + 
+    listOfWindings= ([winding.replace("Layer","Secondary") for winding in WdgSet.FinalSecList] +
                      [winding.replace("Layer","Primary") for winding in WdgSet.FinalPrimList])
-    listOfWindings.sort(key=lambda x: '{0:0>20}'.format(x).lower())                 
+    listOfWindings.sort(key=lambda x: '{0:0>20}'.format(x).lower())
     showConnectionDialog(listOfWindings)
-        
+
 def readDataClick(sender, args):
     try:
-        readData()               
+        readData()
     except:
         raise NameError('Something unexpected. Code 1.  Please contact technical support')
-    
+
 def setupAnalysisClick(sender, args):
     try:
         setupAnalysis(step3)
@@ -1192,9 +1208,9 @@ def setupAnalysisClick(sender, args):
 
 def analyzeClick(sender, args):
     try:
-        analyze(step3)    
+        analyze(step3)
     except:
         raise NameError('Something unexpected. Code 3.  Please contact technical support')
-    
+
 def resetFunc(step):
     pass

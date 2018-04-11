@@ -1,7 +1,7 @@
 def segAngCheck(step, prop):
-    if not (0< float(prop.Value) <20):
-        prop.Value = 15
-        MsgBox(str(prop.Caption) + ' should be in range 0< Angle <20',vbOKOnly ,"Error")
+    if not (0<= float(prop.Value) <20):
+        prop.Value = 0
+        MsgBox(str(prop.Caption) + ' should be 0 for True Surface or less then 20',vbOKOnly ,"Error")
         return False
     return True
 
