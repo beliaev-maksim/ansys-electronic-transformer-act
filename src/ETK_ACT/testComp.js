@@ -17,7 +17,7 @@ define(
 		self.params     = params;
 		self.element    = element;
 		self.rowCount   = 0;
-		self.onlyOneSelect = false;
+		self.onlyOneSelect = true;
 		self.properties = [];
 		self.decimalSeparator = params.Model.DecimalSeparator;
 
@@ -218,15 +218,11 @@ define(
 					editmode: 'click',
 					height: '100%',
 					width: '100%',
-					selectionmode: obj.CanSelect ? "checkbox" : "True",
+					selectionmode: obj.CanSelect ? "singlecell" : "True",  //multiplecellsadvanced 
 				});
 			}
 
-			// fix the probleme where the vertical scrollbar would appear and disapear when press the addButton that causing to remove a part of the tabular data
-			if (self.rowCount != currentRowCount)
-			{
-				gridElement.jqxGrid('render');
-			}
+		
 
 			// valid / invalid
 			var $headers = $(element).find(".jqx-grid-column-header.jqx-widget-header");

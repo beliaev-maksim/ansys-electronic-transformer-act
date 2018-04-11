@@ -585,13 +585,7 @@ class TabularDataEditor:
         self.dialog = None
 
     def onactivate(self, step, prop):
-        # we try to create the smaller dialogBox possible to not use unnecessary space
-        columnWidth = 120
-        selectionColumnWidth = 30
-        thDialogWidth = columnWidth * prop.Properties.Count + selectionColumnWidth + 2 # 2*1 is border
-        maxDialogWidth = 562
-        minDialogWidth = 150
-        dialogWidth = max(min(thDialogWidth, maxDialogWidth), minDialogWidth)
+        dialogWidth = 532
 
         self.dialog.GetComponent(TabularDataEditor.ComponentName).SetPropertyTable(prop)
         self.dialog.GetComponent(TabularDataEditor.ComponentName).Refresh()
