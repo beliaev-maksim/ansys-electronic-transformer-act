@@ -13,6 +13,8 @@ def M(string1='',string2='',string3='',string4='',string5='',string6=''):
 
 #***************   ***************   ***************   ***************   ***************   --------#
 def createModel(step):
+    checkWinding(step)
+
     global designName, oProject
     flagAutoSave = -1
     # read custom material file and dataset points for it
@@ -130,9 +132,14 @@ def setupAnalysis(step):
     else:
         changeColor(oEditor,LayList,132,135,137)
 
-    if step2.Properties["windingProperties/drawWinding/includeBobbin"].Value == True:
+    if (step2.Properties["windingProperties/drawWinding/includeBobbin"].Value == True
+        and step2.Properties["windingProperties/drawWinding/layerType"].Value == 'Wound'):
         assignMaterial(oEditor, 'Bobbin', '"polyamide"')
 
+    elif (step2.Properties["windingProperties/drawWinding/includeBobbin"].Value == True
+        and step2.Properties["windingProperties/drawWinding/layerType"].Value == 'Planar'):
+        boards = ','.join(oEditor.GetMatchedObjectName("Board*"))
+        assignMaterial(oEditor, boards, '"polyamide"')
 
     oEditor.Section(
                         [
@@ -778,7 +785,7 @@ def readData():
         step2.Properties["windingProperties/drawWinding/bobThickness"].Value   = float(MargList[3])
         step2.Properties["windingProperties/drawWinding/includeBobbin"].Value  = True if int(BobStat)==1 else False
 
-        step2.Properties["windingProperties/drawWinding/layerType"].Value = 'Planar' if int(WdgType) == 1 else 'Wound'
+
 
         if int(CondType) == 1:
             step2.Properties["windingProperties/drawWinding/conductorType"].Value = 'Rectangular'
@@ -810,12 +817,24 @@ def readData():
                 table.Properties["insulationThick"].Value   = LayerSpecDict[i][2]
                 table.Properties["layer"].Value             = 'Layer_' + str(i)
                 table.SaveActiveRow()
+
+        if int(WdgType) == 1:
+          step2.Properties["windingProperties/drawWinding/layerType"].Value = 'Planar'
+          step2.Properties["windingProperties/drawWinding/conductorType"].Value = 'Rectangular'
+          step2.Properties["windingProperties/drawWinding/conductorType"].ReadOnly = True
+        else:
+          step2.Properties["windingProperties/drawWinding/layerType"].Value = 'Wound'
+          step2.Properties["windingProperties/drawWinding/conductorType"].ReadOnly = False
+
     else:
         step2.Properties["windingProperties/drawWinding"].Value = False
 
     # Step Three
     if int(SetupDef) > 0:
         step3 = step1.Wizard.Steps["setup"]
+
+        global COREMATERIAL
+        COREMATERIAL = MatList[0]
         step3.Properties["defineSetup/coreMaterial"].Value = MatList[0]
         step3.Properties["defineSetup/coilMaterial"].Value = MatList[1]
         step3.Properties["defineSetup/adaptFreq"].Value = AdFrVal
@@ -995,14 +1014,24 @@ def changeCaptions(step,prop):
     if prop.Value == 'Planar':
       step.Properties["windingProperties/drawWinding/bobThickness"].Caption = 'Board thickness:'
       step.Properties["windingProperties/drawWinding/includeBobbin"].Caption = 'Include board in geometry:'
+      step.Properties["windingProperties/drawWinding/topMargin"].Caption = 'Bottom Margin'
+
+      table = step.Properties["windingProperties/drawWinding/conductorType/tableLayers"]
+      table.Properties["insulationThick"].Caption = 'Turn Spacing'
+
       step.Properties["windingProperties/drawWinding/conductorType"].Value = 'Rectangular'
       step.Properties["windingProperties/drawWinding/conductorType"].ReadOnly = True
-    else:
-      # wounded transformer
+
+    elif prop.Value == 'Wound':
       step.Properties["windingProperties/drawWinding/bobThickness"].Caption = 'Bobbin thickness:'
       step.Properties["windingProperties/drawWinding/includeBobbin"].Caption = 'Include bobbin in geometry:'
+      step.Properties["windingProperties/drawWinding/topMargin"].Caption = 'Top Margin'
+
+      table = step.Properties["windingProperties/drawWinding/conductorType/tableLayers"]
+      table.Properties["insulationThick"].Caption = 'Insulation thickness'
+
       step.Properties["windingProperties/drawWinding/conductorType"].ReadOnly = False
-      
+
     step.UserInterface.GetComponent("Properties").UpdateData()
     step.UserInterface.GetComponent("Properties").Refresh()
 
@@ -1032,6 +1061,7 @@ def CreateButtonsCore(step):
     step.Properties["coreProperties/coreType/coreModel"].Options.Clear()
     supl = step.Properties["coreProperties/supplier"].Value
     coreList = coreTypes(prop, supl)
+
     for i in range(len(coreList)):
         step.Properties["coreProperties/coreType/coreModel"].Options.Add(coreList[i][0])
     step.Properties["coreProperties/coreType/coreModel"].Value = coreList[0][0]
@@ -1085,6 +1115,7 @@ def CreateButtonsSetup(step):
     updateBtnSession.AddButton("defineConnectionsButton", "Define Connections", ButtonPositionType.Center, False)
     updateBtnSession.ButtonClicked += defineConnectionsClick
 
+
     # insert path to the saved project as default path to label
     oProject = oDesktop.GetActiveProject()
     path=oProject.GetPath()
@@ -1092,11 +1123,19 @@ def CreateButtonsSetup(step):
         path=oDesktop.GetProjectPath()
     step.Properties["defineSetup/projPath"].Value = str(path)
 
+
     # add materials from vocabulary
+    global COREMATERIAL # came if materials data was read from input file
     step.Properties["defineSetup/coreMaterial"].Options.Clear()
     for key in sorted(matDict):
         step.Properties["defineSetup/coreMaterial"].Options.Add(key)
-    step.Properties["defineSetup/coreMaterial"].Value = key
+
+    try:
+        if COREMATERIAL != None:
+            step.Properties["defineSetup/coreMaterial"].Value = COREMATERIAL
+    except:
+        step.Properties["defineSetup/coreMaterial"].Value = key
+
 
     if step2.Properties["windingProperties/drawWinding"].Value == True:
         step3.UserInterface.GetComponent("defineWindingsButton").SetEnabledFlag("defineWindingsButton", True)
@@ -1116,10 +1155,12 @@ def CreateButtonsSetup(step):
         for NumLay in range(0, int(step2.Properties["windingProperties/drawWinding/numLayers"].Value)):
             WdgSet.FinalWdgList.append('Layer'+str(NumLay+1))
 
-    if len(WdgSet._WgList.Items) == 0 and len(WdgSet.FinalDefList) !=0:
-        step3.UserInterface.GetComponent("analyzeButton").SetEnabledFlag("analyzeButton", True)
-        step3.UserInterface.GetComponent("setupAnalysisButton").SetEnabledFlag("setupAnalysisButton", True)
-        step3.UserInterface.GetComponent("defineConnectionsButton").SetEnabledFlag("defineConnectionsButton", True)
+    if (len(WdgSet._WgList.Items) == 0 and
+        len(WdgSet.FinalDefList) !=0 and
+        step2.Properties["windingProperties/drawWinding"].Value == True):
+            step3.UserInterface.GetComponent("analyzeButton").SetEnabledFlag("analyzeButton", True)
+            step3.UserInterface.GetComponent("setupAnalysisButton").SetEnabledFlag("setupAnalysisButton", True)
+            step3.UserInterface.GetComponent("defineConnectionsButton").SetEnabledFlag("defineConnectionsButton", True)
 
 def showConnectionDialog(allNamesList):
     global ConnSet
@@ -1195,22 +1236,22 @@ def defineConnectionsClick(sender, args):
     showConnectionDialog(listOfWindings)
 
 def readDataClick(sender, args):
-    try:
+    # try:
         readData()
-    except:
-        raise NameError('Something unexpected. Code 1.  Please contact technical support')
+    # except:
+    #     raise NameError('Something unexpected. Code 1.  Please contact technical support')
 
 def setupAnalysisClick(sender, args):
-    try:
+    # try:
         setupAnalysis(step3)
-    except:
-        raise NameError('Something unexpected. Code 2.  Please contact technical support')
+    # except:
+    #     raise NameError('Something unexpected. Code 2.  Please contact technical support')
 
 def analyzeClick(sender, args):
-    try:
+    # try:
         analyze(step3)
-    except:
-        raise NameError('Something unexpected. Code 3.  Please contact technical support')
+    # except:
+    #     raise NameError('Something unexpected. Code 3.  Please contact technical support')
 
 def resetFunc(step):
     pass

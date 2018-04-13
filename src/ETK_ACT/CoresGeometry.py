@@ -159,7 +159,7 @@ class Cores():
         "UseMaterialAppearance:=", False
       ])
 
-  def createRectangle(self, XPosition, YPosition, ZPosition, width, height, name, covered = True):
+  def createRectangle(self, XPosition, YPosition, ZPosition, XSize, ZSize, name, covered = True):
     self.oEditor.CreateRectangle(
           [
             "NAME:RectangleParameters",
@@ -167,8 +167,8 @@ class Cores():
             "XStart:="		, str(XPosition) + 'mm',
             "YStart:="		, str(YPosition) + 'mm',
             "ZStart:="		, str(ZPosition) + 'mm',
-            "Width:="		, str(width)+'mm',
-            "Height:="		, str(height)+'mm',
+            "Width:="		, str(ZSize)+'mm', # height of conductor
+            "Height:="		, str(XSize)+'mm', # width
             "WhichAxis:="		, 'Y'
           ],
           [
@@ -393,39 +393,36 @@ class ECore(Cores):
     WdgParDict  = self.WdgParDict
     MSlotWidth  = (DimD2 - DimD3)/2.0
     MSlotHeight = DimD5*2
-    
+
     if BobStat > 0 and MWdgType == 2:
       self.drawBobbin(MSlotHeight - 2*MTopMargin, (DimD2/2.0) - MSideMargin, (DimD3/2.0) + MSideMargin + MBobbinThk,
                       (DimD6/2.0)+ MSideMargin + MBobbinThk, MBobbinThk, MSideMargin, SAng, ECoreDimD8)
-    
-  
-    MTDx = MTopMargin+ MBobbinThk
-    
+
     if MWdgType == 1:
       # -- Planar transformer -- #
+      MTDx = MTopMargin
       for MAx in WdgParDict:
         if BobStat > 0 and MWdgType == 1:
             self.drawBoard(MSlotHeight - 2*MTopMargin, (DimD2/2.0) - MSideMargin, (DimD3/2.0) + MSideMargin + MBobbinThk,
-                           (DimD6/2.0)+ MSideMargin + MBobbinThk, MBobbinThk, 
-                           DimD5 - MTDx - (WdgParDict[MAx][3]) - WdgParDict[MAx][0] - MBobbinThk, MAx, ECoreDimD8)
-                           
+                           (DimD6/2.0)+ MSideMargin + MBobbinThk, MBobbinThk, -DimD5+MTDx, MAx, ECoreDimD8)
+
         for MBx in range(0, int(WdgParDict[MAx][2])):
           MRecSzX = (DimD3 + (2*(MSideMargin+ MBobbinThk)) + ((2*MBx+1)*WdgParDict[MAx][0]) +
-                     (2*MBx*2*WdgParDict[MAx][3]) + 2*WdgParDict[MAx][3])
+                     (2*MBx*WdgParDict[MAx][3]) + WdgParDict[MAx][3])
 
           MRecSzY = (DimD6 + (2*(MSideMargin+ MBobbinThk)) + ((2*MBx+1)*WdgParDict[MAx][0]) +
-                     (2*MBx*2*WdgParDict[MAx][3]) + 2*WdgParDict[MAx][3])
+                     (2*MBx*WdgParDict[MAx][3]) + WdgParDict[MAx][3])
 
           MRecSzZ = - WdgParDict[MAx][1]/2.0
-          
+
           self.CreateSingleTurn(MRecSzX, MRecSzY, MRecSzZ, MCondType, WdgParDict[MAx][0], WdgParDict[MAx][1],
-                                  DimD5 - MTDx -(WdgParDict[MAx][3]), MAx, MBx, (MRecSzX - DimD3)/2, SAng)
-          
-          
-          
-        MTDx += MLSpacing + WdgParDict[MAx][1] + 2*WdgParDict[MAx][3] + MBobbinThk
+                                  -DimD5 + MTDx + MBobbinThk + WdgParDict[MAx][1], MAx, MBx, (MRecSzX - DimD3)/2, SAng)
+
+
+        MTDx += MLSpacing + WdgParDict[MAx][1] + MBobbinThk
 
     else:
+      MTDx = MTopMargin+ MBobbinThk
       for MAx in WdgParDict.keys():
         for MBx in range(0, int(WdgParDict[MAx][2])):
           MRecSzX = DimD3 + (2*(MTDx+(WdgParDict[MAx][0]/2.0)))+ 2*WdgParDict[MAx][3]
@@ -558,13 +555,12 @@ class ECore(Cores):
   def drawBoard(self, Hb, Db1, Db2, Db3, Tb, ZStart, LayNum, ECoreDimD8 = 0):
     self.createBox( -Db1+ECoreDimD8, -(Db1 - Db2+Db3), ZStart,
                    2*Db1 - 2*ECoreDimD8, 2*(Db1 - Db2+Db3), Tb, 'Board_{}'.format(LayNum), '(0, 128, 0)')
-                   
-    self.createBox(-Db2+Tb, -Db3+Tb, ZStart, 
+
+    self.createBox(-Db2+Tb, -Db3+Tb, ZStart,
                    2*Db2 - 2*Tb, 2*Db3 - 2*Tb, Hb, 'BoardSlot_{}'.format(LayNum))
     self.subtract('Board_{}'.format(LayNum), 'BoardSlot_{}'.format(LayNum))
-    
-    
-    
+
+
   def drawGeometry(self):
     self.initCore()
     self.createBox( -(self.MECoreLength/2), -(self.MECoreWidth/2), -self.MECoreHeight -self.TAirGap,
@@ -593,42 +589,45 @@ class ECore(Cores):
     if self.WdgStatus == 1:
       self.DrawWdg(self.DimD2, self.DimD3, self.DimD5, self.DimD6, self.SAng, self.DimD8)
 
+
 # EICore inherit from ECore functions DrawWdg, CreateSingleTurn, drawBobbin
 class EICore(ECore):
   def drawGeometry(self):
     self.initCore()
-    self.createBox( -(self.MECoreLength/2), -(self.MECoreWidth/2), -self.MECoreHeight -self.TAirGap,
-                    self.MECoreLength, self.MECoreWidth, (self.MECoreHeight -self.MSlotDepth), 'E_Core')
+    # two multiply air gap due to no symmetry for cores like in ECore
+    self.createBox(-(self.MECoreLength/2), -(self.MECoreWidth/2), -self.MECoreHeight - 2*self.TAirGap,
+                    self.MECoreLength, self.MECoreWidth, (self.MECoreHeight - self.MSlotDepth), 'E_Core')
 
-    self.createBox( -(self.MECoreLength/2), -(self.MECoreWidth/2), -self.MECoreHeight -self.TAirGap,
-                    self.MSLegWidth, self.MECoreWidth, self.MECoreHeight -self.AirGapS, 'Leg1')
+    self.createBox(-(self.MECoreLength/2), -(self.MECoreWidth/2), -self.MECoreHeight - 2*self.TAirGap,
+                    self.MSLegWidth, self.MECoreWidth, self.MECoreHeight - 2*self.AirGapS, 'Leg1')
 
-    self.createBox( -(self.MCLegWidth/2), -(self.MECoreWidth/2), -self.MECoreHeight -self.TAirGap,
-                    self.MCLegWidth, self.MECoreWidth, self.MECoreHeight -self.AirGapC, 'Leg2')
+    self.createBox(-(self.MCLegWidth/2), -(self.MECoreWidth/2), -self.MECoreHeight -self.TAirGap,
+                    self.MCLegWidth, self.MECoreWidth, self.MECoreHeight - 2*self.AirGapC, 'Leg2')
 
-    self.createBox((self.MECoreLength/2) -self.MSLegWidth, -(self.MECoreWidth/2), -self.MECoreHeight -self.TAirGap,
-                    self.MSLegWidth, self.MECoreWidth, self.MECoreHeight -self.AirGapS, 'Leg3')
+    self.createBox((self.MECoreLength/2) - self.MSLegWidth, -(self.MECoreWidth/2), -self.MECoreHeight - 2*self.TAirGap,
+                    self.MSLegWidth, self.MECoreWidth, self.MECoreHeight - 2*self.AirGapS, 'Leg3')
 
     self.unite('E_Core,Leg1,Leg2,Leg3')
 
-    self.fillet('E_Core', self.DimD7, -self.DimD1/2, -self.DimD6/2, -(self.DimD4/2) -self.TAirGap)
-    self.fillet('E_Core', self.DimD7, -self.DimD1/2, self.DimD6/2, -(self.DimD4/2) -self.TAirGap)
-    self.fillet('E_Core', self.DimD7, self.DimD1/2, -self.DimD6/2, -(self.DimD4/2) -self.TAirGap)
-    self.fillet('E_Core', self.DimD7, self.DimD1/2, self.DimD6/2, -(self.DimD4/2) -self.TAirGap)
+    self.fillet('E_Core', self.DimD7, -self.DimD1/2, -self.DimD6/2, -(self.DimD4/2) - 2*self.TAirGap)
+    self.fillet('E_Core', self.DimD7, -self.DimD1/2, self.DimD6/2, -(self.DimD4/2) - 2*self.TAirGap)
+    self.fillet('E_Core', self.DimD7, self.DimD1/2, -self.DimD6/2, -(self.DimD4/2) - 2*self.TAirGap)
+    self.fillet('E_Core', self.DimD7, self.DimD1/2, self.DimD6/2, -(self.DimD4/2) - 2*self.TAirGap)
 
-    self.createBox( -self.DimD1/2, -self.DimD6/2, self.TAirGap,
+    self.createBox( -self.DimD1/2, -self.DimD6/2, 2*self.TAirGap,
              self.DimD1, self.DimD6, self.DimD8, 'I_Core')
 
-    self.fillet('I_Core', self.DimD7, -self.DimD1/2, -self.DimD6/2, (self.DimD8/2) -self.TAirGap)
-    self.fillet('I_Core', self.DimD7, -self.DimD1/2, self.DimD6/2, (self.DimD8/2) -self.TAirGap)
-    self.fillet('I_Core', self.DimD7, self.DimD1/2, -self.DimD6/2, (self.DimD8/2) -self.TAirGap)
-    self.fillet('I_Core', self.DimD7, self.DimD1/2, self.DimD6/2, (self.DimD8/2) -self.TAirGap)
+    self.fillet('I_Core', self.DimD7, -self.DimD1/2, -self.DimD6/2, (self.DimD8/2) - 2*self.TAirGap)
+    self.fillet('I_Core', self.DimD7, -self.DimD1/2, self.DimD6/2, (self.DimD8/2) - 2*self.TAirGap)
+    self.fillet('I_Core', self.DimD7, self.DimD1/2, -self.DimD6/2, (self.DimD8/2) - 2*self.TAirGap)
+    self.fillet('I_Core', self.DimD7, self.DimD1/2, self.DimD6/2, (self.DimD8/2) - 2*self.TAirGap)
 
-    self.move('E_Core, I_Core', 0, 0, self.DimD5/2)
+    self.move('E_Core,I_Core', 0, 0, self.DimD5/2)
 
     self.oEditor.FitAll()
     if self.WdgStatus == 1:
-			self.DrawWdg(self.DimD2, self.DimD3, (self.DimD5+2*self.TAirGap)/2, self.DimD6, self.SAng)
+	    self.DrawWdg(self.DimD2, self.DimD3, self.DimD5/2 + 2*self.TAirGap, self.DimD6, self.SAng)
+
 
 # UCore inherit from ECore functions CreateSingleTurn, drawBobbin
 class UCore(ECore):
@@ -658,26 +657,26 @@ class UCore(ECore):
 
     if MWdgType == 1:
       # -- Planar transformer -- #
-      MTDx = MTopMargin+ MBobbinThk
+      MTDx = MTopMargin
       for MAx in self.WdgParDict:
         if BobStat > 0 and MWdgType == 1:
           self.drawBoard(MSlotHeight - 2*MTopMargin, DimD2 + LegWidth/2 - MSideMargin,
                          LegWidth/2.0 + MSideMargin + MBobbinThk, (DimD5/2.0) + MSideMargin + MBobbinThk, MBobbinThk,
-                         DimD4 - MTDx - (WdgParDict[MAx][3]) - WdgParDict[MAx][0] - MBobbinThk, MAx)
-        
+                         -DimD4 + MTDx, MAx)
+
         for MBx in range(0, int(self.WdgParDict[MAx][2])):
           MRecSzX = (LegWidth + (2*(MSideMargin+ MBobbinThk)) + ((2*MBx+1)*self.WdgParDict[MAx][0]) +
                      (2*MBx*2*self.WdgParDict[MAx][3]) + 2*self.WdgParDict[MAx][3])
 
           MRecSzY = (DimD5 + (2*(MSideMargin+ MBobbinThk)) + ((2*MBx+1)*self.WdgParDict[MAx][0]) +
                      (2*MBx*2*self.WdgParDict[MAx][3]) + 2*self.WdgParDict[MAx][3])
-                     
+
           MRecSzZ = -self.WdgParDict[MAx][1]/2.0
           self.CreateSingleTurn(MRecSzX, MRecSzY, MRecSzZ, MCondType, self.WdgParDict[MAx][0], self.WdgParDict[MAx][1],
-                                  DimD4 - MTDx -(self.WdgParDict[MAx][3]), MAx, MBx, (MRecSzX - LegWidth)/2, SAng)
-          
-        MTDx += MLSpacing + self.WdgParDict[MAx][1] + 2*self.WdgParDict[MAx][3] + MBobbinThk
-                  
+                                  -DimD4 + MTDx + MBobbinThk + WdgParDict[MAx][1], MAx, MBx, (MRecSzX - LegWidth)/2, SAng)
+
+        MTDx += MLSpacing + self.WdgParDict[MAx][1] + MBobbinThk
+
     else:
       MTDx = MSideMargin+ MBobbinThk
       for MAx in self.WdgParDict.keys():
@@ -712,7 +711,7 @@ class UCore(ECore):
     self.subtract('U_Core_Bottom', 'XSlot')
 
     if self.AirGapC > 0:
-      self.createBox((self.DimD1 -self.DimD2)/4, -(self.MECoreWidth)/2, -self.AirGapC,
+      self.createBox(-(self.DimD1 -self.DimD2)/4, -(self.MECoreWidth)/2, -self.AirGapC,
               (self.DimD1 -self.DimD2)/2, self.MECoreWidth, self.AirGapC, 'AgC')
 
       self.subtract('U_Core_Bottom', 'AgC')
@@ -728,6 +727,7 @@ class UCore(ECore):
     self.oEditor.FitAll()
     if self.WdgStatus == 1:
 			self.DrawWdg(self.DimD1, self.DimD2, self.DimD3, (self.DimD4+self.TAirGap), self.DimD5, self.SAng)
+
 
 class EFDCore(ECore):
   def drawGeometry(self):
@@ -778,59 +778,37 @@ class EFDCore(ECore):
     self.oEditor.SetWCS(["NAME:SetWCS Parameter", "Working Coordinate System:=", "Global", "RegionDepCSOk:=", False])
     Cores.CS = 'Global'
 
-  # need to redifine this function since it does not work with relative CS
-  def fillet(self, name, Radius, X, Y, Z):
-      ID = [self.oEditor.GetEdgeByPosition(["NAME:EdgeParameters",
-      "BodyName:=", name,
-      "XPosition:=", str(X) + 'mm',
-      "YPosition:=", str(Y + (self.DimD7 - self.DimD6)/2 - self.DimD8) + 'mm',
-      "ZPosition:=", str(Z) + 'mm'])]
-      self.oEditor.Fillet(
-      [
-        "NAME:Selections",
-        "Selections:="		, name,
-        "NewPartsModelFlag:="	, "Model"
-      ],
-      [
-        "NAME:Parameters",
-        [
-          "NAME:FilletParameters",
-          "Edges:="		, ID,
-          "Vertices:="		, [],
-          "Radius:="		, str(Radius) + 'mm',
-          "Setback:="		, "0mm"
-        ]
-      ])
 
 # UICore inherit from ECore functions CreateSingleTurn, drawBobbin
-# and from UCore inherit DrawWdg and __init__
+# and from UCore inherit DrawWdg and initCore
 class UICore(UCore):
   def drawGeometry(self):
     self.initCore()
-    self.createBox( -(self.DimD1 -self.DimD2)/4, -(self.MECoreWidth/2), (self.DimD4/2) -self.DimD3 -self.TAirGap,
+    self.createBox( -(self.DimD1 -self.DimD2)/4, -(self.MECoreWidth/2), (self.DimD4/2) - self.MECoreHeight,
              self.MECoreLength, self.MECoreWidth, self.MECoreHeight, 'U_Core')
 
-    self.createBox((self.DimD1 -self.DimD2)/4, -(self.MECoreWidth)/2, -self.DimD4/2 -self.TAirGap,
+    self.createBox((self.DimD1 -self.DimD2)/4, -(self.MECoreWidth)/2, -self.DimD4/2,
              self.DimD2, self.MECoreWidth, self.DimD4, 'XSlot')
 
     self.subtract('U_Core', 'XSlot')
 
     if self.AirGapC > 0:
-      self.createBox((self.DimD1 -self.DimD2)/4, -(self.MECoreWidth)/2, -self.AirGapC,
-              (self.DimD1 -self.DimD2)/2, self.MECoreWidth, self.AirGapC, 'AgC')
+      self.createBox((self.DimD1 -self.DimD2)/4, -(self.MECoreWidth)/2, (self.DimD4/2)-2*self.AirGapC,
+              -(self.DimD1 -self.DimD2)/2, self.MECoreWidth, 2*self.AirGapC, 'AgC')
       self.subtract('U_Core', 'AgC')
 
     if self.AirGapS > 0:
-      self.createBox(self.DimD2+(self.DimD1 -self.DimD2)/4, -(self.MECoreWidth)/2, -self.AirGapS,
-              (self.DimD1 -self.DimD2)/2, self.MECoreWidth, self.AirGapS, 'AgS')
+      self.createBox(self.DimD2+(self.DimD1 -self.DimD2)/4, -(self.MECoreWidth)/2, (self.DimD4/2)-2*self.AirGapS,
+              (self.DimD1 -self.DimD2)/2, self.MECoreWidth, 2*self.AirGapS, 'AgS')
       self.subtract('U_Core', 'AgS')
 
-    self.createBox( -(self.DimD1 -self.DimD2)/4+((self.DimD1 -self.DimD6)/2), -self.DimD7/2, (self.DimD4/2)+self.TAirGap,
+    self.createBox(-(self.DimD1 - self.DimD2)/4 + (self.DimD1 -self.DimD6)/2, -self.DimD7/2, (self.DimD4/2) + 2*self.TAirGap,
              self.DimD6, self.DimD7, self.DimD8, 'I_Core')
 
     self.oEditor.FitAll()
     if self.WdgStatus == 1:
-			self.DrawWdg(self.DimD1, self.DimD2, self.DimD3/2, (self.DimD4/2)+self.TAirGap, self.DimD5, self.SAng)
+			self.DrawWdg(self.DimD1, self.DimD2, self.DimD3/2, (self.DimD4/2) + 2*self.TAirGap, self.DimD5, self.SAng)
+
 
 class PQCore(Cores):
   def initCore(self):
@@ -853,19 +831,18 @@ class PQCore(Cores):
     WdgParDict  = self.WdgParDict
     MSlotWidth  = (DimD2 - DimD3)/2.0
     MSlotHeight = DimD5*2
-    
+
     if BobStat > 0 and MWdgType == 2:
       self.drawBobbin(MSlotHeight - 2*MTopMargin, (DimD2/2.0) - MSideMargin, (DimD3/2.0)+ MSideMargin + MBobbinThk,
                       MBobbinThk, SAng)
 
     if MWdgType == 1:
-      MTDx = MTopMargin+ MBobbinThk
+      MTDx = MTopMargin
       for MAx in self.WdgParDict:
         if BobStat > 0 and MWdgType == 1:
           self.drawBoard(MSlotHeight - 2*MTopMargin, (DimD2/2.0) - MSideMargin, (DimD3/2.0)+ MSideMargin + MBobbinThk,
-                      MBobbinThk, SAng, 
-                      DimD5 - MTDx -(self.WdgParDict[MAx][3]) - WdgParDict[MAx][0] - MBobbinThk, MAx)
-          
+                      MBobbinThk, SAng, -DimD5+MTDx, MAx)
+
         for MBx in range(0, int(self.WdgParDict[MAx][2])):
           MRecSzX = (DimD3 + (2*(MSideMargin+ MBobbinThk)) + ((2*MBx+1)*self.WdgParDict[MAx][0]) +
                      (2*MBx*2*self.WdgParDict[MAx][3]) + 2*self.WdgParDict[MAx][3])
@@ -873,9 +850,9 @@ class PQCore(Cores):
           MRecSzZ = -self.WdgParDict[MAx][1]/2.0
 
           self.CreateSingleTurn(MRecSzX, MRecSzZ, MCondType, self.WdgParDict[MAx][0], self.WdgParDict[MAx][1],
-                                DimD5 - MTDx -(self.WdgParDict[MAx][3]), MAx, MBx, SAng)
+                                -DimD5 + MTDx + MBobbinThk + WdgParDict[MAx][1], MAx, MBx, SAng)
 
-        MTDx += MLSpacing + self.WdgParDict[MAx][1] + 2*self.WdgParDict[MAx][3]+ MBobbinThk
+        MTDx += MLSpacing + self.WdgParDict[MAx][1] + MBobbinThk
     else:
       MTDx = MSideMargin+ MBobbinThk
       for MAx in self.WdgParDict.keys():
@@ -941,7 +918,7 @@ class PQCore(Cores):
               (Db2 - Tb)*2, Hb, self.NumSegs, 'BoardSlot_{}'.format(LayNum))
 
     self.subtract('Board_{}'.format(LayNum), 'BoardSlot_{}'.format(LayNum))
-  
+
   def drawGeometry(self):
     self.initCore()
 
@@ -1007,6 +984,7 @@ class ETDCore(PQCore):
     if self.WdgStatus == 1:
 			self.DrawWdg(self.DimD2, self.DimD3, (self.DimD5+self.TAirGap), self.DimD6, self.SAng)
 
+
 # RMCore inherit from PQCore functions DrawWdg, CreateSingleTurn, drawBobbin
 class RMCore(PQCore):
   def drawGeometry(self):
@@ -1053,6 +1031,7 @@ class RMCore(PQCore):
     if self.WdgStatus == 1:
 			self.DrawWdg(self.DimD2, self.DimD3, self.DimD5/2+self.TAirGap, self.DimD6, self.SAng)
 
+
 #depending on bobbin we can inherit bobbin, createturn, drawwdg from PQCore. speak with JMark
 class EPCore(PQCore):
   def initCore(self):
@@ -1090,6 +1069,7 @@ class EPCore(PQCore):
     if self.WdgStatus == 1:
 			self.DrawWdg(self.DimD2, self.DimD3, (self.DimD5/2+self.TAirGap), self.DimD6, self.SAng)
 
+
 class PCore(PQCore):
   def drawGeometry(self, coreName):
     self.initCore()
@@ -1120,7 +1100,7 @@ class PCore(PQCore):
       self.createBox(self.DimD1/2, -self.DimD7/2, -(self.DimD4/2) -self.TAirGap,
              -(self.DimD1 -self.DimD8)/2, self.DimD7, self.DimD4/2, 'Slot2')
 
-      self.subtract(coreName+'_Core_Bottom', 'Slot1, Slot2')
+      self.subtract(coreName+'_Core_Bottom', 'Slot1,Slot2')
 
     self.duplicateMirror(coreName+'_Core_Bottom', 0, 0, 1)
     self.rename(coreName+'_Core_Bottom_1', coreName+'_Core_Top')
@@ -1132,7 +1112,7 @@ class PCore(PQCore):
       self.createBox(self.DimD1/2, -self.DimD1/2, (self.DimD4/2)+self.TAirGap,
              -(self.DimD1 -self.DimD8)/2, self.DimD1, -self.DimD4/2, 'Slot4')
 
-      self.subtract(coreName+'_Core_Top', 'Slot3, Slot4')
+      self.subtract(coreName+'_Core_Top', 'Slot3,Slot4')
 
     self.oEditor.FitAll()
     if self.WdgStatus == 1:
