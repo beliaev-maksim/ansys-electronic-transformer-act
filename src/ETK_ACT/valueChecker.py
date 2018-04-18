@@ -5,12 +5,14 @@ def segAngCheck(step, prop):
     return False
   return True
 
+
 def GEThenZero(step, prop):
   if float(prop.Value) <0:
     prop.Value = 0
     MsgBox(str(prop.Caption) + ' cannot be negative',vbOKOnly ,"Error")
     return False
   return True
+
 
 def GThenZero(step, prop):
   if float(prop.Value) <=0:
@@ -19,12 +21,14 @@ def GThenZero(step, prop):
     return False
   return True
 
+
 def GEThenOne(step, prop):
   if float(prop.Value) <1:
     prop.Value = 1
     MsgBox(str(prop.Caption) + ' should be greater or eqaul then 1',vbOKOnly ,"Error")
     return False
   return True
+
 
 def validityCheckTable(step, prop):
   if step.Properties["windingProperties/drawWinding/conductorType"].Value == 'Rectangular':
@@ -45,82 +49,135 @@ def validityCheckTable(step, prop):
         table.Value["windingProperties/drawWinding/conductorType/" + flag + '/' + prop.Name][i] = 8
         MsgBox(str(prop.Caption) +' must be Zero for True Surface or greater then 7!',vbOKOnly ,"Error")
 
+
 def checkWinding(step):
-  D_1 =step1.Properties["coreProperties/coreType/D_1"].Value
-  D_2 =step1.Properties["coreProperties/coreType/D_2"].Value
-  D_3 =step1.Properties["coreProperties/coreType/D_3"].Value
-  D_4 =step1.Properties["coreProperties/coreType/D_4"].Value
-  D_5 =step1.Properties["coreProperties/coreType/D_5"].Value
-  D_6 =step1.Properties["coreProperties/coreType/D_6"].Value
-  D_7 =step1.Properties["coreProperties/coreType/D_7"].Value
-  D_8 =step1.Properties["coreProperties/coreType/D_8"].Value
+  D_2 = float(step1.Properties["coreProperties/coreType/D_2"].Value)
+  D_3 = float(step1.Properties["coreProperties/coreType/D_3"].Value)
+  D_4 = float(step1.Properties["coreProperties/coreType/D_4"].Value)
+  D_5 = float(step1.Properties["coreProperties/coreType/D_5"].Value)
 
-
+  sideMargin      = float(step.Properties["windingProperties/drawWinding/sideMargin"].Value)
+  bobbinThickness = float(step.Properties["windingProperties/drawWinding/bobThickness"].Value)
+  boardThickness  = float(step.Properties["windingProperties/drawWinding/bobThickness"].Value)
+  topMargin       = float(step.Properties["windingProperties/drawWinding/topMargin"].Value)
+  layerSpacing    = float(step.Properties["windingProperties/drawWinding/layerSpacing"].Value)
 
   CoreType = step1.Properties["coreProperties/coreType"].Value
-  XMLpathToTable = 'windingProperties/drawWinding/conductorType/tableLayers'
-  table = step.Properties[XMLpathToTable]
+  conductorType = step.Properties["windingProperties/drawWinding/conductorType"].Value
 
+  # ---- start checking for wound ---- #
   if step.Properties["windingProperties/drawWinding/layerType"].Value == 'Wound':
-    # do not forget thank insulation is on both sides
-    maximumLayer = max(
-                        [
-                          (table.Value[XMLpathToTable + '/conductorWidth'][i] +
-                           2 * table.Value[XMLpathToTable + '/insulationThick'][i])
-                          for i in range(len(table.Value[XMLpathToTable + '/conductorWidth']))
-                        ]
-                      )
+    # ---- Check possible width for wound---- #
+    if conductorType == 'Rectangular':
+      XMLpathToTable = 'windingProperties/drawWinding/conductorType/tableLayers'
+      table = step.Properties[XMLpathToTable]
+      # take sum of layer dimensions where one layer is: Width + 2 * Insulation
+      maximumLayer = sum(
+                            [
+                              table.Value[XMLpathToTable + '/conductorWidth'][i] +
+                               # do not forget that insulation is on both sides
+                               2 * table.Value[XMLpathToTable + '/insulationThick'][i] +
+                               layerSpacing # since number of layers - 1 for spacing)
+                              for i in range(len(table.Value[XMLpathToTable + '/layer']))
+                            ]
+                          ) - layerSpacing
+
+    elif conductorType == 'Circular':
+      XMLpathToTable = 'windingProperties/drawWinding/conductorType/tableLayersCircles'
+      table = step.Properties[XMLpathToTable]
+      maximumLayer = sum(
+                            [
+                              (table.Value[XMLpathToTable + '/conductorDiameter'][i] +
+                               2 * table.Value[XMLpathToTable + '/insulationThick'][i] + layerSpacing)
+                              for i in range(len(table.Value[XMLpathToTable + '/layer']))
+                            ]
+                          ) - layerSpacing
 
     # do not forget that windings are laying on both sides of the core
-    maximumPossibleWidth = 2*(step.Properties["windingProperties/drawWinding/bobThickness"].Value +
-                            step.Properties["windingProperties/drawWinding/numLayers"].Value * maximumLayer)
+    maximumPossibleWidth = 2 * (bobbinThickness + sideMargin + maximumLayer)
+
+    # ---- Check possible height for wound---- #
+    if conductorType == 'Rectangular':
+      XMLpathToTable = 'windingProperties/drawWinding/conductorType/tableLayers'
+      table = step.Properties[XMLpathToTable]
+      # max value from each layer: (Height + 2 * Insulation) * number of layers
+      maximumLayer = max(
+                            [
+                              ((table.Value[XMLpathToTable + '/conductorHeight'][i] +
+                               # do not forget that insulation is on both sides
+                               2 * table.Value[XMLpathToTable + '/insulationThick'][i])*
+                               table.Value[XMLpathToTable + '/turnsNumber'][i])
+                              for i in range(len(table.Value[XMLpathToTable + '/layer']))
+                            ]
+                          )
+
+    elif conductorType == 'Circular':
+      XMLpathToTable = 'windingProperties/drawWinding/conductorType/tableLayersCircles'
+      table = step.Properties[XMLpathToTable]
+      maximumLayer = max(
+                            [
+                              ((table.Value[XMLpathToTable + '/conductorDiameter'][i] +
+                               2 * table.Value[XMLpathToTable + '/insulationThick'][i])*
+                               table.Value[XMLpathToTable + '/turnsNumber'][i])
+                              for i in range(len(table.Value[XMLpathToTable + '/layer']))
+                            ]
+                          )
+
+    maximumPossibleHeight = (2 * bobbinThickness + topMargin + maximumLayer)
+  # ---- Wound type limit found ---- #
 
 
-    if CoreType  ==  "E":
-      if (maximumPossibleWidth > (D_2 - D_3)):
-        raise UserErrorMessageException("Cannot accomodate all windings, increase D_2")
+  elif step.Properties["windingProperties/drawWinding/layerType"].Value == 'Planar':
+    XMLpathToTable = 'windingProperties/drawWinding/conductorType/tableLayers'
+    table = step.Properties[XMLpathToTable]
+    # ---- Check width for planar---- #
+    maximumLayer = max(
+                          [
+                            ((table.Value[XMLpathToTable + '/conductorWidth'][i] +
+                             # in this case it is turn spacing (no need to x2)
+                             table.Value[XMLpathToTable + '/insulationThick'][i])*
+                             table.Value[XMLpathToTable + '/turnsNumber'][i])
+                            for i in range(len(table.Value[XMLpathToTable + '/layer']))
+                          ]
+                        )
+    maximumPossibleWidth = (2 * maximumLayer + 2 * sideMargin)
 
-    elif CoreType  ==  "EC":
-        pass
+    # ---- Check Height for planar ---- #
+    maximumLayer = sum(
+                          [
+                            (table.Value[XMLpathToTable + '/conductorHeight'][i] + boardThickness + layerSpacing)
+                            for i in range(len(table.Value[XMLpathToTable + '/layer']))
+                          ]
+                        ) - layerSpacing
 
-    elif CoreType  ==  "EFD":
-        pass
+    maximumPossibleHeight = maximumLayer + topMargin
+    # ---- Planar type limit found ---- #
 
-    elif CoreType  ==  "EI":
-        pass
 
-    elif CoreType  ==  "EP":
-        pass
+  # ---- Check accomodation not depending on layer type ---- #
+  # ---- Height ---- #
+  if CoreType  in  ["E","EC","EFD","EQ","ER","ETD","PH"]:
+    # D_5 is height of one half core
+    if (maximumPossibleHeight > 2 * D_5):
+      raise UserErrorMessageException("Cannot accomodate all windings, increase D_5")
+  elif CoreType in ["EI","EP","P","PT","PQ","RM"]:
+    # D_5 is height of core
+    if (maximumPossibleHeight > D_5):
+      raise UserErrorMessageException("Cannot accomodate all windings, increase D_5")
+  elif CoreType in ["U","UI"]:
+     # D_4 is height of core
+     if (maximumPossibleHeight > D_4):
+       raise UserErrorMessageException("Cannot accomodate all windings, increase D_4")
 
-    elif CoreType  ==  "EQ":
-        pass
-
-    elif CoreType  ==  "ER":
-        pass
-
-    elif CoreType  ==  "ETD":
-        pass
-
-    elif CoreType  ==  "P":
-        pass
-
-    elif CoreType  ==  "PH":
-        pass
-
-    elif CoreType  ==  "PQ":
-        pass
-
-    elif CoreType  ==  "PT":
-        pass
-
-    elif CoreType  ==  "RM":
-        pass
-
-    elif CoreType  ==  "U":
-        pass
-
-    elif CoreType  ==  "UI":
-        pass
+  # ---- Width ---- #
+  if CoreType  not in  ["U","UI"]:
+    # D_2 - D_3 is sum of dimesnsions of two slots for windngs (left + right)
+    if (maximumPossibleWidth > (D_2 - D_3)):
+      raise UserErrorMessageException("Cannot accomodate all windings, increase D_2")
+  else:
+    # D_2 is dimension of one side slot for winding
+    if (maximumPossibleWidth/2 > D_2):
+      raise UserErrorMessageException("Cannot accomodate all windings, increase D_2")
 
 
 def CheckCoreDim(step):
@@ -128,14 +185,14 @@ def CheckCoreDim(step):
   if oDesktop.GetVersion() not in ['2018.1.0','2018.2.0']:
     raise UserErrorMessageException("Electronics Desktop Version is unsupported. Please use version r19.1 or r19.2")
 
-  D_1 =step.Properties["coreProperties/coreType/D_1"].Value
-  D_2 =step.Properties["coreProperties/coreType/D_2"].Value
-  D_3 =step.Properties["coreProperties/coreType/D_3"].Value
-  D_4 =step.Properties["coreProperties/coreType/D_4"].Value
-  D_5 =step.Properties["coreProperties/coreType/D_5"].Value
-  D_6 =step.Properties["coreProperties/coreType/D_6"].Value
-  D_7 =step.Properties["coreProperties/coreType/D_7"].Value
-  D_8 =step.Properties["coreProperties/coreType/D_8"].Value
+  D_1 = float(step.Properties["coreProperties/coreType/D_1"].Value)
+  D_2 = float(step.Properties["coreProperties/coreType/D_2"].Value)
+  D_3 = float(step.Properties["coreProperties/coreType/D_3"].Value)
+  D_4 = float(step.Properties["coreProperties/coreType/D_4"].Value)
+  D_5 = float(step.Properties["coreProperties/coreType/D_5"].Value)
+  D_6 = float(step.Properties["coreProperties/coreType/D_6"].Value)
+  D_7 = float(step.Properties["coreProperties/coreType/D_7"].Value)
+  D_8 = float(step.Properties["coreProperties/coreType/D_8"].Value)
 
   if (D_1 == 0):
   	raise UserErrorMessageException("Wrong core parameters!" + '\nD_1 cannot be zero')
