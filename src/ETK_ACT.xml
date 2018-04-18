@@ -1,5 +1,5 @@
-<extension name="Electronic Transformer" version="1" icon="images\logo.jpg" loadasdefault="True">
-  <author> ANSYS Inc. (T. Sambharam, M.Beliaev, M. Christini)</author>
+<extension name="ElectronicTransformer" version="1" icon="images\logo.jpg" loadasdefault="True">
+  <author>ANSYS, Inc.</author>
   <guid shortid="ElectronicsWizard">1c392f59-ac5a-46ef-8fd2-53959b52d542</guid>
   <script src="etkCallback.py" 		compiled ="true"/>
   <script src="coreData.py" 		compiled ="true"/>
@@ -11,9 +11,10 @@
     <images>images</images>
   </interface>
 
-	<wizard name="ETK_ACT" caption="Electronic Transformer" version="1" context="ElectronicsDesktop" icon="logo.jpg">
+	<wizard name="ElectronicTransformer" caption="Electronic Transformer" version="1" context="ElectronicsDesktop" icon="logo.jpg">
 		<description>Tool for automatic preparation of design for analysis of Electronic Transformers</description>
-		<step name="Core" caption="Core Definition" layout="StepOne@Electronic Transformer" version= "1">
+		<step name="Core" caption="Core Definition" layout="StepOne@ElectronicTransformer" version= "1">
+      <description>Dimensions, shape, supplier</description>
 
 			<componentstyle
 			component="readData"
@@ -116,7 +117,8 @@
 			</callbacks>
 		</step>
 
-		<step name="Winding" caption="Winding Definition" layout="StepTwo@Electronic Transformer" version= "1">
+		<step name="Winding" caption="Winding Definition" layout="StepTwo@ElectronicTransformer" version= "1">
+      <description>Dimensions, planar or wound</description>
 
 			<componentstyle
 			component="writeData"
@@ -252,7 +254,8 @@
 			</callbacks>
 		</step>
 
-		<step name="setup" caption="Analysis setup" layout="StepThree@Electronic Transformer" version= "1">
+		<step name="setup" caption="Analysis setup" layout="StepThree@ElectronicTransformer" version= "1">
+      <description>Core/winding material, frequency, winding connections</description>
 
 			<componentstyle
 			component="analyzeButton"
