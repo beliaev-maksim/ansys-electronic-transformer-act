@@ -445,7 +445,7 @@ class ECore(Cores):
         MTDx += MLSpacing + WdgParDict[MAx][0] + 2*WdgParDict[MAx][3]
 
   def CreateSingleTurn(self, PathX, PathY, PathZ, ProfTyp, ProfAX, ProfZ, ZPos, LayNum, TurnNum, FRad, SAng):
-    NumSegs = 4 if SAng == 0 else int(90/SAng)
+    NumSegs = 12 if SAng == 0 else int(90/SAng)*2
     SegAng = math.pi/(NumSegs*2)
 
     vertices = []
@@ -668,8 +668,7 @@ class EFDCore(ECore):
 
     if self.WdgStatus == 1:
 			self.DrawWdg(self.DimD2, self.DimD3, self.DimD5, self.DimD7, self.SAng)
-    self.oEditor.SetWCS(["NAME:SetWCS Parameter", "Working Coordinate System:=", "Global", "RegionDepCSOk:=", False])
-    Cores.CS = 'Global'
+
 
 
 # UCore inherit from ECore functions CreateSingleTurn, drawBobbin, drawBoard

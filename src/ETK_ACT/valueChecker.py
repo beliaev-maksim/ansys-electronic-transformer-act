@@ -50,7 +50,24 @@ def validityCheckTable(step, prop):
         MsgBox(str(prop.Caption) +' must be Zero for True Surface or greater then 7!',vbOKOnly ,"Error")
 
 
+def checkBobbin(step):
+  bobbinThickness = float(step.Properties["windingProperties/drawWinding/bobThickness"].Value)
+  includeBobbin = bool(step.Properties["windingProperties/drawWinding/includeBobbin"].Value)
+  boardThickness  = float(step.Properties["windingProperties/drawWinding/bobThickness"].Value)
+  layerSpacing    = float(step.Properties["windingProperties/drawWinding/layerSpacing"].Value)
+
+  if bobbinThickness == 0 and includeBobbin == True:
+    raise UserErrorMessageException("Include board/bobbin is checked but thickness is 0")
+
+  if (step.Properties["windingProperties/drawWinding/layerType"].Value == 'Planar' and
+      boardThickness == 0 and layerSpacing == 0):
+    raise UserErrorMessageException("For planar transformer Board thickness and Layer spacing cannot be equal 0 at once")
+
+
 def checkWinding(step):
+  if bool(step.Properties["windingProperties/drawWinding/skipCheck"].Value) == True:
+    return
+
   D_2 = float(step1.Properties["coreProperties/coreType/D_2"].Value)
   D_3 = float(step1.Properties["coreProperties/coreType/D_3"].Value)
   D_4 = float(step1.Properties["coreProperties/coreType/D_4"].Value)
@@ -159,31 +176,31 @@ def checkWinding(step):
   if CoreType  in  ["E","EC","EFD","EQ","ER","ETD","PH"]:
     # D_5 is height of one half core
     if (maximumPossibleHeight > 2 * D_5):
-      raise UserErrorMessageException("Cannot accomodate all windings, increase D_5")
+      raise UserErrorMessageException("Cannot accommodate all windings, increase D_5")
   elif CoreType in ["EI","EP","P","PT","PQ","RM"]:
     # D_5 is height of core
     if (maximumPossibleHeight > D_5):
-      raise UserErrorMessageException("Cannot accomodate all windings, increase D_5")
+      raise UserErrorMessageException("Cannot accommodate all windings, increase D_5")
   elif CoreType in ["U","UI"]:
      # D_4 is height of core
      if (maximumPossibleHeight > D_4):
-       raise UserErrorMessageException("Cannot accomodate all windings, increase D_4")
+       raise UserErrorMessageException("Cannot accommodate all windings, increase D_4")
 
   # ---- Width ---- #
   if CoreType  not in  ["U","UI"]:
     # D_2 - D_3 is sum of dimesnsions of two slots for windngs (left + right)
     if (maximumPossibleWidth > (D_2 - D_3)):
-      raise UserErrorMessageException("Cannot accomodate all windings, increase D_2")
+      raise UserErrorMessageException("Cannot accommodate all windings, increase D_2")
   else:
     # D_2 is dimension of one side slot for winding
     if (maximumPossibleWidth/2 > D_2):
-      raise UserErrorMessageException("Cannot accomodate all windings, increase D_2")
+      raise UserErrorMessageException("Cannot accommodate all windings, increase D_2")
 
 
 def CheckCoreDim(step):
   # stop invoking for unsupported versions
-  if oDesktop.GetVersion() not in ['2018.1.0','2018.2.0']:
-    raise UserErrorMessageException("Electronics Desktop Version is unsupported. Please use version r19.1 or r19.2")
+  if float(oDesktop.GetVersion()[:-2]) < 2018.1:
+    raise UserErrorMessageException("Electronics Desktop Version is unsupported. Please use version r19.1 or higher")
 
   D_1 = float(step.Properties["coreProperties/coreType/D_1"].Value)
   D_2 = float(step.Properties["coreProperties/coreType/D_2"].Value)
