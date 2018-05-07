@@ -177,7 +177,7 @@
 
 
 
-					<property control="boolean" name="includeBobbin" caption="Include bobbin in geometry:"  default="False" visibleon="True"/>
+					<property control="boolean" name="includeBobbin" caption="Include bobbin in geometry"  default="False" visibleon="True"/>
 
 
 					<propertygroup name="conductorType" caption="Conductor type:" control="select" default="Rectangular" visibleon="True" display="property">
@@ -242,7 +242,9 @@
 
 								<property name="layer" caption= "No. of layer" control="integer" readonly= "True"></property>
 						</propertytable>
-					</propertygroup>
+          </propertygroup>
+
+          <property control="boolean" name="skipCheck" caption="Skip check windings accommodation"  default="False" visibleon="True"/>
 				</propertygroup>
 			</propertygroup>
 
