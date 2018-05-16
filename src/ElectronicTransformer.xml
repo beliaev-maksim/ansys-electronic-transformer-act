@@ -1,0 +1,783 @@
+<extension name="ElectronicTransformer" version="1" icon="images\logo.jpg" loadasdefault="True">
+  <author>ANSYS, Inc.</author>
+  <guid shortid="ElectronicsWizard">1c392f59-ac5a-46ef-8fd2-53959b52d542</guid>
+  <script src="etkCallback.py" 		compiled ="true"/>
+  <script src="coreData.py" 		compiled ="true"/>
+  <script src="Forms.py" 	        compiled ="true"/>
+  <script src="valueChecker.py" 	compiled ="true"/>
+  <script src="CoresGeometry.py" 	compiled ="true"/>
+
+  <interface context="ElectronicsDesktop">
+    <images>images</images>
+  </interface>
+
+	<wizard name="ElectronicTransformer" caption="Electronic Transformer" version="1" context="ElectronicsDesktop" icon="logo.jpg">
+		<description>Tool for automatic preparation of design for analysis of Electronic Transformers</description>
+		<step name="Core" caption="Core Definition" layout="StepOne@ElectronicTransformer" version= "1">
+      <description>Dimensions, shape, supplier</description>
+
+			<componentstyle
+			component="readData"
+			background-color="Transparent"
+			border-color="Transparent" />
+
+			<componentstyle
+			component="helpButton"
+			background-color="Transparent"
+			border-color="Transparent" />
+
+			<propertygroup name="coreProperties" caption="Core Definition [1/3]">
+
+				<property control="integer" name="segAngle" caption="Segmentation angle"  default="0">
+                    <callbacks>
+                            <OnValidate>segAngCheck</OnValidate>
+                    </callbacks>
+                </property>
+
+				<property name="supplier" caption="Supplier:" control="select" default="Ferroxcube">
+					<attributes options="Ferroxcube,Phillips" />
+					<callbacks>
+						<onvalidate>showCoreIMG</onvalidate>
+					</callbacks>
+				</property>
+
+				<propertygroup name="coreType" caption="Core Type:" control="select" default="E" display="property">
+					<attributes options="E,EI,EC,EFD,EP,EQ,ER,ETD,P,PT,PH,PQ,RM,U,UI" />
+					<callbacks>
+						<onvalidate>showCoreIMG</onvalidate>
+					</callbacks>
+
+
+                    <property name="coreModel" caption="Core Model:" control="select" >
+                        <attributes options="1" />
+                        <callbacks>
+                            <onvalidate>insertDefaultValues</onvalidate>
+                        </callbacks>
+                    </property>
+
+                    <property  name="D_1" caption="D_1 [mm]" control="float">
+                        <callbacks>
+                            <onvalidate>GEThenZero</onvalidate>
+                        </callbacks>
+                    </property>
+                    <property  name="D_2" caption="D_2 [mm]" control="float">
+                        <callbacks>
+                            <onvalidate>GEThenZero</onvalidate>
+                        </callbacks>
+                    </property>
+                    <property  name="D_3" caption="D_3 [mm]" control="float">
+                        <callbacks>
+                            <onvalidate>GEThenZero</onvalidate>
+                        </callbacks>
+                    </property>
+                    <property  name="D_4" caption="D_4 [mm]" control="float">
+                        <callbacks>
+                            <onvalidate>GEThenZero</onvalidate>
+                        </callbacks>
+                    </property>
+                    <property  name="D_5" caption="D_5 [mm]" control="float">
+                        <callbacks>
+                            <onvalidate>GEThenZero</onvalidate>
+                        </callbacks>
+                    </property>
+                    <property  name="D_6" caption="D_6 [mm]" control="float" visibleon="E|EI|EC|EFD|EP|EQ|ER|ETD|P|PT|PH|PQ|RM|UI">
+                        <callbacks>
+                            <onvalidate>GEThenZero</onvalidate>
+                        </callbacks>
+                    </property>
+                    <property  name="D_7" caption="D_7 [mm]" control="float" visibleon="E|EI|EFD|EP|ER|P|PT|PH|PQ|RM|UI">
+                        <callbacks>
+                            <onvalidate>GEThenZero</onvalidate>
+                        </callbacks>
+                    </property>
+                    <property  name="D_8" caption="D_8 [mm]" control="float" visibleon="E|EI|EFD|P|PT|PH|PQ|RM|UI">
+                        <callbacks>
+                            <onvalidate>GEThenZero</onvalidate>
+                        </callbacks>
+                    </property>
+                </propertygroup>
+
+				<propertygroup control="boolean" name="defAirgap" caption="Define Airgap"  default="False" display="property">
+					<property name="airgapOn" caption="Airgap On:" control="select" default="Center Leg" visibleon="True">
+						<attributes options="Center Leg,Side Leg,Both" />
+					</property>
+					<property control="float" name="airgapValue" caption="Airgap Value [mm]"  default="0.1" visibleon="True">
+						<callbacks>
+							<onvalidate>GEThenZero</onvalidate>
+						</callbacks>
+					</property>
+				</propertygroup>
+			</propertygroup>
+
+			<callbacks>
+				<onrefresh>CreateButtonsCore</onrefresh>
+				<onupdate>CheckCoreDim</onupdate>
+				<oninit>initializeData</oninit>
+				<onreset>resetFunc</onreset>
+			</callbacks>
+		</step>
+
+		<step name="Winding" caption="Winding Definition" layout="StepTwo@ElectronicTransformer" version= "1">
+      <description>Dimensions, planar or wound</description>
+
+			<componentstyle
+			component="writeData"
+			background-color="Transparent"
+			border-color="Transparent" />
+
+			<componentstyle
+			component="readData"
+			background-color="Transparent"
+			border-color="Transparent" />
+
+			<componentstyle
+			component="helpButton"
+			background-color="Transparent"
+			border-color="Transparent" />
+
+
+			<propertygroup name="windingProperties" caption="Winding Definition  [2/3]">
+				<propertygroup control="boolean" name="drawWinding" caption="Draw Winding"  default="true" display="property">
+                    <property name="layerType" caption="Transformer:" control="select" default="Wound" visibleon="True">
+						<attributes options="Planar,Wound" />
+                        <callbacks>
+							<OnValidate>changeCaptions</OnValidate>
+						 </callbacks>
+					</property>
+
+					<property name="numLayers" caption="No. of Layers:" control="integer" default="1" visibleon="True">
+                        <callbacks>
+							<OnValidate>addRows</OnValidate>
+						 </callbacks>
+					</property>
+
+					<property name="layerSpacing" caption="Layer spacing:" control="float" default="0" visibleon="True">
+                        <callbacks>
+							<OnValidate>GEThenZero</OnValidate>
+						</callbacks>
+					</property>
+
+					<property name="bobThickness" caption="Bobbin thickness:" control="float" default="0.1" visibleon="True">
+                        <callbacks>
+							<OnValidate>GEThenZero</OnValidate>
+						</callbacks>
+					</property>
+
+					<property name="topMargin" caption="Top margin:" control="float" default="0" visibleon="True">
+                        <callbacks>
+							<OnValidate>GEThenZero</OnValidate>
+						</callbacks>
+					</property>
+
+					<property name="sideMargin" caption="Side margin:" control="float" default="0" visibleon="True">
+                        <callbacks>
+							<OnValidate>GEThenZero</OnValidate>
+						</callbacks>
+					</property>
+
+
+
+					<property control="boolean" name="includeBobbin" caption="Include bobbin in geometry"  default="False" visibleon="True"/>
+
+
+					<propertygroup name="conductorType" caption="Conductor type:" control="select" default="Rectangular" visibleon="True" display="property">
+						<attributes options="Rectangular,Circular" />
+						<callbacks>
+							<OnValidate>addRows</OnValidate>
+						</callbacks>
+
+						<propertytable name="tableLayers" caption="Layer's properties:" visibleon="Rectangular" control="custom" display="worksheet"  class="TabularDataEditor">
+
+								<property name="conductorWidth" caption="Conductor Width" control="float"  >
+									<callbacks>
+											<OnValidate>validityCheckTable</OnValidate>
+									</callbacks>
+								</property>
+
+								<property name="conductorHeight" caption="Conductor Height" control="float"  >
+									<callbacks>
+											<OnValidate>validityCheckTable</OnValidate>
+									</callbacks>
+								</property>
+
+								<property name="turnsNumber" caption="No. of turns" control="float"  >
+									<callbacks>
+										<OnValidate>validityCheckTable</OnValidate>
+									</callbacks>
+								 </property>
+
+								 <property name="insulationThick" caption="Insulation thickness" control="float"  >
+									<callbacks>
+										<OnValidate>validityCheckTable</OnValidate>
+									</callbacks>
+								 </property>
+
+								<property name="layer" caption= "No. of layer" control="integer" readonly= "True"></property>
+						</propertytable>
+
+						<propertytable name="tableLayersCircles" caption="Layer's properties:" visibleon="Circular" control="custom" display="worksheet"  class="TabularDataEditor">
+								<property name="conductorDiameter" caption="Conductor Diameter" control="float"  >
+									<callbacks>
+											<OnValidate>validityCheckTable</OnValidate>
+									</callbacks>
+								</property>
+
+								 <property name="layerSegNumber" caption="Number of segments" control="float"  >
+									<callbacks>
+											<OnValidate>validityCheckTable</OnValidate>
+									</callbacks>
+								</property>
+
+								<property name="turnsNumber" caption="No. of turns" control="float"  >
+									<callbacks>
+										<OnValidate>validityCheckTable</OnValidate>
+									</callbacks>
+								 </property>
+
+								 <property name="insulationThick" caption="Insulation thickness" control="float"  >
+									<callbacks>
+										<OnValidate>validityCheckTable</OnValidate>
+									</callbacks>
+								 </property>
+
+								<property name="layer" caption= "No. of layer" control="integer" readonly= "True"></property>
+						</propertytable>
+          </propertygroup>
+
+          <property control="boolean" name="skipCheck" caption="Skip check windings accommodation"  default="False" visibleon="True"/>
+				</propertygroup>
+			</propertygroup>
+
+			<callbacks>
+				<onrefresh>CreateButtonsWinding</onrefresh>
+				<oninit>InitTabularData</oninit>
+        <onreset>resetFunc2</onreset>
+				<onupdate>createModel</onupdate>
+			</callbacks>
+		</step>
+
+		<step name="setup" caption="Analysis setup" layout="StepThree@ElectronicTransformer" version= "1">
+      <description>Core/winding material, frequency, winding connections</description>
+
+			<componentstyle
+			component="analyzeButton"
+			background-color="Transparent"
+			border-color="Transparent" />
+
+			<componentstyle
+			component="setupAnalysisButton"
+			background-color="Transparent"
+			border-color="Transparent" />
+
+			<componentstyle
+			component="helpButton"
+			background-color="Transparent"
+			border-color="Transparent" />
+
+			<propertygroup name="defineSetup" caption="Analysis Setup [3/3]">
+				<property name="coreMaterial" caption="Core Material:" control="select" default="3C15">
+					<attributes options="3C15" />
+				</property>
+
+				<property name="coilMaterial" caption="Coil Material:" control="select" default="Copper">
+					<attributes options="Copper,Aluminum" />
+				</property>
+
+				<property  name="adaptFreq" caption="Adaptive frequency [Hz]" control="float" default="1000">
+                    <callbacks>
+                            <OnValidate>GEThenOne</OnValidate>
+                    </callbacks>
+                </property>
+
+				<property  name="percError" caption="Percentage Error" control="float" default="1">
+                    <callbacks>
+                            <OnValidate>GEThenZero</OnValidate>
+                    </callbacks>
+                </property>
+
+				<property  name="numPasses" caption="Max No. of passes" control="integer" default="5">
+                    <callbacks>
+                            <OnValidate>GEThenOne</OnValidate>
+                    </callbacks>
+                </property>
+
+				<property  name="offset" caption="Region offset [%]" control="integer" default="50">
+                    <callbacks>
+                            <OnValidate>GThenZero</OnValidate>
+                    </callbacks>
+                </property>
+
+				<property  name="projPath" caption="Save to:" control="folderopen" />
+
+				<propertygroup control="boolean" name="freqSweep" caption="Define frequency sweep"  default="False" display="property">
+
+							<property name="startFreq" caption="Start freq" control="float" default="1" visibleon="True">
+								<callbacks>
+										<OnValidate>GThenZero</OnValidate>
+								</callbacks>
+							</property>
+
+							<property name="freqSelect1" caption="Frequency" control="select" default="kHz" visibleon="True">
+								<attributes options="Hz,kHz,MHz" />
+							</property>
+
+							<property name="stopFreq" caption="Stop freq" control="float" default="1" visibleon="True">
+								<callbacks>
+										<OnValidate>GThenZero</OnValidate>
+								</callbacks>
+							</property>
+
+							<property name="freqSelect2" caption="Frequency" control="select" default="MHz" visibleon="True">
+								<attributes options="Hz,kHz,MHz" />
+							</property>
+
+							<property name="samples" caption="Samples" control="integer" default="3" visibleon="True">
+								<callbacks>
+										<OnValidate>GEThenOne</OnValidate>
+								</callbacks>
+							</property>
+
+							<property name="scale" caption="Scale" control="select" default="Logarithmic" visibleon="True">
+								<attributes options="Logarithmic,Linear" />
+							</property>
+
+				</propertygroup>
+
+			</propertygroup>
+
+			<callbacks>
+				<onrefresh>CreateButtonsSetup</onrefresh>
+			</callbacks>
+		</step>
+	</wizard>
+
+	<uidefinition>
+    <!-- defining a custom layout -->
+		<layout name="StepOne">
+			<component
+				name="Title"
+				leftattachment=""
+				topattachment=""
+				rightattachment=""
+				bottomattachment="Properties"
+
+				leftoffset="10"
+				topoffset="10"
+				rightoffset="10"
+				bottomoffset=""
+
+				heighttype="FitToContent"
+				height="100" maxheight="0"
+				widthtype="Percentage"
+				width="100"
+				componenttype="startPageHeaderComponent"
+			/>
+
+			<component
+				name="Properties"
+
+				leftattachment=""
+				topattachment="Title"
+				rightattachment="coreImage"
+				bottomattachment="readData"
+
+				leftoffset="10"
+				topoffset="5"
+				rightoffset=""
+				bottomoffset="5"
+
+				heighttype="Percentage"
+				height="100"
+				maxheight="0"
+				widthtype="fixed"
+				width="300"
+				componenttype="propertiesComponent"
+			/>
+
+
+			<component
+				name="coreImage"
+				leftattachment="Properties"
+				topattachment="Title"
+				rightattachment=""
+				bottomattachment="readData"
+
+				leftoffset=""
+				topoffset="5"
+				rightoffset=""
+				bottomoffset="5"
+
+				heighttype="Percentage"
+				height="100"
+				minheight = "200"
+				maxheight="0"
+				widthtype="fixed"
+				width="310"
+				maxwidth="0"
+				componenttype="htmlComponent"
+			/>
+
+			<component
+				name="readData"
+				leftattachment=""
+				topattachment="Properties"
+				rightattachment="helpButton"
+				bottomattachment="Submit"
+
+				leftoffset="10"
+				topoffset=""
+				rightoffset=""
+				bottomoffset=""
+
+				heighttype="FitTocontent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="60"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+
+			<component
+				name="helpButton"
+				leftattachment="readData"
+				topattachment="Properties"
+				rightattachment=""
+				bottomattachment="Submit"
+
+				leftoffset=""
+				topoffset=""
+				rightoffset=""
+				bottomoffset=""
+
+				heighttype="FitTocontent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="30"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+
+			/>
+
+			<component
+				name="Submit"
+
+				leftattachment=""
+				topattachment="helpButton"
+				rightattachment=""
+				bottomattachment=""
+
+				leftoffset="10"
+				topoffset="10"
+				rightoffset="10"
+				bottomoffset="10"
+
+				heighttype="FitToContent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="100"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+		</layout>
+
+		<layout name="StepTwo">
+			<component
+				name="Title"
+				leftattachment=""
+				topattachment=""
+				rightattachment=""
+				bottomattachment="Properties"
+
+				leftoffset="10"
+				topoffset="10"
+				rightoffset="10"
+				bottomoffset=""
+
+				heighttype="FitToContent"
+				height="100" maxheight="0"
+				widthtype="Percentage"
+				width="100"
+				componenttype="startPageHeaderComponent"
+			/>
+
+			<component
+				name="Properties"
+
+				leftattachment=""
+				topattachment="Title"
+				rightattachment=""
+				bottomattachment="readData"
+
+				leftoffset="10"
+				topoffset="5"
+				rightoffset="10"
+				bottomoffset="5"
+
+				heighttype="Percentage"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="100"
+				componenttype="propertiesComponent"
+			/>
+
+
+			<component
+				name="readData"
+				leftattachment=""
+				topattachment="Properties"
+				rightattachment="writeData"
+				bottomattachment="Submit"
+
+				leftoffset=""
+				topoffset=""
+				rightoffset=""
+				bottomoffset=""
+
+				heighttype="FitTocontent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="30"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+
+			<component
+				name="writeData"
+				leftattachment="readData"
+				topattachment="Properties"
+				rightattachment=""
+				bottomattachment="Submit"
+
+				leftoffset=""
+				topoffset=""
+				rightoffset=""
+				bottomoffset=""
+
+				heighttype="FitTocontent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="30"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+
+			<component
+				name="helpButton"
+				leftattachment="writeData"
+				topattachment="Properties"
+				rightattachment=""
+				bottomattachment="Submit"
+
+				leftoffset=""
+				topoffset=""
+				rightoffset=""
+				bottomoffset=""
+
+				heighttype="FitTocontent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="30"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+
+			<component
+				name="Submit"
+
+				leftattachment=""
+				topattachment="helpButton"
+				rightattachment=""
+				bottomattachment=""
+
+				leftoffset="10"
+				topoffset="10"
+				rightoffset="10"
+				bottomoffset="10"
+
+				heighttype="FitToContent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="100"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+		</layout>
+
+		<layout name="StepThree">
+			<component
+				name="Title"
+				leftattachment=""
+				topattachment=""
+				rightattachment=""
+				bottomattachment="Properties"
+
+				leftoffset="10"
+				topoffset="10"
+				rightoffset="10"
+				bottomoffset=""
+
+				heighttype="FitToContent"
+				height="100" maxheight="0"
+				widthtype="Percentage"
+				width="100"
+				componenttype="startPageHeaderComponent"
+			/>
+
+			<component
+				name="Properties"
+
+				leftattachment=""
+				topattachment="Title"
+				rightattachment=""
+				bottomattachment="setupAnalysisButton"
+
+				leftoffset="10"
+				topoffset="5"
+				rightoffset="10"
+				bottomoffset=""
+
+				heighttype="Percentage"
+				height="90"
+				maxheight="0"
+				widthtype="Percentage"
+				width="100"
+				componenttype="propertiesComponent"
+			/>
+
+			<component
+				name="defineWindingsButton"
+				leftattachment=""
+				topattachment="Properties"
+				rightattachment="defineConnectionsButton"
+				bottomattachment="setupAnalysisButton"
+
+				leftoffset="10"
+				topoffset=""
+				rightoffset=""
+				bottomoffset=""
+
+				heighttype="FitTocontent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="50"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+
+			<component
+				name="defineConnectionsButton"
+				leftattachment="defineWindingsButton"
+				topattachment="Properties"
+				rightattachment="analyzeButton"
+				bottomattachment="setupAnalysisButton"
+
+				leftoffset=""
+				topoffset=""
+				rightoffset="10"
+				bottomoffset=""
+
+				heighttype="FitTocontent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="50"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+
+			<component
+				name="setupAnalysisButton"
+				leftattachment=""
+				topattachment="defineWindingsButton"
+				rightattachment="analyzeButton"
+				bottomattachment="Submit"
+
+				leftoffset=""
+				topoffset=""
+				rightoffset=""
+				bottomoffset=""
+
+				heighttype="FitTocontent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="30"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+
+			<component
+				name="analyzeButton"
+				leftattachment="setupAnalysisButton"
+				topattachment="defineWindingsButton"
+				rightattachment=""
+				bottomattachment="Submit"
+
+				leftoffset=""
+				topoffset=""
+				rightoffset=""
+				bottomoffset=""
+
+				heighttype="FitTocontent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="30"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+
+			<component
+				name="helpButton"
+				leftattachment="analyzeButton"
+				topattachment="defineWindingsButton"
+				rightattachment=""
+				bottomattachment="Submit"
+
+				leftoffset=""
+				topoffset=""
+				rightoffset=""
+				bottomoffset=""
+
+				heighttype="FitTocontent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="30"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+
+			<component
+				name="Submit"
+
+				leftattachment=""
+				topattachment="helpButton"
+				rightattachment=""
+				bottomattachment=""
+
+				leftoffset="10"
+				topoffset="10"
+				rightoffset="10"
+				bottomoffset="10"
+
+				heighttype="FitToContent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="100"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+		</layout>
+	</uidefinition>
+</extension>
