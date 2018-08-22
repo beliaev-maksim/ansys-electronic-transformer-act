@@ -68,10 +68,10 @@ def checkWinding(step):
   if bool(step.Properties["windingProperties/drawWinding/skipCheck"].Value) == True:
     return
 
-  D_2 = float(step1.Properties["coreProperties/coreType/D_2"].Value)
-  D_3 = float(step1.Properties["coreProperties/coreType/D_3"].Value)
-  D_4 = float(step1.Properties["coreProperties/coreType/D_4"].Value)
-  D_5 = float(step1.Properties["coreProperties/coreType/D_5"].Value)
+  D_2 = float(STEP1.Properties["coreProperties/coreType/D_2"].Value)
+  D_3 = float(STEP1.Properties["coreProperties/coreType/D_3"].Value)
+  D_4 = float(STEP1.Properties["coreProperties/coreType/D_4"].Value)
+  D_5 = float(STEP1.Properties["coreProperties/coreType/D_5"].Value)
 
   sideMargin      = float(step.Properties["windingProperties/drawWinding/sideMargin"].Value)
   bobbinThickness = float(step.Properties["windingProperties/drawWinding/bobThickness"].Value)
@@ -79,7 +79,7 @@ def checkWinding(step):
   topMargin       = float(step.Properties["windingProperties/drawWinding/topMargin"].Value)
   layerSpacing    = float(step.Properties["windingProperties/drawWinding/layerSpacing"].Value)
 
-  CoreType = step1.Properties["coreProperties/coreType"].Value
+  CoreType = STEP1.Properties["coreProperties/coreType"].Value
   conductorType = step.Properties["windingProperties/drawWinding/conductorType"].Value
 
   # ---- start checking for wound ---- #

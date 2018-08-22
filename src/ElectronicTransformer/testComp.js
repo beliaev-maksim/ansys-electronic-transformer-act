@@ -54,7 +54,7 @@ define(
 				for (var i = 0; i < self.columns.length; i++) {
 					var column = self.columns[i];
 					var prop = properties[i];
-					if (prop.Name != column.datafield && prop.Caption != column.text) {
+					if (prop.Name != column.datafield || prop.Caption != column.text) {
 						updateColumns = true;
 						break;
 					}

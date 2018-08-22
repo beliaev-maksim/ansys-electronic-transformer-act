@@ -6,7 +6,7 @@
 class Cores():
   CS='Global'
   def __init__(self):
-    global step1, step2, coreDimensionsSetup, filledDict
+    global STEP1, STEP2, coreDimensionsSetup, filledDict
 
     self.oProject = oDesktop.GetActiveProject()
     self.oDesign = self.oProject.GetActiveDesign()
@@ -14,8 +14,8 @@ class Cores():
 
     self.coreDimensions = []
     for i in range(1, 9):
-      if step1.Properties["coreProperties/coreType/D_" + str(i)].Visible == True:
-        self.coreDimensions.append(str(step1.Properties["coreProperties/coreType/D_" + str(i)].Value))
+      if STEP1.Properties["coreProperties/coreType/D_" + str(i)].Visible == True:
+        self.coreDimensions.append(str(STEP1.Properties["coreProperties/coreType/D_" + str(i)].Value))
       else:
         self.coreDimensions.append('0')
     coreDimensionsSetup = self.coreDimensions # need in setup
@@ -29,17 +29,17 @@ class Cores():
     self.DimD7 = float(self.coreDimensions[6])
     self.DimD8 = float(self.coreDimensions[7])
 
-    self.SAng = int(step1.Properties["coreProperties/segAngle"].Value)
+    self.SAng = int(STEP1.Properties["coreProperties/segAngle"].Value)
     self.NumSegs = 0 if self.SAng == 0 else int(360/self.SAng)
 
     self.AirGapS = 0
     self.AirGapC = 0
     self.TAirGap = 0
 
-    DoAirgap = bool(step1.Properties["coreProperties/defAirgap"].Value)
+    DoAirgap = bool(STEP1.Properties["coreProperties/defAirgap"].Value)
     if DoAirgap == True:
-      AGValue = float(step1.Properties["coreProperties/defAirgap/airgapValue"].Value)
-      AirGapOn = step1.Properties["coreProperties/defAirgap/airgapOn"].Value
+      AGValue = float(STEP1.Properties["coreProperties/defAirgap/airgapValue"].Value)
+      AirGapOn = STEP1.Properties["coreProperties/defAirgap/airgapOn"].Value
       if AirGapOn =='Center Leg':
         self.AirGapC = AGValue/2.0
       elif AirGapOn =='Side Leg':
@@ -47,20 +47,20 @@ class Cores():
       else:
         self.TAirGap = AGValue/2.0
 
-    self.MNumLayers  = int(step2.Properties["windingProperties/drawWinding/numLayers"].Value)
-    self.MLSpacing   = float(step2.Properties["windingProperties/drawWinding/layerSpacing"].Value)
-    self.MTopMargin  = float(step2.Properties["windingProperties/drawWinding/topMargin"].Value)
-    self.MSideMargin = float(step2.Properties["windingProperties/drawWinding/sideMargin"].Value)
-    self.MBobbinThk  = float(step2.Properties["windingProperties/drawWinding/bobThickness"].Value)
-    self.MWdgType  = 1 if step2.Properties["windingProperties/drawWinding/layerType"].Value == 'Planar' else 2
-    self.BobStat   = 1 if bool(step2.Properties["windingProperties/drawWinding/includeBobbin"].Value) == True else 0
-    self.WdgStatus = 1 if bool(step2.Properties["windingProperties/drawWinding"].Value) == True else 0
+    self.MNumLayers  = int(STEP2.Properties["windingProperties/drawWinding/numLayers"].Value)
+    self.MLSpacing   = float(STEP2.Properties["windingProperties/drawWinding/layerSpacing"].Value)
+    self.MTopMargin  = float(STEP2.Properties["windingProperties/drawWinding/topMargin"].Value)
+    self.MSideMargin = float(STEP2.Properties["windingProperties/drawWinding/sideMargin"].Value)
+    self.MBobbinThk  = float(STEP2.Properties["windingProperties/drawWinding/bobThickness"].Value)
+    self.MWdgType  = 1 if STEP2.Properties["windingProperties/drawWinding/layerType"].Value == 'Planar' else 2
+    self.BobStat   = 1 if bool(STEP2.Properties["windingProperties/drawWinding/includeBobbin"].Value) == True else 0
+    self.WdgStatus = 1 if bool(STEP2.Properties["windingProperties/drawWinding"].Value) == True else 0
     self.WdgParDict  = {}
 
-    if step2.Properties["windingProperties/drawWinding/conductorType"].Value == 'Rectangular':
+    if STEP2.Properties["windingProperties/drawWinding/conductorType"].Value == 'Rectangular':
       self.MCondType   = 1
       XMLPathToTable = 'windingProperties/drawWinding/conductorType/tableLayers'
-      table = step2.Properties[XMLPathToTable]
+      table = STEP2.Properties[XMLPathToTable]
       rowNum = table.RowCount
 
       for rowIndex in range(0, rowNum):
@@ -72,7 +72,7 @@ class Cores():
     else:
       self.MCondType   = 2
       XMLPathToTable = 'windingProperties/drawWinding/conductorType/tableLayersCircles'
-      table = step2.Properties[XMLPathToTable]
+      table = STEP2.Properties[XMLPathToTable]
       rowNum = table.RowCount
       for rowIndex in range(0, rowNum):
         self.WdgParDict[rowIndex+1] = []
