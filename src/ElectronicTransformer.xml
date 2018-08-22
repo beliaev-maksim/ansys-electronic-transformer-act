@@ -1,4 +1,4 @@
-<extension name="ElectronicTransformer" version="1" icon="images\logo.jpg" loadasdefault="True">
+<extension name="ElectronicTransformer" version="1" minorversion="1" icon="images\logo.jpg" loadasdefault="True">
   <author>ANSYS, Inc.</author>
   <guid shortid="ElectronicsWizard">1c392f59-ac5a-46ef-8fd2-53959b52d542</guid>
   <script src="etkCallback.py" 		compiled ="true"/>
