@@ -1,7 +1,7 @@
-<extension name="ElectronicTransformer" version="2" minorversion="0" icon="images\logo.jpg" loadasdefault="True">
+<extension name="ElectronicTransformer" version="2" minorversion="0" icon="images\logo.jpg" loadasdefault="False">
   <author>ANSYS, Inc.</author>
-  <guid shortid="ElectronicsWizard">1c392f59-ac5a-46ef-8fd2-53959b52d542</guid>
-  <script src="etkCallback.py" 		compiled = "true"/>
+  <guid shortid="ElectronicsWizard">beb238e5-6315-4602-a3f5-f004e6c02805</guid>
+  <script src="etk_callback.py" 		compiled = "true"/>
   <script src="coreData.py" 		    compiled = "true"/>
   <script src="Forms.py" 	          compiled = "true"/>
   <script src="valueChecker.py" 	  compiled = "true"/>
@@ -14,7 +14,7 @@
 	<wizard name="ElectronicTransformer" caption="Electronic Transformer" version="2"
 					context="ElectronicsDesktop" icon="logo.jpg">
 		<description>Tool for automatic preparation of design for analysis of Electronic Transformers</description>
-		<step name="Core" caption="Core Definition" layout="StepOne@ElectronicTransformer" version= "1">
+		<step name="step1" caption="Core Definition" layout="StepOne@ElectronicTransformer" version= "1">
       <description>Dimensions, shape, supplier</description>
 
 			<componentstyle
@@ -27,241 +27,232 @@
 			background-color="Transparent"
 			border-color="Transparent" />
 
-			<propertygroup name="coreProperties" caption="Core Definition [1/3]">
+			<propertygroup name="core_properties" caption="Core Definition [1/3]">
 
-				<property control="integer" name="segAngle" caption="Segmentation angle"  default="10">
+				<property control="integer" name="segmentation_angle" caption="Segmentation angle"  default="10">
                     <callbacks>
-                            <OnValidate>segAngCheck</OnValidate>
+                            <OnValidate>segmentation_angle_check</OnValidate>
                     </callbacks>
                 </property>
 
 				<property name="supplier" caption="Supplier:" control="select" default="Ferroxcube">
 					<attributes options="Ferroxcube,Phillips" />
 					<callbacks>
-						<onvalidate>showCoreIMG</onvalidate>
+						<onvalidate>on_supplier_core_type_change</onvalidate>
 					</callbacks>
 				</property>
 
-				<propertygroup name="coreType" caption="Core Type:" control="select" default="E" display="property">
+				<propertygroup name="core_type" caption="Core Type:" control="select" default="E" display="property">
 					<attributes options="E,EI,EC,EFD,EP,EQ,ER,ETD,P,PT,PH,PQ,RM,U,UI" />
 					<callbacks>
-						<onvalidate>showCoreIMG</onvalidate>
+						<onvalidate>on_supplier_core_type_change</onvalidate>
 					</callbacks>
 
-          <property name="coreModel" caption="Core Model:" control="select" >
+          <property name="core_model" caption="Core Model:" control="select" >
             <attributes options="1" />
             <callbacks>
-                <onvalidate>insertDefaultValues</onvalidate>
+                <onvalidate>on_core_model_change</onvalidate>
             </callbacks>
           </property>
 
           <property  name="D_1" caption="D_1 [mm]" control="float">
             <callbacks>
-              <onvalidate>GEThenZero</onvalidate>
+              <onvalidate>GEThanZero</onvalidate>
             </callbacks>
           </property>
           <property  name="D_2" caption="D_2 [mm]" control="float">
             <callbacks>
-                <onvalidate>GEThenZero</onvalidate>
+                <onvalidate>GEThanZero</onvalidate>
             </callbacks>
           </property>
           <property  name="D_3" caption="D_3 [mm]" control="float">
             <callbacks>
-              <onvalidate>GEThenZero</onvalidate>
+              <onvalidate>GEThanZero</onvalidate>
             </callbacks>
           </property>
           <property  name="D_4" caption="D_4 [mm]" control="float">
             <callbacks>
-              <onvalidate>GEThenZero</onvalidate>
+              <onvalidate>GEThanZero</onvalidate>
             </callbacks>
           </property>
           <property  name="D_5" caption="D_5 [mm]" control="float">
             <callbacks>
-              <onvalidate>GEThenZero</onvalidate>
+              <onvalidate>GEThanZero</onvalidate>
             </callbacks>
           </property>
           <property  name="D_6" caption="D_6 [mm]" control="float" visibleon="E|EI|EC|EFD|EP|EQ|ER|ETD|P|PT|PH|PQ|RM|UI">
             <callbacks>
-              <onvalidate>GEThenZero</onvalidate>
+              <onvalidate>GEThanZero</onvalidate>
             </callbacks>
           </property>
           <property  name="D_7" caption="D_7 [mm]" control="float" visibleon="E|EI|EFD|EP|ER|P|PT|PH|PQ|RM|UI">
             <callbacks>
-              <onvalidate>GEThenZero</onvalidate>
+              <onvalidate>GEThanZero</onvalidate>
             </callbacks>
           </property>
           <property  name="D_8" caption="D_8 [mm]" control="float" visibleon="E|EI|EFD|P|PT|PH|PQ|RM|UI">
             <callbacks>
-              <onvalidate>GEThenZero</onvalidate>
+              <onvalidate>GEThanZero</onvalidate>
             </callbacks>
           </property>
       </propertygroup>
 
-				<propertygroup control="boolean" name="defAirgap" caption="Define Airgap"  default="False" display="property">
-					<property name="airgapOn" caption="Airgap On:" control="select" default="Center Leg" visibleon="True">
-						<attributes options="Center Leg,Side Leg,Both" />
+				<propertygroup name="define_airgap" caption="Define Airgap"  default="False" display="property"
+											 control="boolean">
+					<property name="airgap_on_leg" caption="Airgap On Leg:" control="select" default="Center" visibleon="True">
+						<attributes options="Center,Side,Both" />
 					</property>
-					<property control="float" name="airgapValue" caption="Airgap Value [mm]"  default="0.1" visibleon="True">
+					<property name="airgap_value" caption="Airgap Value [mm]"  default="0.1" visibleon="True" control="float" >
 						<callbacks>
-							<onvalidate>GEThenZero</onvalidate>
+							<onvalidate>GEThanZero</onvalidate>
 						</callbacks>
 					</property>
 				</propertygroup>
 			</propertygroup>
 
 			<callbacks>
-				<onrefresh>CreateButtonsCore</onrefresh>
-				<onupdate>CheckCoreDim</onupdate>
-				<oninit>initializeData</oninit>
-				<onreset>resetFunc</onreset>
+				<onrefresh>create_buttons_step1</onrefresh>
+				<onupdate>callback_step1</onupdate>
+				<oninit>on_init_step1</oninit>
+				<onreset>on_step_back</onreset>
 			</callbacks>
 		</step>
 
-		<step name="Winding" caption="Winding Definition" layout="StepTwo@ElectronicTransformer" version= "1">
+		<step name="step2" caption="Winding Definition" layout="StepTwo@ElectronicTransformer" version= "1">
       <description>Dimensions, planar or wound</description>
-
-			<componentstyle
-			component="writeData"
-			background-color="Transparent"
-			border-color="Transparent" />
-
-			<componentstyle
-			component="readData"
-			background-color="Transparent"
-			border-color="Transparent" />
-
 			<componentstyle
 			component="helpButton"
 			background-color="Transparent"
 			border-color="Transparent" />
 
 
-			<propertygroup name="windingProperties" caption="Winding Definition  [2/3]">
-				<propertygroup control="boolean" name="drawWinding" caption="Draw Winding"  default="true" display="property">
-                    <property name="layerType" caption="Transformer:" control="select" default="Wound" visibleon="True">
+			<propertygroup name="winding_properties" caption="Winding Definition  [2/3]">
+				<propertygroup name="draw_winding" caption="Draw Winding"  default="true" display="property" control="boolean" >
+					<property name="layer_type" caption="Transformer:" control="select" default="Wound" visibleon="True">
 						<attributes options="Planar,Wound" />
+						<callbacks>
+							<OnValidate>on_layer_type_change</OnValidate>
+						</callbacks>
+					</property>
+
+					<property name="number_of_layers" caption="No. of Layers:" control="integer" default="1" visibleon="True">
                         <callbacks>
-							<OnValidate>changeCaptions</OnValidate>
+							<OnValidate>on_layers_number_change</OnValidate>
 						 </callbacks>
 					</property>
 
-					<property name="numLayers" caption="No. of Layers:" control="integer" default="1" visibleon="True">
-                        <callbacks>
-							<OnValidate>addRows</OnValidate>
-						 </callbacks>
-					</property>
-
-					<property name="layerSpacing" caption="Layer spacing:" control="float" default="0" visibleon="True">
-                        <callbacks>
-							<OnValidate>GEThenZero</OnValidate>
+					<property name="layer_spacing" caption="Layer spacing:" control="float" default="0" visibleon="True">
+						<callbacks>
+							<OnValidate>GEThanZero</OnValidate>
 						</callbacks>
 					</property>
 
-					<property name="bobThickness" caption="Bobbin thickness:" control="float" default="0.1" visibleon="True">
-                        <callbacks>
-							<OnValidate>GEThenZero</OnValidate>
+					<property name="bobbin_board_thickness" caption="Bobbin thickness:" control="float" default="0.1"
+										visibleon="True">
+            <callbacks>
+							<OnValidate>GEThanZero</OnValidate>
 						</callbacks>
 					</property>
 
-					<property name="topMargin" caption="Top margin:" control="float" default="0" visibleon="True">
+					<property name="top_margin" caption="Top margin:" control="float" default="0" visibleon="True">
                         <callbacks>
-							<OnValidate>GEThenZero</OnValidate>
+							<OnValidate>GEThanZero</OnValidate>
 						</callbacks>
 					</property>
 
-					<property name="sideMargin" caption="Side margin:" control="float" default="0" visibleon="True">
+					<property name="side_margin" caption="Side margin:" control="float" default="0" visibleon="True">
                         <callbacks>
-							<OnValidate>GEThenZero</OnValidate>
+							<OnValidate>GEThanZero</OnValidate>
 						</callbacks>
 					</property>
 
 
 
-					<property control="boolean" name="includeBobbin" caption="Include bobbin in geometry"  default="False"
-                    visibleon="True"/>
+					<property name="include_bobbin" caption="Include bobbin in geometry"  default="False"
+                    visibleon="True" control="boolean" />
 
 
-					<propertygroup name="conductorType" caption="Conductor type:" control="select" default="Rectangular"
+					<propertygroup name="conductor_type" caption="Conductor type:" control="select" default="Rectangular"
                          visibleon="True" display="property">
 						<attributes options="Rectangular,Circular" />
 						<callbacks>
-							<OnValidate>addRows</OnValidate>
+							<OnValidate>on_layers_number_change</OnValidate>
 						</callbacks>
 
-						<propertytable name="tableLayers" caption="Layer's properties:" visibleon="Rectangular" control="custom"
+						<propertytable name="table_layers" caption="Layer's properties:" visibleon="Rectangular" control="custom"
                            display="worksheet"  class="TabularDataEditor">
 
-								<property name="conductorWidth" caption="Conductor Width" control="float"  >
+								<property name="conductor_width" caption="Conductor Width" control="float"  >
 									<callbacks>
 											<OnValidate>validityCheckTable</OnValidate>
 									</callbacks>
 								</property>
 
-								<property name="conductorHeight" caption="Conductor Height" control="float"  >
+								<property name="conductor_height" caption="Conductor Height" control="float"  >
 									<callbacks>
 											<OnValidate>validityCheckTable</OnValidate>
 									</callbacks>
 								</property>
 
-								<property name="turnsNumber" caption="No. of turns" control="float"  >
+								<property name="turns_number" caption="No. of turns" control="float"  >
 									<callbacks>
 										<OnValidate>validityCheckTable</OnValidate>
 									</callbacks>
 								 </property>
 
-								 <property name="insulationThick" caption="Insulation thickness" control="float"  >
+								 <property name="insulation_thickness" caption="Insulation thickness" control="float"  >
 									<callbacks>
 										<OnValidate>validityCheckTable</OnValidate>
 									</callbacks>
 								 </property>
 
-								<property name="layer" caption= "No. of layer" control="integer" readonly= "True"></property>
+								<property name="layer" caption= "No. of layer" control="integer" readonly= "True"/>
 						</propertytable>
 
-						<propertytable name="tableLayersCircles" caption="Layer's properties:" visibleon="Circular"
+						<propertytable name="table_layers_circles" caption="Layer's properties:" visibleon="Circular"
                            control="custom" display="worksheet"  class="TabularDataEditor">
-								<property name="conductorDiameter" caption="Conductor Diameter" control="float"  >
+								<property name="conductor_diameter" caption="Conductor Diameter" control="float"  >
 									<callbacks>
 											<OnValidate>validityCheckTable</OnValidate>
 									</callbacks>
 								</property>
 
-								 <property name="layerSegNumber" caption="Number of segments" control="float"  >
+								 <property name="segments_number" caption="Number of segments" control="float"  >
 									<callbacks>
 											<OnValidate>validityCheckTable</OnValidate>
 									</callbacks>
 								</property>
 
-								<property name="turnsNumber" caption="No. of turns" control="float"  >
+								<property name="turns_number" caption="No. of turns" control="float"  >
 									<callbacks>
 										<OnValidate>validityCheckTable</OnValidate>
 									</callbacks>
 								 </property>
 
-								 <property name="insulationThick" caption="Insulation thickness" control="float"  >
+								 <property name="insulation_thickness" caption="Insulation thickness" control="float"  >
 									<callbacks>
 										<OnValidate>validityCheckTable</OnValidate>
 									</callbacks>
 								 </property>
 
-								<property name="layer" caption= "No. of layer" control="integer" readonly= "True"></property>
+								<property name="layer" caption= "No. of layer" control="integer" readonly= "True"/>
 						</propertytable>
           </propertygroup>
 
-          <property control="boolean" name="skipCheck" caption="Skip check windings accommodation"
+          <property control="boolean" name="skip_check" caption="Skip check windings accommodation"
                     default="False" visibleon="True"/>
 				</propertygroup>
 			</propertygroup>
 
 			<callbacks>
-				<onrefresh>CreateButtonsWinding</onrefresh>
-				<oninit>InitTabularData</oninit>
-        <onreset>resetFunc2</onreset>
-				<onupdate>createModel</onupdate>
+				<onrefresh>create_buttons_step2</onrefresh>
+				<oninit>on_init_step2</oninit>
+        <onreset>on_step_back</onreset>
+				<onupdate>callback_step2</onupdate>
 			</callbacks>
 		</step>
 
-		<step name="setup" caption="Analysis setup" layout="StepThree@ElectronicTransformer" version= "1">
+		<step name="step3" caption="Analysis setup" layout="StepThree@ElectronicTransformer" version= "1">
       <description>Core/winding material, frequency, winding connections</description>
 
 			<componentstyle
@@ -270,81 +261,102 @@
 			border-color="Transparent" />
 
 			<componentstyle
-			component="setupAnalysisButton"
-			background-color="Transparent"
-			border-color="Transparent" />
-
-			<componentstyle
 			component="helpButton"
 			background-color="Transparent"
 			border-color="Transparent" />
 
-			<propertygroup name="defineSetup" caption="Analysis Setup [3/3]">
-				<property name="coreMaterial" caption="Core Material:" control="select" default="3C15">
+			<propertygroup name="define_setup" caption="Analysis Setup [3/3]">
+				<property name="core_material" caption="Core Material:" control="select" default="3C15">
 					<attributes options="3C15" />
 				</property>
 
-				<property name="coilMaterial" caption="Coil Material:" control="select" default="Copper">
+				<property name="coil_material" caption="Coil Material:" control="select" default="Copper">
 					<attributes options="Copper,Aluminum" />
 				</property>
 
-				<property  name="adaptFreq" caption="Adaptive frequency [Hz]" control="float" default="1000">
+				<property  name="adaptive_frequency" caption="Adaptive frequency [Hz]" control="float" default="1000">
           <callbacks>
-            <OnValidate>GEThenOne</OnValidate>
+            <OnValidate>GEThanOne</OnValidate>
           </callbacks>
         </property>
 
-				<property  name="percError" caption="Percentage Error" control="float" default="1">
+				<property  name="percentage_error" caption="Percentage Error" control="float" default="1">
           <callbacks>
-            <OnValidate>GEThenZero</OnValidate>
+            <OnValidate>GEThanZero</OnValidate>
           </callbacks>
         </property>
 
-				<property  name="numPasses" caption="Max No. of passes" control="integer" default="5">
+				<property  name="number_passes" caption="Max No. of passes" control="integer" default="5">
           <callbacks>
-            <OnValidate>GEThenOne</OnValidate>
+            <OnValidate>GEThanOne</OnValidate>
           </callbacks>
         </property>
 
+				<property  name="transformer_sides" caption="Transformer sides" control="integer" default="1">
+					<help>Number of transformer sides eg Primary, Secondary, etc.
+If you change number of sides winding definition would be reset</help>
+					<callbacks>
+            <onvalidate>validate_sides_number</onvalidate>
+          </callbacks>
+        </property>
 
-				<property  name="excitationStrategy" caption="Excitation strategy" control="select" default="Winding">
-          <attributes options="Winding,Current" />
+				<property  name="excitation_strategy" caption="Excitation strategy" control="select" default="Voltage">
+					<help>Voltage or Current winding type</help>
+          <attributes options="Voltage,Current" />
+
+					<callbacks>
+            <onvalidate>on_excitation_strategy_change</onvalidate>
+          </callbacks>
+        </property>
+
+				<property  name="voltage" caption="Primary Voltage [V]" control="float" default="1">
+					<help>Voltage/Current for primary side of the transformer</help>
+          <callbacks>
+            <OnValidate>GThanZero</OnValidate>
+          </callbacks>
+        </property>
+
+				<property  name="resistance" caption="Load Resistance [Ohm]" control="float" default="1" visible="False">
+					<help>Load resistance specified for Secondary, Tertiary, etc sides </help>
+          <callbacks>
+            <OnValidate>GThanZero</OnValidate>
+          </callbacks>
         </property>
 
 				<property  name="offset" caption="Region offset [%]" control="integer" default="50">
             <callbacks>
-                <OnValidate>GThenZero</OnValidate>
+                <OnValidate>GThanZero</OnValidate>
             </callbacks>
         </property>
 
-				<property  name="projPath" caption="Save to:" control="folderopen" />
+				<property  name="project_path" caption="Save to:" control="folderopen" />
 
-				<propertygroup control="boolean" name="freqSweep" caption="Define frequency sweep"  default="False"
+				<propertygroup name="frequency_sweep" caption="Define frequency sweep"  default="False" control="boolean"
                        display="property">
 
-          <property name="startFreq" caption="Start freq" control="float" default="1" visibleon="True">
+          <property name="start_frequency" caption="Start freq" control="float" default="1" visibleon="True">
             <callbacks>
-              <OnValidate>GThenZero</OnValidate>
+              <OnValidate>GThanZero</OnValidate>
             </callbacks>
           </property>
 
-          <property name="freqSelect1" caption="Frequency" control="select" default="kHz" visibleon="True">
+          <property name="start_frequency_unit" caption="Frequency" control="select" default="kHz" visibleon="True">
             <attributes options="Hz,kHz,MHz" />
           </property>
 
-          <property name="stopFreq" caption="Stop freq" control="float" default="1" visibleon="True">
+          <property name="stop_frequency" caption="Stop freq" control="float" default="1" visibleon="True">
             <callbacks>
-              <OnValidate>GThenZero</OnValidate>
+              <OnValidate>GThanZero</OnValidate>
             </callbacks>
           </property>
 
-          <property name="freqSelect2" caption="Frequency" control="select" default="MHz" visibleon="True">
+          <property name="stop_frequency_unit" caption="Frequency" control="select" default="MHz" visibleon="True">
             <attributes options="Hz,kHz,MHz" />
           </property>
 
           <property name="samples" caption="Samples" control="integer" default="3" visibleon="True">
             <callbacks>
-              <OnValidate>GEThenOne</OnValidate>
+              <OnValidate>GEThanOne</OnValidate>
             </callbacks>
           </property>
 
@@ -357,7 +369,9 @@
 			</propertygroup>
 
 			<callbacks>
-				<onrefresh>CreateButtonsSetup</onrefresh>
+				<onrefresh>create_buttons_step3</onrefresh>
+				<oninit>on_init_step3</oninit>
+        <onreset>on_reset_step3</onreset>
 			</callbacks>
 		</step>
 	</wizard>
@@ -525,7 +539,7 @@
 				leftattachment=""
 				topattachment="Title"
 				rightattachment=""
-				bottomattachment="readData"
+				bottomattachment="helpButton"
 
 				leftoffset="10"
 				topoffset="5"
@@ -540,55 +554,10 @@
 				componenttype="propertiesComponent"
 			/>
 
-
-			<component
-				name="readData"
-
-				leftattachment=""
-				topattachment="Properties"
-				rightattachment="writeData"
-				bottomattachment="Submit"
-
-				leftoffset=""
-				topoffset=""
-				rightoffset=""
-				bottomoffset=""
-
-				heighttype="FitTocontent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="30"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-
-			<component
-				name="writeData"
-
-				leftattachment="readData"
-				topattachment="Properties"
-				rightattachment=""
-				bottomattachment="Submit"
-
-				leftoffset=""
-				topoffset=""
-				rightoffset=""
-				bottomoffset=""
-
-				heighttype="FitTocontent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="30"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-
 			<component
 				name="helpButton"
 
-				leftattachment="writeData"
+				leftattachment=""
 				topattachment="Properties"
 				rightattachment=""
 				bottomattachment="Submit"
@@ -602,7 +571,7 @@
 				height="100"
 				maxheight="0"
 				widthtype="Percentage"
-				width="30"
+				width="80"
 				maxwidth="0"
 				componenttype="buttonsComponent"
 			/>
@@ -677,7 +646,7 @@
 
 				leftattachment=""
 				topattachment="Properties"
-				rightattachment="defineConnectionsButton"
+				rightattachment=""
 				bottomattachment="setupAnalysisButton"
 
 				leftoffset="10"
@@ -695,16 +664,16 @@
 			/>
 
 			<component
-				name="defineConnectionsButton"
+				name="setupAnalysisButton"
 
 				leftattachment="defineWindingsButton"
 				topattachment="Properties"
-				rightattachment="analyzeButton"
-				bottomattachment="setupAnalysisButton"
+				rightattachment=""
+				bottomattachment="analyzeButton"
 
 				leftoffset=""
 				topoffset=""
-				rightoffset="10"
+				rightoffset=""
 				bottomoffset=""
 
 				heighttype="FitTocontent"
@@ -717,33 +686,11 @@
 			/>
 
 			<component
-				name="setupAnalysisButton"
-
-				leftattachment=""
-				topattachment="defineWindingsButton"
-				rightattachment="analyzeButton"
-				bottomattachment="Submit"
-
-				leftoffset=""
-				topoffset=""
-				rightoffset=""
-				bottomoffset=""
-
-				heighttype="FitTocontent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="30"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-
-			<component
 				name="analyzeButton"
 
-				leftattachment="setupAnalysisButton"
-				topattachment="defineWindingsButton"
-				rightattachment=""
+				leftattachment=""
+				topattachment="setupAnalysisButton"
+				rightattachment="helpButton"
 				bottomattachment="Submit"
 
 				leftoffset=""
@@ -755,7 +702,7 @@
 				height="100"
 				maxheight="0"
 				widthtype="Percentage"
-				width="30"
+				width="50"
 				maxwidth="0"
 				componenttype="buttonsComponent"
 			/>
@@ -764,7 +711,7 @@
 				name="helpButton"
 
 				leftattachment="analyzeButton"
-				topattachment="defineWindingsButton"
+				topattachment="setupAnalysisButton"
 				rightattachment=""
 				bottomattachment="Submit"
 
