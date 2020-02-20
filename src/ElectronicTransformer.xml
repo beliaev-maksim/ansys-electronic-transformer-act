@@ -329,7 +329,9 @@ If you change number of sides winding definition would be reset</help>
             </callbacks>
         </property>
 
-				<property  name="project_path" caption="Save to:" control="folderopen" />
+				<property name="full_model" caption="Make full model" control="boolean" default="False"/>
+
+				<property name="project_path" caption="Save to:" control="folderopen"/>
 
 				<propertygroup name="frequency_sweep" caption="Define frequency sweep"  default="False" control="boolean"
                        display="property">
