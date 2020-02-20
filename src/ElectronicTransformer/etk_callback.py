@@ -6,8 +6,8 @@
 #            Tested by: Mark Christini (mark.christini@ansys.com)
 #            Last updated : 13.02.2020
 
-import datetime    # get the time library
-import os    # import operations system module
+import datetime
+import os
 import re
 from webbrowser import open as webopen
 import math
@@ -223,6 +223,7 @@ class Step2:
         self.module_output_var = self.design.GetModule("OutputVariable")
         self.module_report = self.design.GetModule("ReportSetup")
         self.module_mesh = self.design.GetModule("MeshSetup")
+        self.module_fields_reporter = self.design.GetModule("FieldsReporter")
 
         args = [self.step1, self.project, self.design, self.editor]
         all_cores = {'E': ECore(args), 'EI': EICore(args), 'U': UCore(args), 'UI': UICore(args),
@@ -598,9 +599,11 @@ class Step3:
                     "Displacement Current:=", True
                 ])
         self.module_boundary_setup.SetEddyEffect(["NAME:Eddy Effect Setting", eddy_list])
+        self.create_field_plot("Mag_J", "J", adapt_freq, layers_list)
+        self.create_field_plot("Mag_B", "B", adapt_freq, core_list)
 
         self.create_region()
-        self.create_skin_layers(adapt_freq, coil_material, core_list)
+        self.create_skin_layers_and_mesh(adapt_freq, coil_material, core_list)
         self.editor.FitAll()
 
         if self.project_path.Value is None:
@@ -613,6 +616,46 @@ class Step3:
         self.analysis_set = True
         self.step3.UserInterface.GetComponent("setupAnalysisButton").SetEnabledFlag("setupAnalysisButton", False)
         self.step3.UserInterface.GetComponent("defineWindingsButton").SetEnabledFlag("defineWindingsButton", False)
+
+    def create_field_plot(self, quantity, folder, adapt_freq, object_list):
+        """Create filed overlay on the surface of the objects"""
+
+        self.module_fields_reporter.CreateFieldPlot(
+            [
+                "NAME:" + quantity,
+                "SolutionName:=", "Setup1 : LastAdaptive",
+                "UserSpecifyName:=", 0,
+                "UserSpecifyFolder:=", 0,
+                "QuantityName:=", quantity,
+                "PlotFolder:="	, folder,
+                "StreamlinePlot:="	, False,
+                "AdjacentSidePlot:="	, False,
+                "FullModelPlot:="	, False,
+                "IntrinsicVar:="	, "Freq=\'{}Hz\' Phase=\'0deg\'".format(adapt_freq),
+                "PlotGeomInfo:="	, [1, "Surface", "FacesList", len(object_list)] +
+                                      [str(self.editor.GetObjectIDByName(obj)) for obj in object_list],
+                "FilterBoxes:="		, [0],
+                [
+                    "NAME:PlotOnSurfaceSettings",
+                    "Filled:="		, False,
+                    "IsoValType:="		, "Fringe",
+                    "SmoothShade:="		, True,
+                    "AddGrid:="		, False,
+                    "MapTransparency:="	, True,
+                    "Refinement:="		, 0,
+                    "Transparency:="	, 0,
+                    "SmoothingLevel:="	, 0,
+                    [
+                        "NAME:Arrow3DSpacingSettings",
+                        "ArrowUniform:="	, True,
+                        "ArrowSpacing:="	, 0,
+                        "MinArrowSpacing:="	, 0,
+                        "MaxArrowSpacing:="	, 0
+                    ],
+                    "GridColor:="		, [255, 255, 255]
+                ],
+                "EnableGaussianSmoothing:=", False
+            ], "Field")
 
     def define_windings_click(self, _sender, _args):
         self.windings_definition.number_of_sides = self.transformer_sides.Value
@@ -685,7 +728,7 @@ class Step3:
              ["NAME:MatrixGroup"]
              ])
 
-    def create_skin_layers(self, adapt_freq, coil_material, core_list):
+    def create_skin_layers_and_mesh(self, adapt_freq, coil_material, core_list):
         """Function to create 'manual' skin layers from face sheets and to assign mesh operations to
         core geometry and windings in which we do not require skin layers (thinner than 3 skin depths)"""
 
@@ -1114,30 +1157,30 @@ class Step3:
         """Function to create an analysis setup"""
 
         self.module_analysis.InsertSetup("EddyCurrent",
-                            [
-                                "NAME:Setup1",
-                                "Enabled:=", True,
-                                "MaximumPasses:=", max_num_passes,
-                                "MinimumPasses:=", 2,
-                                "MinimumConvergedPasses:=", 1,
-                                "PercentRefinement:=", 30,
-                                "SolveFieldOnly:=", False,
-                                "PercentError:=", percent_error,
-                                "SolveMatrixAtLast:=", True,
-                                "PercentError:=", percent_error,
-                                "UseIterativeSolver:=", False,
-                                "RelativeResidual:=", 0.0001,
-                                "ComputeForceDensity:=", False,
-                                "ComputePowerLoss:=", False,
-                                "Frequency:=", frequency,
-                                "HasSweepSetup:=", has_sweep,
-                                "SweepSetupType:=", sweep_type,
-                                "StartValue:=", start_sweep_freq,
-                                "StopValue:=", stop_sweep_freq,
-                                "Samples:=", samples,
-                                "SaveAllFields:=", True,
-                                "UseHighOrderShapeFunc:=", False
-                            ])
+                                         [
+                                                "NAME:Setup1",
+                                                "Enabled:=", True,
+                                                "MaximumPasses:=", max_num_passes,
+                                                "MinimumPasses:=", 2,
+                                                "MinimumConvergedPasses:=", 1,
+                                                "PercentRefinement:=", 30,
+                                                "SolveFieldOnly:=", False,
+                                                "PercentError:=", percent_error,
+                                                "SolveMatrixAtLast:=", True,
+                                                "PercentError:=", percent_error,
+                                                "UseIterativeSolver:=", False,
+                                                "RelativeResidual:=", 0.0001,
+                                                "ComputeForceDensity:=", False,
+                                                "ComputePowerLoss:=", False,
+                                                "Frequency:=", frequency,
+                                                "HasSweepSetup:=", has_sweep,
+                                                "SweepSetupType:=", sweep_type,
+                                                "StartValue:=", start_sweep_freq,
+                                                "StopValue:=", stop_sweep_freq,
+                                                "Samples:=", samples,
+                                                "SaveAllFields:=", True,
+                                                "UseHighOrderShapeFunc:=", False
+                                         ])
 
 
 class TransformerClass(Step1, Step2, Step3):
