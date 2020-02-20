@@ -450,6 +450,7 @@ class Step3:
         self.resistance = self.step3.Properties["define_setup/resistance"]
 
         self.offset = self.step3.Properties["define_setup/offset"]
+        self.full_model = self.step3.Properties["define_setup/full_model"]
         self.project_path = self.step3.Properties["define_setup/project_path"]
 
         self.frequency_sweep = self.step3.Properties["define_setup/frequency_sweep"]
@@ -587,6 +588,7 @@ class Step3:
         self.assign_winding_excitations(layer_sections_list)
         self.assign_matrix_winding()
         self.calculate_leakage()
+        self.create_loss_report()
 
         self.module_boundary_setup.SetCoreLoss(core_list, False)
 
@@ -601,11 +603,24 @@ class Step3:
                     "Displacement Current:=", True
                 ])
         self.module_boundary_setup.SetEddyEffect(["NAME:Eddy Effect Setting", eddy_list])
-        self.create_field_plot("Mag_J", "J", adapt_freq, layers_list)
-        self.create_field_plot("Mag_B", "B", adapt_freq, core_list)
 
-        self.create_region()
         self.create_skin_layers_and_mesh(adapt_freq, coil_material, core_list)
+
+        layers_and_skins = self.editor.GetMatchedObjectName("Layer*")
+        layers_and_skins = [name for name in layers_and_skins if "Section" not in name]
+
+        x_zero_region = False
+        if not self.full_model.Value:
+            self.split_geom(core_list+layers_and_skins)
+            x_zero_region = True
+
+        self.create_region(x_zero_region)
+
+        self.create_field_plot("Mag_J", "J", adapt_freq, layers_list)
+        self.create_field_plot("Ohmic_Loss", "Ohmic-Loss", adapt_freq, layers_list)
+        self.create_field_plot("Mag_B", "B", adapt_freq, core_list)
+        self.create_field_plot("Core_Loss", "Core-Loss", adapt_freq, core_list)
+
         self.editor.FitAll()
 
         if self.project_path.Value is None:
@@ -843,6 +858,14 @@ class Step3:
         else:
             self.voltage.Caption = "Current [A]"
 
+    def create_loss_report(self):
+        self.module_report.CreateReport("Core and Solid Loss", "EddyCurrent", "Data Table", "Setup1 : LastAdaptive", [],
+                                        ["Freq:=", ["All"]],
+                                        [
+                                          "X Component:=", "Freq",
+                                          "Y Component:=", ["CoreLoss", "SolidLoss"]
+                                        ])
+
     def calculate_leakage(self):
         """Create equations to calculate leakage inductance.
         For N winding transformer would be N*(N-1)/2 equations"""
@@ -883,6 +906,23 @@ class Step3:
                 "IncludeTemperatureDependence:=", True,
                 "EnableFeedback:=", True,
                 "Temperatures:=", solids
+            ])
+
+    def split_geom(self, list_to_split):
+        self.editor.Split(
+            [
+                "NAME:Selections",
+                "Selections:="	, ",".join(list_to_split),
+                "NewPartsModelFlag:="	, "Model"
+            ],
+            [
+                "NAME:SplitToParameters",
+                "SplitPlane:="		, "YZ",
+                "WhichSide:="		, "NegativeOnly",
+                "ToolType:="		, "PlaneTool",
+                "ToolEntityID:="	, -1,
+                "SplitCrossingObjectsOnly:=", False,
+                "DeleteInvalidObjects:=", True
             ])
 
     def create_setup(self):
@@ -944,15 +984,17 @@ class Step3:
                 "CreateGroupsForNewObjects:=", False
             ])
 
-    def create_region(self):
+    def create_region(self, x_zero_region):
         """Create vacuum region with offset specified by user"""
         offset = int(self.step3.Properties["define_setup/offset"].Value)
+
+        x_offset = 0 if x_zero_region else offset
 
         self.editor.CreateRegion(
             [
                 "NAME:RegionParameters",
                 "+XPaddingType:=", "Percentage Offset",
-                "+XPadding:=", offset,
+                "+XPadding:=", x_offset,
                 "-XPaddingType:=", "Percentage Offset",
                 "-XPadding:=", offset,
                 "+YPaddingType:=", "Percentage Offset",
@@ -1297,6 +1339,7 @@ class TransformerClass(Step1, Step2, Step3):
             ("voltage", str(self.voltage.Value)),
             ("resistance", str(self.resistance.Value)),
             ("offset", str(self.offset.Value)),
+            ("full_model", str(self.full_model.Value)),
             ("project_path", self.project_path.Value),
         ])
 
@@ -1410,21 +1453,23 @@ class TransformerClass(Step1, Step2, Step3):
         self.change_captions(need_refresh=False)
 
         # read data for step 3
-        self.core_material.Value = self.transformer_definition["setup_definition"]["core_material"]
-        self.coil_material.Value = self.transformer_definition["setup_definition"]["coil_material"]
-        self.adaptive_frequency.Value = float(self.transformer_definition["setup_definition"]["adaptive_frequency"])
-        self.percentage_error.Value = float(self.transformer_definition["setup_definition"]["percentage_error"])
-        self.number_passes.Value = int(self.transformer_definition["setup_definition"]["number_passes"])
+        setup_def_dict = self.transformer_definition["setup_definition"]
+        self.core_material.Value = setup_def_dict["core_material"]
+        self.coil_material.Value = setup_def_dict["coil_material"]
+        self.adaptive_frequency.Value = float(setup_def_dict["adaptive_frequency"])
+        self.percentage_error.Value = float(setup_def_dict["percentage_error"])
+        self.number_passes.Value = int(setup_def_dict["number_passes"])
 
-        self.transformer_sides.Value = int(self.transformer_definition["setup_definition"]["transformer_sides"])
-        self.excitation_strategy.Value = self.transformer_definition["setup_definition"]["excitation_strategy"]
-        self.voltage.Value = float(self.transformer_definition["setup_definition"]["voltage"])
-        self.resistance.Value = float(self.transformer_definition["setup_definition"]["resistance"])
-        self.offset.Value = float(self.transformer_definition["setup_definition"]["offset"])
+        self.transformer_sides.Value = int(setup_def_dict["transformer_sides"])
+        self.excitation_strategy.Value = setup_def_dict["excitation_strategy"]
+        self.voltage.Value = float(setup_def_dict["voltage"])
+        self.resistance.Value = float(setup_def_dict["resistance"])
+        self.offset.Value = float(setup_def_dict["offset"])
+        self.full_model.Value = bool(distutils.util.strtobool(setup_def_dict["full_model"]))
 
-        self.project_path.Value = self.transformer_definition["setup_definition"]["project_path"]
+        self.project_path.Value = setup_def_dict["project_path"]
 
-        freq_dict = self.transformer_definition["setup_definition"]["frequency_sweep_definition"]
+        freq_dict = setup_def_dict["frequency_sweep_definition"]
         self.frequency_sweep.Value = bool(distutils.util.strtobool(freq_dict["frequency_sweep"]))
 
         if self.frequency_sweep.Value:
@@ -1438,7 +1483,7 @@ class TransformerClass(Step1, Step2, Step3):
         self.number_of_layers.ReadOnly = True
 
         self.defined_layers_list = []
-        layer_dict = self.transformer_definition["setup_definition"]["layer_side_definition"]
+        layer_dict = setup_def_dict["layer_side_definition"]
         for key in layer_dict.keys():
             self.defined_layers_list.extend([key + "_" + "Layer" + str(lay_num) for lay_num in layer_dict[key]])
 
