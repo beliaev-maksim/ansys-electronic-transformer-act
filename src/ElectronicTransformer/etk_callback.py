@@ -494,16 +494,18 @@ class Step3:
         if self.draw_winding.Value:
             self.step3.UserInterface.GetComponent("defineWindingsButton").SetEnabledFlag("defineWindingsButton", True)
 
-        self.update_ui(self.step3)
-
         if self.number_of_layers.ReadOnly:
+            # came after read an input file
             self.windings_definition = WindingForm(defined_layers_list=self.defined_layers_list)
             if self.transformer_sides.Value == 1:
                 self.resistance.Visible = False
         else:
+            # either first run or clicked back from step3 and regenerate the model
             self.transformer_sides.Value = 1
             self.resistance.Visible = False
             self.windings_definition = WindingForm(number_undefined_layers=int(self.number_of_layers.Value))
+
+        self.update_ui(self.step3)
 
         if self.windings_definition.defined_layers_list:
             self.step3.UserInterface.GetComponent("analyzeButton").SetEnabledFlag("analyzeButton", True)
