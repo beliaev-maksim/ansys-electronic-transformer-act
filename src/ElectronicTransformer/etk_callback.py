@@ -4,7 +4,7 @@
 #
 #            ACT Written by : Maksim Beliaev (maksim.beliaev@ansys.com)
 #            Tested by: Mark Christini (mark.christini@ansys.com)
-#            Last updated : 05.06.2018
+#            Last updated : 13.02.2020
 
 import datetime    # get the time library
 import os    # import operations system module
@@ -51,7 +51,7 @@ class Step1:
         self.airgap_on_leg = self.step1.Properties["core_properties/define_airgap/airgap_on_leg"]
 
     # read data from file
-    def read_data(self, sender, args):
+    def read_data(self, _sender, _args):
         path = ExtAPI.UserInterface.UIRenderer.ShowFileOpenDialog('Text Files(*.txt;*.json;)|*.txt;*.json;')
 
         if path is None:
@@ -115,12 +115,12 @@ class Step1:
         self.core_model.Options.Clear()
 
         if self.core_type.Value not in ['EP', 'ER', 'PQ', 'RM']:
-            HTML_data = '<img width="300" height="200" src="' + str(ExtAPI.Extension.InstallDir) + '/images/'
+            html_data = '<img width="300" height="200" src="' + str(ExtAPI.Extension.InstallDir) + '/images/'
         else:
-            HTML_data = '<img width="275" height="360" src="' + str(ExtAPI.Extension.InstallDir) + '/images/'
+            html_data = '<img width="275" height="360" src="' + str(ExtAPI.Extension.InstallDir) + '/images/'
 
         report = self.step1.UserInterface.GetComponent("coreImage")
-        report.SetHtmlContent(HTML_data + self.core_type.Value + 'Core.png"/>')  # set core names
+        report.SetHtmlContent(html_data + self.core_type.Value + 'Core.png"/>')  # set core names
 
         self.core_models = cores_database[self.supplier.Value][self.core_type.Value]
         for model in sorted(self.core_models.keys(), key=natural_keys):
@@ -208,14 +208,23 @@ class Step2:
 
         get_time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
         self.design_name = 'Transformer_' + get_time
-        self.oProject = oDesktop.GetActiveProject()
-        if self.oProject is None:
-            self.oProject = oDesktop.NewProject()
-        self.oProject.InsertDesign("Maxwell 3D", self.design_name, "EddyCurrent", "")
-        self.oDesign = self.oProject.SetActiveDesign(self.design_name)
-        self.oEditor = self.oDesign.SetActiveEditor("3D Modeler")
+        self.project = oDesktop.GetActiveProject()
+        if self.project is None:
+            self.project = oDesktop.NewProject()
+            
+        self.project.InsertDesign("Maxwell 3D", self.design_name, "EddyCurrent", "")
+        self.design = self.project.SetActiveDesign(self.design_name)
+        self.editor = self.design.SetActiveEditor("3D Modeler")
 
-        args = [self.step1, self.oProject, self.oDesign, self.oEditor]
+        # define all modules
+        self.module_analysis = self.design.GetModule("AnalysisSetup")
+        self.module_boundary_setup = self.design.GetModule("BoundarySetup")
+        self.module_parameter_setup = self.design.GetModule("MaxwellParameterSetup")
+        self.module_output_var = self.design.GetModule("OutputVariable")
+        self.module_report = self.design.GetModule("ReportSetup")
+        self.module_mesh = self.design.GetModule("MeshSetup")
+
+        args = [self.step1, self.project, self.design, self.editor]
         all_cores = {'E': ECore(args), 'EI': EICore(args), 'U': UCore(args), 'UI': UICore(args),
                      'PQ': PQCore(args), 'ETD': ETDCore(args), 'EQ': ETDCore(args),
                      'EC': ETDCore(args), 'RM': RMCore(args), 'EP': EPCore(args),
@@ -465,8 +474,8 @@ class Step3:
         self.analysis_set = False
 
         # insert path to the saved project as default path to textbox
-        path = self.oProject.GetPath()
-        if self.oProject is None:
+        path = self.project.GetPath()
+        if self.project is None:
             path = oDesktop.GetProjectPath()
         self.project_path.Value = str(path)
 
@@ -525,16 +534,16 @@ class Step3:
 
         self.update_ui(self.step3)
 
-    def analyze_click(self, sender, args):
+    def analyze_click(self, _sender, _args):
         if not self.analysis_set:
             self.setup_analysis_click()
 
         try:
-            self.oDesign.Analyze("Setup1")
+            self.design.Analyze("Setup1")
         except:
             pass
 
-    def setup_analysis_click(self, sender="", args=""):
+    def setup_analysis_click(self, _sender="", _args=""):
         coil_material = self.coil_material.Value + "_temperature"
 
         layers_list = []
@@ -542,7 +551,7 @@ class Step3:
         layers_sections_delete_list = []
         core_list = []
 
-        obj_list = self.oEditor.GetObjectsInGroup('Solids')
+        obj_list = self.editor.GetObjectsInGroup('Solids')
         for each_obj in obj_list:
             if "Layer" in each_obj:
                 layers_list.append(each_obj)
@@ -551,33 +560,32 @@ class Step3:
             elif "Core" in each_obj:
                 core_list.append(each_obj)
 
-        create_new_materials(self.oProject, self.core_material.Value, coil_material)
-        assign_material(self.oEditor, ','.join(core_list), '"Material_' + self.core_material.Value + '"')
-        assign_material(self.oEditor, ','.join(layers_list), '"' + coil_material + '"')
+        self.create_new_materials(coil_material)
+        self.assign_material(','.join(core_list), '"Material_' + self.core_material.Value + '"')
+        self.assign_material(','.join(layers_list), '"' + coil_material + '"')
 
         if coil_material == 'Copper_temperature':
-            change_color(self.oEditor, layers_list, 255, 128, 64)
+            self.change_color(layers_list, 255, 128, 64)
         else:
-            change_color(self.oEditor, layers_list, 132, 135, 137)
+            self.change_color(layers_list, 132, 135, 137)
 
         if self.include_bobbin.Value:
             if self.layer_type.Value == 'Wound':
-                assign_material(self.oEditor, 'Bobbin', '"polyamide"')
+                self.assign_material('Bobbin', '"polyamide"')
             else:
-                boards = ','.join(self.oEditor.GetMatchedObjectName("Board*"))
-                assign_material(self.oEditor, boards, '"polyamide"')
+                boards = ','.join(self.editor.GetMatchedObjectName("Board*"))
+                self.assign_material(boards, '"polyamide"')
 
-        adapt_freq = create_setup(self.step3, self.oDesign)
-        enable_thermal(self.oDesign, obj_list)
+        adapt_freq = self.create_setup()
+        self.enable_thermal(obj_list)
 
-        create_terminal_sections(self.oEditor, layers_list, layer_sections_list, layers_sections_delete_list)
-        self.oModule_BoundarySetup = self.oDesign.GetModule("BoundarySetup")
+        self.create_terminal_sections(layers_list, layer_sections_list, layers_sections_delete_list)
 
         self.assign_winding_excitations(layer_sections_list)
         self.assign_matrix_winding()
-        calculate_leakage(self.oDesign, self.transformer_sides.Value)
+        self.calculate_leakage()
 
-        self.oModule_BoundarySetup.SetCoreLoss(core_list, False)
+        self.module_boundary_setup.SetCoreLoss(core_list, False)
 
         # turn on eddy effects
         eddy_list = ["NAME:EddyEffectVector"]
@@ -589,11 +597,11 @@ class Step3:
                     "Eddy Effect:=", True,
                     "Displacement Current:=", True
                 ])
-        self.oModule_BoundarySetup.SetEddyEffect(["NAME:Eddy Effect Setting", eddy_list])
+        self.module_boundary_setup.SetEddyEffect(["NAME:Eddy Effect Setting", eddy_list])
 
-        create_region(self.step3, self.oEditor)
+        self.create_region()
         self.create_skin_layers(adapt_freq, coil_material, core_list)
-        self.oEditor.FitAll()
+        self.editor.FitAll()
 
         if self.project_path.Value is None:
             # that means that we are here due to auto run after reading a file
@@ -601,12 +609,12 @@ class Step3:
 
         self.write_json_data()
 
-        self.oProject.SaveAs(os.path.join(self.project_path.Value, self.design_name + '.aedt'), True)
+        self.project.SaveAs(os.path.join(self.project_path.Value, self.design_name + '.aedt'), True)
         self.analysis_set = True
         self.step3.UserInterface.GetComponent("setupAnalysisButton").SetEnabledFlag("setupAnalysisButton", False)
         self.step3.UserInterface.GetComponent("defineWindingsButton").SetEnabledFlag("defineWindingsButton", False)
 
-    def define_windings_click(self, sender, args):
+    def define_windings_click(self, _sender, _args):
         self.windings_definition.number_of_sides = self.transformer_sides.Value
 
         # if layers read from file and after that number of sides was changed
@@ -637,7 +645,7 @@ class Step3:
                     side = definition.split("_")[1]
 
                     point_terminal = True if int(side) > 1 else False
-                    self.oModule_BoundarySetup.AssignCoilTerminal(
+                    self.module_boundary_setup.AssignCoilTerminal(
                         [
                             "NAME:" + section,
                             "Objects:=", [section],
@@ -648,7 +656,7 @@ class Step3:
                         ])
 
     def create_winding(self, name, winding_type, current=0.0, resistance=0.0, inductance=0.0, voltage=0.0):
-        self.oModule_BoundarySetup.AssignWindingGroup(
+        self.module_boundary_setup.AssignWindingGroup(
             [
                 "NAME:" + name,
                 "Type:=", winding_type,
@@ -662,8 +670,7 @@ class Step3:
             ])
 
     def assign_matrix_winding(self):
-        oModule = self.oDesign.GetModule("MaxwellParameterSetup")
-
+        """Function to assign RL matrix to a winding group"""
         matrix_entry = ["NAME:MatrixEntry"]
         for i in range(1, self.transformer_sides.Value + 1):
             matrix_entry.append([
@@ -672,7 +679,7 @@ class Step3:
                  "NumberOfTurns:=", "1"
              ])
 
-        oModule.AssignMatrix(
+        self.module_parameter_setup.AssignMatrix(
             ["NAME:Matrix1",
              matrix_entry,
              ["NAME:MatrixGroup"]
@@ -684,26 +691,25 @@ class Step3:
 
         mesh_op_sz = max([float(Lx) for Lx in self.draw_class.core_dims]) / 20.0
 
-        layer_names = self.oEditor.GetMatchedObjectName("Layer*")
+        layer_names = self.editor.GetMatchedObjectName("Layer*")
         layer_names = [name for name in layer_names if "Section" not in name]
 
         sigma = 58000000 if coil_material == 'Copper_temperature' else 38000000
         skin_depth = 503.292121 * math.sqrt(1 / (sigma * adapt_freq)) * 1000  # convert to mm
 
-        oModule = self.oDesign.GetModule("MeshSetup")
         # first assign mesh operation for cores
-        assign_length_op(oModule, core_list, mesh_op_sz)
+        self.assign_length_op(core_list, mesh_op_sz)
 
         for layer in layer_names:
             layer_number = int(layer.split("_")[0][5:])
-            face_ids = [int(ID) for ID in self.oEditor.GetFaceIDs(layer)]
+            face_ids = [int(ID) for ID in self.editor.GetFaceIDs(layer)]
 
             my_dict = {}
             list_of_round_faces = []
             for ID in face_ids:
                 try:
                     # DE190482, fails on round objects, need to handle separate
-                    my_dict[ID] = self.oEditor.GetFaceCenter(ID)
+                    my_dict[ID] = self.editor.GetFaceCenter(ID)
                 except:
                     list_of_round_faces.append(ID)
             # sort by Z coordinate to get top and bottom face
@@ -716,18 +722,18 @@ class Step3:
                 height = self.draw_class.WdgParDict[layer_number][1]
                 if height < 3 * skin_depth:
                     # that means we do not need skin here
-                    assign_length_op(oModule, [layer], mesh_op_sz)
+                    self.assign_length_op([layer], mesh_op_sz)
                     continue
 
                 for index in range(1, 3):
-                    skinDepthLayer = skin_depth / index  # to get two layers of skin depth
+                    skin_depth_layer = skin_depth / index  # to get two layers of skin depth
 
-                    create_object_from_face(self.oEditor, layer, [bot_face_id])
+                    self.create_object_from_face(layer, [bot_face_id])
                     self.draw_class.rename(layer + "_ObjectFromFace1", layer + "_bot" + str(index))
-                    self.draw_class.move(layer + "_bot" + str(index), 0, 0, skinDepthLayer)
-                    create_object_from_face(self.oEditor, layer, [top_face_id])
+                    self.draw_class.move(layer + "_bot" + str(index), 0, 0, skin_depth_layer)
+                    self.create_object_from_face(layer, [top_face_id])
                     self.draw_class.rename(layer + "_ObjectFromFace1", layer + "_top" + str(index))
-                    self.draw_class.move(layer + "_top" + str(index), 0, 0, -skinDepthLayer)
+                    self.draw_class.move(layer + "_top" + str(index), 0, 0, -skin_depth_layer)
 
             else:
                 # make validation that skindepth is required
@@ -736,7 +742,7 @@ class Step3:
 
                 if width < 3 * skin_depth:
                     # that means we do not need skin here
-                    assign_length_op(oModule, [layer], mesh_op_sz)
+                    self.assign_length_op([layer], mesh_op_sz)
                     continue
 
                 for ID in list_of_round_faces:
@@ -749,16 +755,16 @@ class Step3:
                     wound_faces = [int(key) for key in my_dict.keys()]
 
                 self.draw_class.rename(layer, layer + "_forskin")
-                self.oEditor.Copy(
+                self.editor.Copy(
                     [
                         "NAME:Selections",
                         "Selections:=", layer + "_forskin"
                     ])
-                self.oEditor.Paste()
+                self.editor.Paste()
                 self.draw_class.rename(layer + "_forskin1", layer)
 
                 for index in range(1, 3):
-                    self.oEditor.MoveFaces(
+                    self.editor.MoveFaces(
                         [
                             "NAME:Selections",
                             "Selections:=", layer + "_forskin",
@@ -777,10 +783,10 @@ class Step3:
                             ]
                         ])
 
-                    create_object_from_face(self.oEditor, layer + "_forskin", wound_faces)
+                    self.create_object_from_face(layer + "_forskin", wound_faces)
 
                 # delete object only after loop since create object from faces twice
-                self.oEditor.Delete(
+                self.editor.Delete(
                     [
                         "NAME:Selections",
                         "Selections:="	, layer + "_forskin"
@@ -791,6 +797,347 @@ class Step3:
             self.voltage.Caption = "Voltage [V]"
         else:
             self.voltage.Caption = "Current [A]"
+
+    def calculate_leakage(self):
+        """Create equations to calculate leakage inductance.
+        For N winding transformer would be N*(N-1)/2 equations"""
+
+        list_x = list(range(1, self.transformer_sides.Value + 1))[:]
+        list_y = list(range(1, self.transformer_sides.Value + 1))[:]
+
+        all_leakages = []
+
+        for x in list_x:
+            for y in list_y:
+                if x != y:
+                    equation = "Matrix1.L(Side_{0},Side_{0})*(1-sqr(Matrix1.CplCoef(Side_{0},Side_{1})))".format(x, y)
+                    all_leakages.append("LeakageInductance_{}{}".format(x, y))
+                    self.module_output_var.CreateOutputVariable("LeakageInductance_{}{}".format(x, y), equation,
+                                                                "Setup1 : LastAdaptive", "EddyCurrent", [])
+
+            list_y.remove(x)
+
+        if self.transformer_sides.Value <= 1:
+            all_leakages = ["Matrix1.L(Side_1,Side_1)"]
+
+        self.module_report.CreateReport("Leakage inductance", "EddyCurrent", "Data Table", "Setup1 : LastAdaptive", [],
+                                        ["Freq:=", ["All"]],
+                                        [
+                                            "X Component:="	, "Freq",
+                                            "Y Component:="		, all_leakages
+                                        ], [])
+
+    def enable_thermal(self, solids):
+        """function to turn on feedback for thermal coupling"""
+        for i in range(len(solids)):
+            solids.insert(i * 2 + 1, "22cel")
+
+        self.design.SetObjectTemperature(
+            [
+                "NAME:TemperatureSettings",
+                "IncludeTemperatureDependence:=", True,
+                "EnableFeedback:=", True,
+                "Temperatures:=", solids
+            ])
+
+    def create_setup(self):
+        """function which grabs parameters from UI and inserts Setup1 according to them"""
+        max_num_passes = int(self.step3.Properties["define_setup/number_passes"].Value)
+        percent_error = float(self.step3.Properties["define_setup/percentage_error"].Value)
+
+        adapt_freq = self.step3.Properties["define_setup/adaptive_frequency"].Value
+        frequency = str(adapt_freq) + 'Hz'
+
+        start_sweep_freq = (str(self.step3.Properties["define_setup/frequency_sweep/start_frequency"].Value) +
+                            str(self.step3.Properties["define_setup/frequency_sweep/start_frequency_unit"].Value))
+
+        stop_sweep_freq = (str(self.step3.Properties["define_setup/frequency_sweep/stop_frequency"].Value) +
+                           str(self.step3.Properties["define_setup/frequency_sweep/stop_frequency_unit"].Value))
+
+        samples = int(self.step3.Properties["define_setup/frequency_sweep/samples"].Value)
+
+        if self.step3.Properties["define_setup/frequency_sweep"].Value:
+            if self.step3.Properties["define_setup/frequency_sweep/scale"].Value == 'Linear':
+                self.insert_setup(max_num_passes, percent_error, frequency, True,
+                                  'LinearCount', start_sweep_freq, stop_sweep_freq, samples)
+            else:
+                self.insert_setup(max_num_passes, percent_error, frequency, True,
+                                  'LogScale', start_sweep_freq, stop_sweep_freq, samples)
+        else:
+            self.insert_setup(max_num_passes, percent_error, frequency, False)
+
+        return adapt_freq
+
+    def assign_length_op(self, objects, size):
+        self.module_mesh.AssignLengthOp(
+            [
+                "NAME:Length_" + objects[0],
+                "RefineInside:=", False,
+                "Enabled:=", True,
+                "Objects:=", objects,
+                "RestrictElem:=", False,
+                "NumMaxElem:=", "1000",
+                "RestrictLength:=", True,
+                "MaxLength:=", str(size) + "mm"
+            ])
+
+    def create_object_from_face(self, objects, listID):
+        self.editor.CreateObjectFromFaces(
+            [
+                "NAME:Selections",
+                "Selections:=", objects,
+                "NewPartsModelFlag:=", "Model"
+            ],
+            [
+                "NAME:Parameters",
+                [
+                    "NAME:BodyFromFaceToParameters",
+                    "FacesToDetach:=", listID
+                ]
+            ],
+            [
+                "CreateGroupsForNewObjects:=", False
+            ])
+
+    def create_region(self):
+        """Create vacuum region with offset specified by user"""
+        offset = int(self.step3.Properties["define_setup/offset"].Value)
+
+        self.editor.CreateRegion(
+            [
+                "NAME:RegionParameters",
+                "+XPaddingType:=", "Percentage Offset",
+                "+XPadding:=", offset,
+                "-XPaddingType:=", "Percentage Offset",
+                "-XPadding:=", offset,
+                "+YPaddingType:=", "Percentage Offset",
+                "+YPadding:=", offset,
+                "-YPaddingType:=", "Percentage Offset",
+                "-YPadding:=", offset,
+                "+ZPaddingType:=", "Percentage Offset",
+                "+ZPadding:=", offset,
+                "-ZPaddingType:=", "Percentage Offset",
+                "-ZPadding:=", offset
+            ],
+            [
+                "NAME:Attributes",
+                "Name:=", "Region",
+                "Flags:=", "Wireframe#",
+                "Color:=", "(255 0 0)",
+                "Transparency:=", 0,
+                "PartCoordinateSystem:=", "Global",
+                "UDMId:=", "",
+                "MaterialValue:=", "\"vacuum\"",
+                "SolveInside:=", True
+            ])
+
+    def change_color(self, selection, R, G, B):
+        self.editor.ChangeProperty(
+            ["NAME:AllTabs", ["NAME:Geometry3DAttributeTab",
+                              ["NAME:PropServers"] + selection,
+                              ["NAME:ChangedProps",
+                               [
+                                   "NAME:Color",
+                                   "R:=", R,
+                                   "G:=", G,
+                                   "B:=", B
+                               ]
+                               ]]])
+
+    def create_terminal_sections(self, layer_list, layer_sections_list, layers_sections_delete_list):
+        # only for EFD core not to get an error due to section of winding
+        if "CentralLegCS" in self.editor.GetCoordinateSystems():
+            self.editor.SetWCS(
+                [
+                    "NAME:SetWCS Parameter",
+                    "Working Coordinate System:=", "CentralLegCS",
+                    "RegionDepCSOk:=", False
+                ])
+
+        self.editor.Section(
+            [
+                "NAME:Selections",
+                "Selections:=", ','.join(layer_list),
+                "NewPartsModelFlag:=", "Model"
+            ],
+            [
+                "NAME:SectionToParameters",
+                "CreateNewObjects:=", True,
+                "SectionPlane:=", "ZX",
+                "SectionCrossObject:=", False
+            ])
+
+        self.editor.SeparateBody(
+            [
+                "NAME:Selections",
+                "Selections:=", ','.join(layer_sections_list),
+                "NewPartsModelFlag:=", "Model"
+            ])
+
+        self.editor.Delete(["NAME:Selections", "Selections:=", ','.join(layers_sections_delete_list)])
+
+    def create_new_materials(self, coil_material):
+        oDefinitionManager = self.project.GetDefinitionManager()
+        core_material = self.core_material.Value
+
+        # check if we are not having core material already
+        if not oDefinitionManager.DoesMaterialExist("Material_" + core_material):
+            cord_list = ["NAME:Coordinates"]
+            for coordinatePair in range(len(matKeyPoints[core_material])):
+                cord_list.append(["NAME:Coordinate", "X:=", matKeyPoints[core_material][coordinatePair][0],
+                                  "Y:=", matKeyPoints[core_material][coordinatePair][1]])
+
+            self.project.AddDataset(["NAME:$Mu_" + core_material, cord_list])
+
+            oDefinitionManager.AddMaterial(
+                [
+                    "NAME:Material_" + core_material,
+                    "CoordinateSystemType:=", "Cartesian",
+                    "BulkOrSurfaceType:=", 1,
+                    [
+                        "NAME:PhysicsTypes",
+                        "set:=", ["Electromagnetic", "Thermal", "Structural"]
+                    ],
+                    ["NAME:AttachedData"],
+                    ["NAME:ModifierData"],
+                    "permeability:=", "pwl($Mu_" + core_material + ",Freq)",
+                    "conductivity:=", matDict[core_material][0],
+                    [
+                        "NAME:core_loss_type",
+                        "property_type:=", "ChoiceProperty",
+                        "Choice:=", "Power Ferrite"
+                    ],
+                    "core_loss_cm:=", matDict[core_material][1],
+                    "core_loss_x:=", matDict[core_material][2],
+                    "core_loss_y:=", matDict[core_material][3],
+                    "core_loss_kdc:=", "0",
+                    "thermal_conductivity:=", "5",
+                    "mass_density:=", matDict[core_material][4],
+                    "specific_heat:=", "750",
+                    "thermal_expansion_coeffcient:=", "1e-05"
+                ])
+
+        # check if winding material exists
+        if (coil_material == "Copper_temperature" and
+            not oDefinitionManager.DoesMaterialExist(coil_material)):
+
+            oDefinitionManager.AddMaterial(
+                [
+                    "NAME:" + coil_material,
+                    "CoordinateSystemType:=", "Cartesian",
+                    "BulkOrSurfaceType:=", 1,
+                    [
+                        "NAME:PhysicsTypes",
+                        "set:=", ["Electromagnetic", "Thermal", "Structural"]
+                    ],
+                    [
+                        "NAME:ModifierData",
+                        [
+                            "NAME:ThermalModifierData",
+                            "modifier_data:=", "thermal_modifier_data",
+                            [
+                                "NAME:all_thermal_modifiers",
+                                [
+                                    "NAME:one_thermal_modifier",
+                                    "Property::=", "conductivity",
+                                    "Index::=", 0,
+                                    "prop_modifier:=", "thermal_modifier",
+                                    "use_free_form:=", True,
+                                    "free_form_value:=", "1 / (1 + 0.0039 * (Temp - 22))"
+                                ]
+                            ]
+                        ]
+                    ],
+                    "permeability:=", "0.999991",
+                    "conductivity:=", "58000000",
+                    "thermal_conductivity:=", "400",
+                    "mass_density:=", "8933",
+                    "specific_heat:=", "385",
+                    "youngs_modulus:=", "120000000000",
+                    "poissons_ratio:=", "0.38",
+                    "thermal_expansion_coeffcient:=", "1.77e-05"
+                ])
+
+        elif (coil_material == "Aluminum_temperature" and
+              not oDefinitionManager.DoesMaterialExist(coil_material)):
+            oDefinitionManager.AddMaterial(
+                [
+                    "NAME:" + coil_material,
+                    "CoordinateSystemType:=", "Cartesian",
+                    "BulkOrSurfaceType:=", 1,
+                    [
+                        "NAME:PhysicsTypes",
+                        "set:=", ["Electromagnetic", "Thermal", "Structural"]
+                    ],
+                    [
+                        "NAME:ModifierData",
+                        [
+                            "NAME:ThermalModifierData",
+                            "modifier_data:=", "thermal_modifier_data",
+                            [
+                                "NAME:all_thermal_modifiers",
+                                [
+                                    "NAME:one_thermal_modifier",
+                                    "Property::=", "conductivity",
+                                    "Index::=", 0,
+                                    "prop_modifier:=", "thermal_modifier",
+                                    "use_free_form:=", True,
+                                    "free_form_value:=", "1 / (1 + 0.0039 * (Temp - 22))"
+                                ]
+                            ]
+                        ]
+                    ],
+                    "permeability:=", "1.000021",
+                    "conductivity:=", "38000000",
+                    "thermal_conductivity:=", "237.5",
+                    "mass_density:=", "2689",
+                    "specific_heat:=", "951",
+                    "youngs_modulus:=", "69000000000",
+                    "poissons_ratio:=", "0.31",
+                    "thermal_expansion_coeffcient:=", "2.33e-05"
+                ])
+
+    def assign_material(self, selection, material):
+        self.editor.AssignMaterial(
+            [
+                "NAME:Selections",
+                "Selections:=", selection
+            ],
+            [
+                "NAME:Attributes",
+                "MaterialValue:=", material,
+                "SolveInside:=", True
+            ])
+
+    def insert_setup(self, max_num_passes, percent_error, frequency, has_sweep,
+                     sweep_type='', start_sweep_freq='', stop_sweep_freq='', samples=''):
+        """Function to create an analysis setup"""
+
+        self.module_analysis.InsertSetup("EddyCurrent",
+                            [
+                                "NAME:Setup1",
+                                "Enabled:=", True,
+                                "MaximumPasses:=", max_num_passes,
+                                "MinimumPasses:=", 2,
+                                "MinimumConvergedPasses:=", 1,
+                                "PercentRefinement:=", 30,
+                                "SolveFieldOnly:=", False,
+                                "PercentError:=", percent_error,
+                                "SolveMatrixAtLast:=", True,
+                                "PercentError:=", percent_error,
+                                "UseIterativeSolver:=", False,
+                                "RelativeResidual:=", 0.0001,
+                                "ComputeForceDensity:=", False,
+                                "ComputePowerLoss:=", False,
+                                "Frequency:=", frequency,
+                                "HasSweepSetup:=", has_sweep,
+                                "SweepSetupType:=", sweep_type,
+                                "StartValue:=", start_sweep_freq,
+                                "StopValue:=", stop_sweep_freq,
+                                "Samples:=", samples,
+                                "SaveAllFields:=", True,
+                                "UseHighOrderShapeFunc:=", False
+                            ])
 
 
 class TransformerClass(Step1, Step2, Step3):
@@ -824,7 +1171,7 @@ class TransformerClass(Step1, Step2, Step3):
         step.UserInterface.GetComponent("Properties").UpdateData()
         step.UserInterface.GetComponent("Properties").Refresh()
 
-    def help_button_clicked(self, sender, args):
+    def help_button_clicked(self, _sender, _args):
         """when user clicks Help button HTML page will be opened in standard web browser"""
         webopen(str(ExtAPI.Extension.InstallDir) + '/help/help.html')
 
@@ -1051,360 +1398,6 @@ class TransformerClass(Step1, Step2, Step3):
             self.defined_layers_list.extend([key + "_" + "Layer" + str(lay_num) for lay_num in layer_dict[key]])
 
 
-def calculate_leakage(oDesign, sides_number):
-    """Create equations to calculate leakage inductance.
-    For N winding transformer would be N*(N-1)/2 equations"""
-
-    oModule = oDesign.GetModule("OutputVariable")
-    list_x = list(range(1, sides_number + 1))[:]
-    list_y = list(range(1, sides_number + 1))[:]
-
-    all_leakages = []
-
-    for x in list_x:
-        for y in list_y:
-            if x != y:
-                equation = "Matrix1.L(Side_{0},Side_{0})*(1-sqr(Matrix1.CplCoef(Side_{0},Side_{1})))".format(x, y)
-                all_leakages.append("LeakageInductance_{}{}".format(x, y))
-                oModule.CreateOutputVariable("LeakageInductance_{}{}".format(x, y), equation,
-                                             "Setup1 : LastAdaptive", "EddyCurrent", [])
-
-        list_y.remove(x)
-
-    if sides_number <= 1:
-        all_leakages = ["Matrix1.L(Side_1,Side_1)"]
-
-    oModule = oDesign.GetModule("ReportSetup")
-    oModule.CreateReport("Leakage inductance", "EddyCurrent", "Data Table", "Setup1 : LastAdaptive", [],
-                         [
-                             "Freq:="	, ["All"]
-                         ],
-                         [
-                             "X Component:="		, "Freq",
-                             "Y Component:="		, all_leakages
-                         ], [])
-
-
-def enable_thermal(oDesign, solids):
-    """function to turn on feedback for thermal coupling"""
-    for i in range(len(solids)):
-        solids.insert(i * 2 + 1, "22cel")
-
-    oDesign.SetObjectTemperature(
-        [
-            "NAME:TemperatureSettings",
-            "IncludeTemperatureDependence:=", True,
-            "EnableFeedback:=", True,
-            "Temperatures:=", solids
-        ])
-
-
-def create_setup(step, oDesign):
-    """function which grabs parameters from UI and inserts Setup1 according to them"""
-    max_num_passes = int(step.Properties["define_setup/number_passes"].Value)
-    percent_error = float(step.Properties["define_setup/percentage_error"].Value)
-
-    adapt_freq = step.Properties["define_setup/adaptive_frequency"].Value
-    frequency = str(adapt_freq) + 'Hz'
-
-    start_sweep_freq = (str(step.Properties["define_setup/frequency_sweep/start_frequency"].Value) +
-                        str(step.Properties["define_setup/frequency_sweep/start_frequency_unit"].Value))
-
-    stop_sweep_freq = (str(step.Properties["define_setup/frequency_sweep/stop_frequency"].Value) +
-                       str(step.Properties["define_setup/frequency_sweep/stop_frequency_unit"].Value))
-
-    samples = int(step.Properties["define_setup/frequency_sweep/samples"].Value)
-
-    if step.Properties["define_setup/frequency_sweep"].Value:
-        if step.Properties["define_setup/frequency_sweep/scale"].Value == 'Linear':
-            insert_setup(oDesign, max_num_passes, percent_error, frequency, True,
-                        'LinearCount', start_sweep_freq, stop_sweep_freq, samples)
-        else:
-            insert_setup(oDesign, max_num_passes, percent_error, frequency, True,
-                        'LogScale', start_sweep_freq, stop_sweep_freq, samples)
-    else:
-        insert_setup(oDesign, max_num_passes, percent_error, frequency, False)
-
-    return adapt_freq
-
-
-def assign_length_op(oModule, objects, size):
-    oModule.AssignLengthOp(
-        [
-            "NAME:Length_" + objects[0],
-            "RefineInside:=", False,
-            "Enabled:=", True,
-            "Objects:=", objects,
-            "RestrictElem:=", False,
-            "NumMaxElem:=", "1000",
-            "RestrictLength:=", True,
-            "MaxLength:=", str(size) + "mm"
-        ])
-
-
-def create_object_from_face(oEditor, objects, listID):
-    oEditor.CreateObjectFromFaces(
-        [
-            "NAME:Selections",
-            "Selections:=", objects,
-            "NewPartsModelFlag:=", "Model"
-        ],
-        [
-            "NAME:Parameters",
-            [
-                "NAME:BodyFromFaceToParameters",
-                "FacesToDetach:=", listID
-            ]
-        ],
-        [
-            "CreateGroupsForNewObjects:=", False
-        ])
-
-
-def create_region(step, oEditor):
-    """Create vacuum region with offset specified by user"""
-    offset = int(step.Properties["define_setup/offset"].Value)
-
-    oEditor.CreateRegion(
-        [
-            "NAME:RegionParameters",
-            "+XPaddingType:=", "Percentage Offset",
-            "+XPadding:=", offset,
-            "-XPaddingType:=", "Percentage Offset",
-            "-XPadding:=", offset,
-            "+YPaddingType:=", "Percentage Offset",
-            "+YPadding:=", offset,
-            "-YPaddingType:=", "Percentage Offset",
-            "-YPadding:=", offset,
-            "+ZPaddingType:=", "Percentage Offset",
-            "+ZPadding:=", offset,
-            "-ZPaddingType:=", "Percentage Offset",
-            "-ZPadding:=", offset
-        ],
-        [
-            "NAME:Attributes",
-            "Name:=", "Region",
-            "Flags:=", "Wireframe#",
-            "Color:=", "(255 0 0)",
-            "Transparency:=", 0,
-            "PartCoordinateSystem:=", "Global",
-            "UDMId:=", "",
-            "MaterialValue:=", "\"vacuum\"",
-            "SolveInside:=", True
-        ])
-
-
-def create_terminal_sections(oEditor, LayList, LaySecList, LayDelList):
-    # only for EFD core not to get an error due to section of winding
-    if "CentralLegCS" in oEditor.GetCoordinateSystems():
-        oEditor.SetWCS(
-            [
-                "NAME:SetWCS Parameter",
-                "Working Coordinate System:=", "CentralLegCS",
-                "RegionDepCSOk:=", False
-            ])
-
-    oEditor.Section(
-        [
-            "NAME:Selections",
-            "Selections:=", ','.join(LayList),
-            "NewPartsModelFlag:=", "Model"
-        ],
-        [
-            "NAME:SectionToParameters",
-            "CreateNewObjects:=", True,
-            "SectionPlane:=", "ZX",
-            "SectionCrossObject:=", False
-        ])
-
-    oEditor.SeparateBody(
-        [
-            "NAME:Selections",
-            "Selections:=", ','.join(LaySecList),
-            "NewPartsModelFlag:=", "Model"
-        ])
-
-    oEditor.Delete(["NAME:Selections", "Selections:=", ','.join(LayDelList)])
-
-
-def create_new_materials(oProject, core_material, coil_material):
-    oDefinitionManager = oProject.GetDefinitionManager()
-
-    # check if we are not having core material already
-    if not oDefinitionManager.DoesMaterialExist("Material_" + core_material):
-        cord_list = ["NAME:Coordinates"]
-        for coordinatePair in range(len(matKeyPoints[core_material])):
-            cord_list.append(["NAME:Coordinate", "X:=", matKeyPoints[core_material][coordinatePair][0],
-                              "Y:=", matKeyPoints[core_material][coordinatePair][1]])
-
-        oProject.AddDataset(["NAME:$Mu_" + core_material, cord_list])
-
-        oDefinitionManager.AddMaterial(
-            [
-                "NAME:Material_" + core_material,
-                "CoordinateSystemType:=", "Cartesian",
-                "BulkOrSurfaceType:=", 1,
-                [
-                    "NAME:PhysicsTypes",
-                    "set:=", ["Electromagnetic", "Thermal", "Structural"]
-                ],
-                ["NAME:AttachedData"],
-                ["NAME:ModifierData"],
-                "permeability:=", "pwl($Mu_" + core_material + ",Freq)",
-                "conductivity:=", matDict[core_material][0],
-                [
-                    "NAME:core_loss_type",
-                    "property_type:=", "ChoiceProperty",
-                    "Choice:=", "Power Ferrite"
-                ],
-                "core_loss_cm:=", matDict[core_material][1],
-                "core_loss_x:=", matDict[core_material][2],
-                "core_loss_y:=", matDict[core_material][3],
-                "core_loss_kdc:=", "0",
-                "thermal_conductivity:=", "5",
-                "mass_density:=", matDict[core_material][4],
-                "specific_heat:=", "750",
-                "thermal_expansion_coeffcient:=", "1e-05"
-            ])
-
-    # check if winding material exists
-    if (coil_material == "Copper_temperature" and
-            not oDefinitionManager.DoesMaterialExist(coil_material)):
-
-        oDefinitionManager.AddMaterial(
-            [
-                "NAME:" + coil_material,
-                "CoordinateSystemType:=", "Cartesian",
-                "BulkOrSurfaceType:=", 1,
-                [
-                    "NAME:PhysicsTypes",
-                    "set:=", ["Electromagnetic", "Thermal", "Structural"]
-                ],
-                [
-                    "NAME:ModifierData",
-                    [
-                        "NAME:ThermalModifierData",
-                        "modifier_data:=", "thermal_modifier_data",
-                        [
-                            "NAME:all_thermal_modifiers",
-                            [
-                                "NAME:one_thermal_modifier",
-                                "Property::=", "conductivity",
-                                "Index::=", 0,
-                                "prop_modifier:=", "thermal_modifier",
-                                "use_free_form:=", True,
-                                "free_form_value:=", "1 / (1 + 0.0039 * (Temp - 22))"
-                            ]
-                        ]
-                    ]
-                ],
-                "permeability:=", "0.999991",
-                "conductivity:=", "58000000",
-                "thermal_conductivity:=", "400",
-                "mass_density:=", "8933",
-                "specific_heat:=", "385",
-                "youngs_modulus:=", "120000000000",
-                "poissons_ratio:=", "0.38",
-                "thermal_expansion_coeffcient:=", "1.77e-05"
-            ])
-
-    elif (coil_material == "Aluminum_temperature" and
-          not oDefinitionManager.DoesMaterialExist(coil_material)):
-        oDefinitionManager.AddMaterial(
-            [
-                "NAME:" + coil_material,
-                "CoordinateSystemType:=", "Cartesian",
-                "BulkOrSurfaceType:=", 1,
-                [
-                    "NAME:PhysicsTypes",
-                    "set:=", ["Electromagnetic", "Thermal", "Structural"]
-                ],
-                [
-                    "NAME:ModifierData",
-                    [
-                        "NAME:ThermalModifierData",
-                        "modifier_data:=", "thermal_modifier_data",
-                        [
-                            "NAME:all_thermal_modifiers",
-                            [
-                                "NAME:one_thermal_modifier",
-                                "Property::=", "conductivity",
-                                "Index::=", 0,
-                                "prop_modifier:=", "thermal_modifier",
-                                "use_free_form:=", True,
-                                "free_form_value:=", "1 / (1 + 0.0039 * (Temp - 22))"
-                            ]
-                        ]
-                    ]
-                ],
-                "permeability:=", "1.000021",
-                "conductivity:=", "38000000",
-                "thermal_conductivity:=", "237.5",
-                "mass_density:=", "2689",
-                "specific_heat:=", "951",
-                "youngs_modulus:=", "69000000000",
-                "poissons_ratio:=", "0.31",
-                "thermal_expansion_coeffcient:=", "2.33e-05"
-            ])
-
-
-def assign_material(oEditor, selection, material):
-    oEditor.AssignMaterial(
-        [
-            "NAME:Selections",
-            "Selections:=", selection
-        ],
-        [
-            "NAME:Attributes",
-            "MaterialValue:=", material,
-            "SolveInside:=", True
-        ])
-
-
-def insert_setup(oDesign, max_num_passes, percent_error, frequency, has_sweep,
-                 sweep_type='', start_sweep_freq='', stop_sweep_freq='', samples=''):
-    oModule = oDesign.GetModule("AnalysisSetup")
-    oModule.InsertSetup("EddyCurrent",
-                                            [
-                                                "NAME:Setup1",
-                                                "Enabled:=", True,
-                                                "MaximumPasses:=", max_num_passes,
-                                                "MinimumPasses:=", 2,
-                                                "MinimumConvergedPasses:=", 1,
-                                                "PercentRefinement:=", 30,
-                                                "SolveFieldOnly:=", False,
-                                                "PercentError:=", percent_error,
-                                                "SolveMatrixAtLast:=", True,
-                                                "PercentError:=", percent_error,
-                                                "UseIterativeSolver:=", False,
-                                                "RelativeResidual:=", 0.0001,
-                                                "ComputeForceDensity:=", False,
-                                                "ComputePowerLoss:=", False,
-                                                "Frequency:=", frequency,
-                                                "HasSweepSetup:=", has_sweep,
-                                                "SweepSetupType:=", sweep_type,
-                                                "StartValue:=", start_sweep_freq,
-                                                "StopValue:=", stop_sweep_freq,
-                                                "Samples:=", samples,
-                                                "SaveAllFields:=", True,
-                                                "UseHighOrderShapeFunc:=", False
-                                            ])
-
-
-def change_color(oEditor, selection, R, G, B):
-    oEditor.ChangeProperty(
-        ["NAME:AllTabs", ["NAME:Geometry3DAttributeTab",
-                                            ["NAME:PropServers"] + selection,
-                                            ["NAME:ChangedProps",
-                                             [
-                                                 "NAME:Color",
-                                                 "R:=", R,
-                                                 "G:=", G,
-                                                 "B:=", B
-                                             ]
-                                             ]]])
-
-
 def on_init_step1(step):
     """invoke on step initialisation"""
     global transformer
@@ -1412,65 +1405,65 @@ def on_init_step1(step):
     transformer.initialize_step1()
 
 
-def create_buttons_step1(step):
+def create_buttons_step1(_step):
     """invoke on step1 refresh"""
     transformer.refresh_step1()
 
 
-def callback_step1(step):
+def callback_step1(_step):
     """invoke on click 'Next' button in UI"""
     transformer.callback_step1()
 
 
-def on_supplier_core_type_change(step, prop):
+def on_supplier_core_type_change(_step, _prop):
     transformer.show_core_img()
 
 
-def on_core_model_change(step, prop):
+def on_core_model_change(_step, _prop):
     transformer.insert_default_values()
 
 
-def on_init_step2(step):
+def on_init_step2(_step):
     """invoke on step initialisation"""
     transformer.initialize_step2()
 
 
-def create_buttons_step2(step):
+def create_buttons_step2(_step):
     """invoke on step1 refresh"""
     transformer.refresh_step2()
 
 
-def callback_step2(step):
+def callback_step2(_step):
     """invoke on click 'Next' button in UI"""
     transformer.callback_step2()
 
 
-def on_layers_number_change(step, prop):
+def on_layers_number_change(_step, _prop):
     transformer.update_rows()
 
 
-def on_layer_type_change(step, prop):
+def on_layer_type_change(_step, _prop):
     transformer.change_captions()
 
 
-def on_excitation_strategy_change(step, prop):
+def on_excitation_strategy_change(_step, _prop):
     transformer.excitation_strategy_change()
 
 
-def on_init_step3(step):
+def on_init_step3(_step):
     """invoke on step initialisation"""
     transformer.initialize_step3()
 
 
-def on_reset_step3(step):
+def on_reset_step3(_step):
     """invoke on step initialisation"""
     transformer.reset_step3()
 
 
-def create_buttons_step3(step):
+def create_buttons_step3(_step):
     """invoke on step1 refresh"""
     transformer.refresh_step3()
 
 
-def on_step_back(step):
+def on_step_back(_step):
     pass
