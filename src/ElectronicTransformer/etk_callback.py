@@ -234,7 +234,7 @@ class Step2:
 
         cores_arguments = {'EC': 'EC', 'ETD': 'ETD', 'EQ': 'EQ', 'ER': 'ER', 'P': 'P', 'PT': 'PT', 'PH': 'PH'}
 
-        flag_auto_save = oDesktop.GetAutoSaveEnabled()
+        self.flag_auto_save = oDesktop.GetAutoSaveEnabled()
         oDesktop.EnableAutoSave(False)
 
         self.draw_class = all_cores[self.core_type.Value]
@@ -242,8 +242,6 @@ class Step2:
             self.draw_class.draw_geometry(cores_arguments[self.core_type.Value])
         else:
             self.draw_class.draw_geometry()
-
-        oDesktop.EnableAutoSave(flag_auto_save)
 
     def check_winding(self):
         if self.skip_check.Value:
@@ -606,12 +604,28 @@ class Step3:
 
         self.create_skin_layers_and_mesh(adapt_freq, coil_material, core_list)
 
-        layers_and_skins = self.editor.GetMatchedObjectName("Layer*")
-        layers_and_skins = [name for name in layers_and_skins if "Section" not in name]
+        sheet_objects = self.editor.GetMatchedObjectName("Layer*")
+        layers_and_skins = []
+        terminals = []
+        for sheet in sheet_objects:
+            if "Section" not in sheet:
+                layers_and_skins.append(sheet)
+            else:
+                terminals.append(sheet)
+
+        # if user selects to enable bobbin on boards we need to cut them, if not empty list
+        bobbin_list = self.editor.GetMatchedObjectName("Bobbin")
+        boards_list = self.editor.GetMatchedObjectName("Board*")
 
         x_zero_region = False
         if not self.full_model.Value:
-            self.split_geom(core_list+layers_and_skins)
+            self.split_geom(core_list + layers_and_skins + bobbin_list + boards_list)
+
+            first_vertex_id_first_terminal = int(self.editor.GetVertexIDsFromObject(terminals[0])[0])
+            x_coord = float(self.editor.GetVertexPosition(first_vertex_id_first_terminal)[0])
+            if x_coord >= 0:
+                self.mirror(",".join(terminals))
+
             x_zero_region = True
 
         self.create_region(x_zero_region)
@@ -621,6 +635,7 @@ class Step3:
         self.create_field_plot("Mag_B", "B", adapt_freq, core_list)
         self.create_field_plot("Core_Loss", "Core-Loss", adapt_freq, core_list)
 
+        self.project.SetActiveDesign(self.design_name)
         self.editor.FitAll()
 
         if self.project_path.Value is None:
@@ -633,6 +648,24 @@ class Step3:
         self.analysis_set = True
         self.step3.UserInterface.GetComponent("setupAnalysisButton").SetEnabledFlag("setupAnalysisButton", False)
         self.step3.UserInterface.GetComponent("defineWindingsButton").SetEnabledFlag("defineWindingsButton", False)
+        oDesktop.EnableAutoSave(self.flag_auto_save)
+
+    def mirror(self, objects):
+        self.editor.Mirror(
+            [
+                "NAME:Selections",
+                "Selections:="		, objects,
+                "NewPartsModelFlag:="	, "Model"
+            ],
+            [
+                "NAME:MirrorParameters",
+                "MirrorBaseX:="		, "0mm",
+                "MirrorBaseY:="		, "0mm",
+                "MirrorBaseZ:="		, "0mm",
+                "MirrorNormalX:="	, "1mm",
+                "MirrorNormalY:="	, "0mm",
+                "MirrorNormalZ:="	, "0mm"
+            ])
 
     def create_field_plot(self, quantity, folder, adapt_freq, object_list):
         """Create filed overlay on the surface of the objects"""
@@ -772,6 +805,8 @@ class Step3:
                     my_dict[ID] = self.editor.GetFaceCenter(ID)
                 except:
                     list_of_round_faces.append(ID)
+                    oDesktop.ClearMessages("", "", 2)  # clear error message since EDT cannot catch DE187113
+
             # sort by Z coordinate to get top and bottom face
             sorted_dict = sorted(my_dict.items(), key=lambda x: float(x[1][2]))
 
