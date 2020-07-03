@@ -127,53 +127,47 @@
 
 
 			<propertygroup name="winding_properties" caption="Winding Definition  [2/3]">
-				<propertygroup name="draw_winding" caption="Draw Winding"  default="true" display="property" control="boolean" >
-					<property name="layer_type" caption="Transformer:" control="select" default="Wound" visibleon="True">
+					<property name="layer_type" caption="Transformer:" control="select" default="Wound">
 						<attributes options="Planar,Wound" />
 						<callbacks>
 							<OnValidate>on_layer_type_change</OnValidate>
 						</callbacks>
 					</property>
 
-					<property name="number_of_layers" caption="No. of Layers:" control="integer" default="1" visibleon="True">
-                        <callbacks>
+					<property name="number_of_layers" caption="No. of Layers:" control="integer" default="1">
+						<callbacks>
 							<OnValidate>on_layers_number_change</OnValidate>
 						 </callbacks>
 					</property>
 
-					<property name="layer_spacing" caption="Layer spacing:" control="float" default="0" visibleon="True">
+					<property name="layer_spacing" caption="Layer spacing:" control="float" default="0">
 						<callbacks>
 							<OnValidate>GEThanZero</OnValidate>
 						</callbacks>
 					</property>
 
-					<property name="bobbin_board_thickness" caption="Bobbin thickness:" control="float" default="0.1"
-										visibleon="True">
+					<property name="bobbin_board_thickness" caption="Bobbin thickness:" control="float" default="0.1">
             <callbacks>
 							<OnValidate>GEThanZero</OnValidate>
 						</callbacks>
 					</property>
 
-					<property name="top_margin" caption="Top margin:" control="float" default="0" visibleon="True">
-                        <callbacks>
+					<property name="top_margin" caption="Top margin:" control="float" default="0">
+						<callbacks>
 							<OnValidate>GEThanZero</OnValidate>
 						</callbacks>
 					</property>
 
-					<property name="side_margin" caption="Side margin:" control="float" default="0" visibleon="True">
-                        <callbacks>
+					<property name="side_margin" caption="Side margin:" control="float" default="0">
+						<callbacks>
 							<OnValidate>GEThanZero</OnValidate>
 						</callbacks>
 					</property>
 
-
-
-					<property name="include_bobbin" caption="Include bobbin in geometry"  default="False"
-                    visibleon="True" control="boolean" />
-
+					<property name="include_bobbin" caption="Include bobbin in geometry"  default="False" control="boolean" />
 
 					<propertygroup name="conductor_type" caption="Conductor type:" control="select" default="Rectangular"
-                         visibleon="True" display="property">
+                         display="property">
 						<attributes options="Rectangular,Circular" />
 						<callbacks>
 							<OnValidate>on_layers_number_change</OnValidate>
@@ -240,8 +234,7 @@
           </propertygroup>
 
           <property control="boolean" name="skip_check" caption="Skip check windings accommodation"
-                    default="False" visibleon="True"/>
-				</propertygroup>
+                    default="False"/>
 			</propertygroup>
 
 			<callbacks>
