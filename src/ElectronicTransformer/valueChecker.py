@@ -31,7 +31,7 @@ def GEThanOne(step, prop):
 
 
 def validityCheckTable(step, prop):
-    xml_path = "winding_properties/draw_winding/conductor_type"
+    xml_path = "winding_properties/conductor_type"
     if step.Properties[xml_path].Value == 'Rectangular':
         xml_path += "/" + 'table_layers'
         table = step.Properties[xml_path]

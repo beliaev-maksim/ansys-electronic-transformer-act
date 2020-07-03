@@ -135,20 +135,20 @@ class Step2:
     def __init__(self, step):
         self.step2 = step.Wizard.Steps["step2"]
 
-        self.draw_winding = self.step2.Properties["winding_properties/draw_winding"]
-        self.layer_type = self.step2.Properties["winding_properties/draw_winding/layer_type"]
-        self.number_of_layers = self.step2.Properties["winding_properties/draw_winding/number_of_layers"]
-        self.layer_spacing = self.step2.Properties["winding_properties/draw_winding/layer_spacing"]
-        self.bobbin_board_thickness = self.step2.Properties["winding_properties/draw_winding/bobbin_board_thickness"]
-        self.top_margin = self.step2.Properties["winding_properties/draw_winding/top_margin"]
-        self.side_margin = self.step2.Properties["winding_properties/draw_winding/side_margin"]
-        self.include_bobbin = self.step2.Properties["winding_properties/draw_winding/include_bobbin"]
-        self.conductor_type = self.step2.Properties["winding_properties/draw_winding/conductor_type"]
+        self.winding_prop = self.step2.Properties["winding_properties"]
+        self.layer_type = self.step2.Properties["winding_properties/layer_type"]
+        self.number_of_layers = self.step2.Properties["winding_properties/number_of_layers"]
+        self.layer_spacing = self.step2.Properties["winding_properties/layer_spacing"]
+        self.bobbin_board_thickness = self.step2.Properties["winding_properties/bobbin_board_thickness"]
+        self.top_margin = self.step2.Properties["winding_properties/top_margin"]
+        self.side_margin = self.step2.Properties["winding_properties/side_margin"]
+        self.include_bobbin = self.step2.Properties["winding_properties/include_bobbin"]
+        self.conductor_type = self.step2.Properties["winding_properties/conductor_type"]
 
         self.table_layers = self.conductor_type.Properties["table_layers"]
         self.table_layers_circles = self.conductor_type.Properties["table_layers_circles"]
 
-        self.skip_check = self.step2.Properties["winding_properties/draw_winding/skip_check"]
+        self.skip_check = self.step2.Properties["winding_properties/skip_check"]
 
     def init_data_step2(self):
         # initialize tables
@@ -256,7 +256,7 @@ class Step2:
         if self.layer_type.Value == 'Wound':
             # ---- Check possible width for wound---- #
             if self.conductor_type.Value == 'Rectangular':
-                xml_path_to_table = 'winding_properties/draw_winding/conductor_type/table_layers'
+                xml_path_to_table = 'winding_properties/conductor_type/table_layers'
                 table = self.step2.Properties[xml_path_to_table]
                 # take sum of layer dimensions where one layer is: Width + 2 * Insulation
                 maximum_layer = sum(
@@ -270,7 +270,7 @@ class Step2:
                 ) - layer_spacing
 
             elif self.conductor_type.Value == 'Circular':
-                xml_path_to_table = 'winding_properties/draw_winding/conductor_type/table_layers_circles'
+                xml_path_to_table = 'winding_properties/conductor_type/table_layers_circles'
                 table = self.step2.Properties[xml_path_to_table]
                 maximum_layer = sum(
                     [
@@ -285,7 +285,7 @@ class Step2:
 
             # ---- Check possible height for wound---- #
             if self.conductor_type.Value == 'Rectangular':
-                xml_path_to_table = 'winding_properties/draw_winding/conductor_type/table_layers'
+                xml_path_to_table = 'winding_properties/conductor_type/table_layers'
                 table = self.step2.Properties[xml_path_to_table]
                 # max value from each layer: (Height + 2 * Insulation) * number of layers
                 maximum_layer = max(
@@ -299,7 +299,7 @@ class Step2:
                 )
 
             elif self.conductor_type.Value == 'Circular':
-                xml_path_to_table = 'winding_properties/draw_winding/conductor_type/table_layers_circles'
+                xml_path_to_table = 'winding_properties/conductor_type/table_layers_circles'
                 table = self.step2.Properties[xml_path_to_table]
                 maximum_layer = max(
                     [
@@ -314,7 +314,7 @@ class Step2:
         # ---- Wound type limit found ---- #
 
         elif self.layer_type.Value == 'Planar':
-            xml_path_to_table = 'winding_properties/draw_winding/conductor_type/table_layers'
+            xml_path_to_table = 'winding_properties/conductor_type/table_layers'
             table = self.step2.Properties[xml_path_to_table]
             # ---- Check width for planar---- #
             maximum_layer = max(
@@ -409,10 +409,10 @@ class Step2:
             return False
 
         if self.conductor_type.Value == 'Rectangular':
-            xml_path_to_table = "winding_properties/draw_winding/conductor_type/table_layers"
+            xml_path_to_table = "winding_properties/conductor_type/table_layers"
             list_of_prop = ["conductor_width", "conductor_height", "turns_number", "insulation_thickness"]
         else:
-            xml_path_to_table = "winding_properties/draw_winding/conductor_type/table_layers_circles"
+            xml_path_to_table = "winding_properties/conductor_type/table_layers_circles"
             list_of_prop = ["conductor_diameter", "segments_number", "turns_number", "insulation_thickness"]
 
         table = self.step2.Properties[xml_path_to_table]
@@ -489,9 +489,6 @@ class Step3:
                 self.core_material.Value = core_material
         except:
             self.core_material.Value = key
-
-        if self.draw_winding.Value:
-            self.step3.UserInterface.GetComponent("defineWindingsButton").SetEnabledFlag("defineWindingsButton", True)
 
         if self.number_of_layers.ReadOnly:
             # came after read an input file
@@ -805,7 +802,7 @@ class Step3:
                     my_dict[ID] = self.editor.GetFaceCenter(ID)
                 except:
                     list_of_round_faces.append(ID)
-                    oDesktop.ClearMessages("", "", 2)  # clear error message since EDT cannot catch DE187113
+                    # oDesktop.ClearMessages("", "", 2)  # clear error message since EDT cannot catch DE187113 # todo
 
             # sort by Z coordinate to get top and bottom face
             sorted_dict = sorted(my_dict.items(), key=lambda x: float(x[1][2]))
@@ -1333,25 +1330,21 @@ class TransformerClass(Step1, Step2, Step3):
             self.transformer_definition["core_dimensions"]["airgap"]["airgap_value"] = str(self.airgap_value.Value)
 
         # step 2
-        winding_property = self.draw_winding
-
-        self.transformer_definition["winding_definition"] = OrderedDict([
-            ("draw_winding", str(bool(winding_property.Value)))
-        ])
+        self.transformer_definition["winding_definition"] = OrderedDict()
 
         for prop in ["layer_type", "number_of_layers", "layer_spacing", "bobbin_board_thickness", "top_margin",
                      "side_margin", "conductor_type"]:
-            self.transformer_definition["winding_definition"][prop] = str(winding_property.Properties[prop].Value)
+            self.transformer_definition["winding_definition"][prop] = str(self.winding_prop.Properties[prop].Value)
 
         self.transformer_definition["winding_definition"]["include_bobbin"] = str(
-                                                            bool(winding_property.Properties["include_bobbin"].Value))
+                                                            bool(self.winding_prop.Properties["include_bobbin"].Value))
 
         self.transformer_definition["winding_definition"]["layers_definition"] = OrderedDict()
         if self.conductor_type.Value == "Circular":
-            xml_path_to_table = 'winding_properties/draw_winding/conductor_type/table_layers_circles'
+            xml_path_to_table = 'winding_properties/conductor_type/table_layers_circles'
             list_of_prop = ["conductor_diameter", "segments_number", "insulation_thickness"]
         else:
-            xml_path_to_table = 'winding_properties/draw_winding/conductor_type/table_layers'
+            xml_path_to_table = 'winding_properties/conductor_type/table_layers'
             list_of_prop = ["conductor_width", "conductor_height", "insulation_thickness"]
 
         table = self.step2.Properties[xml_path_to_table]
@@ -1426,41 +1419,35 @@ class TransformerClass(Step1, Step2, Step3):
         self.update_ui(self.step1)
 
         # read data for step 2
-        self.draw_winding.Value = bool(distutils.util.strtobool(
-                                    self.transformer_definition["winding_definition"]["draw_winding"]))
-
-        if not self.draw_winding.Value:
-            return
-
-        self.draw_winding.Properties["layer_type"].Value = self.transformer_definition[
+        self.winding_prop.Properties["layer_type"].Value = self.transformer_definition[
             "winding_definition"]["layer_type"]
 
-        self.draw_winding.Properties["number_of_layers"].Value = int(self.transformer_definition[
+        self.winding_prop.Properties["number_of_layers"].Value = int(self.transformer_definition[
             "winding_definition"]["number_of_layers"])
 
-        self.draw_winding.Properties["layer_spacing"].Value = float(self.transformer_definition[
+        self.winding_prop.Properties["layer_spacing"].Value = float(self.transformer_definition[
             "winding_definition"]["layer_spacing"])
 
-        self.draw_winding.Properties["bobbin_board_thickness"].Value = float(self.transformer_definition[
+        self.winding_prop.Properties["bobbin_board_thickness"].Value = float(self.transformer_definition[
             "winding_definition"]["bobbin_board_thickness"])
 
-        self.draw_winding.Properties["top_margin"].Value = float(self.transformer_definition[
+        self.winding_prop.Properties["top_margin"].Value = float(self.transformer_definition[
             "winding_definition"]["top_margin"])
 
-        self.draw_winding.Properties["side_margin"].Value = float(self.transformer_definition[
+        self.winding_prop.Properties["side_margin"].Value = float(self.transformer_definition[
             "winding_definition"]["side_margin"])
 
-        self.draw_winding.Properties["include_bobbin"].Value = bool(distutils.util.strtobool(
+        self.winding_prop.Properties["include_bobbin"].Value = bool(distutils.util.strtobool(
             self.transformer_definition["winding_definition"]["include_bobbin"]))
 
-        self.draw_winding.Properties["conductor_type"].Value = self.transformer_definition[
+        self.winding_prop.Properties["conductor_type"].Value = self.transformer_definition[
             "winding_definition"]["conductor_type"]
 
         if self.conductor_type.Value == "Circular":
-            xml_path_to_table = 'winding_properties/draw_winding/conductor_type/table_layers_circles'
+            xml_path_to_table = 'winding_properties/conductor_type/table_layers_circles'
             list_of_prop = ["conductor_diameter", "segments_number", "turns_number", "insulation_thickness"]
         else:
-            xml_path_to_table = 'winding_properties/draw_winding/conductor_type/table_layers'
+            xml_path_to_table = 'winding_properties/conductor_type/table_layers'
             list_of_prop = ["conductor_width", "conductor_height", "turns_number", "insulation_thickness"]
 
         table = self.step2.Properties[xml_path_to_table]
