@@ -1,7 +1,7 @@
 def segmentation_angle_check(step, prop):
     if not (0 <= float(prop.Value) < 20):
         prop.Value = 0
-        return transformer.add_error_message(str(prop.Caption) + ' should be 0 for True Surface or less than 20')
+        return add_error_message(str(prop.Caption) + ' should be 0 for True Surface or less than 20')
     return True
 
 
@@ -12,21 +12,21 @@ def validate_sides_number(step, prop):
 def GEThanZero(step, prop):
     if float(prop.Value) < 0:
         prop.Value = 0
-        return transformer.add_error_message(str(prop.Caption) + ' cannot be negative')
+        return add_error_message(str(prop.Caption) + ' cannot be negative')
     return True
 
 
 def GThanZero(step, prop):
     if float(prop.Value) <= 0:
         prop.Value = 1
-        return transformer.add_error_message(str(prop.Caption) + ' should be greater than 0')
+        return add_error_message(str(prop.Caption) + ' should be greater than 0')
     return True
 
 
 def GEThanOne(step, prop):
     if float(prop.Value) < 1:
         prop.Value = 1
-        return transformer.add_error_message(str(prop.Caption) + ' should be greater or equal than 1')
+        return add_error_message(str(prop.Caption) + ' should be greater or equal than 1')
     return True
 
 
@@ -43,19 +43,19 @@ def validityCheckTable(step, prop):
         if prop.Name != 'segments_number':
             if float(table.Value[xml_path + '/' + prop.Name][i]) <= 0:
                 table.Value[xml_path + '/' + prop.Name][i] = 1
-                return transformer.add_error_message(str(prop.Caption) + ' must be greater than zero!')
+                return add_error_message(str(prop.Caption) + ' must be greater than zero!')
         else:
             if (float(table.Value[xml_path + '/' + prop.Name][i]) < 8 and
                     float(table.Value[xml_path + '/' + prop.Name][i]) != 0):
                 table.Value[xml_path + '/' + prop.Name][i] = 8
-                return transformer.add_error_message(str(prop.Caption) + ' must be Zero for True Surface or greater than 7!')
+                return add_error_message(str(prop.Caption) + ' must be Zero for True Surface or greater than 7!')
 
 
 def check_core_dimensions(step):
     # stop invoking for unsupported versions
-    if float(oDesktop.GetVersion()[:-2]) < 2018.1:
+    if float(oDesktop.GetVersion()[:-2]) < 2020.2:
         raise UserErrorMessageException("Electronics Desktop Version is unsupported." +
-                                        "Please use version R19.1 or higher")
+                                        "Please use version 2020R2 or higher")
 
     D_1 = float(step.Properties["core_properties/core_type/D_1"].Value)
     D_2 = float(step.Properties["core_properties/core_type/D_2"].Value)

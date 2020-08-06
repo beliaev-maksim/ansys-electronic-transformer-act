@@ -1,11 +1,11 @@
 <extension name="ElectronicTransformer" version="2" minorversion="0" icon="images\logo.jpg" loadasdefault="False">
   <author>ANSYS, Inc.</author>
   <guid shortid="ElectronicsWizard">beb238e5-6315-4602-a3f5-f004e6c02805</guid>
-  <script src="etk_callback.py" 		compiled = "true"/>
-  <script src="coreData.py" 		    compiled = "true"/>
-  <script src="Forms.py" 	          compiled = "true"/>
-  <script src="valueChecker.py" 	  compiled = "true"/>
-  <script src="CoresGeometry.py" 	compiled = "true"/>
+  <script src="core_data.py"/>
+	<script src="etk_callback.py"/>
+  <script src="forms.py"/>
+  <script src="value_checker.py"/>
+  <script src="cores_geometry.py"/>
 
   <interface context="ElectronicsDesktop">
     <images>images</images>
@@ -240,7 +240,7 @@
 			<callbacks>
 				<onrefresh>create_buttons_step2</onrefresh>
 				<oninit>on_init_step2</oninit>
-        <onreset>on_step_back</onreset>
+        <onreset>on_reset_step2</onreset>
 				<onupdate>callback_step2</onupdate>
 			</callbacks>
 		</step>
@@ -366,7 +366,7 @@ If you change number of sides winding definition would be reset</help>
 			<callbacks>
 				<onrefresh>create_buttons_step3</onrefresh>
 				<oninit>on_init_step3</oninit>
-        <onreset>on_reset_step3</onreset>
+        <onreset>on_step_back</onreset>
 			</callbacks>
 		</step>
 	</wizard>
