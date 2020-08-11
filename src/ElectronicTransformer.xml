@@ -273,6 +273,10 @@
           </callbacks>
         </property>
 
+				<property name="draw_skin_layers" caption="Create skin layers for mesh"  default="True" control="boolean">
+					<help>To increase accuracy of Ohmic Losses and decrease mesh size geometrical layers would be added</help>
+				</property>
+
 				<property  name="percentage_error" caption="Percentage Error" control="float" default="1">
           <callbacks>
             <OnValidate>GEThanZero</OnValidate>

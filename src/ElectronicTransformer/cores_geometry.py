@@ -52,6 +52,10 @@ class Cores(object):
         
         self.winding_parameters_dict = transformer_definition["winding_definition"]["layers_definition"]
 
+        self.draw_skin = transformer_definition["setup_definition"]["draw_skin_layers"]
+        self.frequency = float(transformer_definition["setup_definition"]["adaptive_frequency"])
+        self.coil_material = transformer_definition["setup_definition"]["coil_material"]
+
     def create_polyline(self, points, segments, name, covered=True, closed=True, color='(165 42 42)'):
         created_name = self.oEditor.CreatePolyline(
             [
@@ -502,19 +506,106 @@ class ECore(Cores):
 
         profile_name = 'Layer{}'.format(layer_number)
         if turn_num != 0:
-            profile_name += "_turn{}".format(turn_num)
+            profile_name += "_{}".format(turn_num)
+
+        object_names = []
+        if self.draw_skin:
+            self.create_skin_layers(profile_name, object_names, position_z_final, profile_height,
+                                    profile_width, sweep_path_x, profile_segments_num, profile_diameter)
+
         if self.conductor_type == 'Rectangular':
             profile_name = self.create_rectangle((sweep_path_x - profile_width)/2, 0,
                                                  (position_z_final - profile_height/2),
                                                  profile_width, profile_height, profile_name)
         else:
             profile_name = self.create_circle(sweep_path_x/2, 0, position_z_final,
-                                              profile_diameter, profile_segments_num, profile_name, 'Y')
+                                              profile_diameter, profile_segments_num, profile_name,
+                                              axis='Y')
+        object_names.append(profile_name)
 
-        self.sweep_along_path(profile_name + ',' + path_name)
+        self.sweep_along_path(",".join(object_names) + ',' + path_name)
 
-        object_names = [profile_name]
         return object_names
+
+    def create_skin_layers(self, profile_name, object_names, position_z_final=None, profile_height=None,
+                           profile_width=None, sweep_path_x=None, profile_segments_num=None, profile_diameter=None):
+        sigma = 58000000 if self.coil_material.lower() == 'copper' else 38000000
+        skin_depth = 503.292121*math.sqrt(1/(sigma*self.frequency))*1000  # convert to mm
+        segments = ["NAME:PolylineSegments", self.line_segment(0)]
+        points = ["NAME:PolylinePoints"]
+
+        for i in range(1, 3):
+            profile_name = "{}_skin_{}".format(profile_name, i)
+            if self.conductor_type == 'Rectangular':
+                # validate if skin depth is less than 1/3 of conductor height/width (planar/wound)
+                if self.layer_type == "Planar":
+                    dimension = profile_height
+                    if profile_height < 3*skin_depth:
+                        continue
+
+                    # create horizontal lines to be swept for sheet
+                    x_initial = (sweep_path_x - profile_width)/2
+                    z_coord = position_z_final - (profile_height/2 - i*skin_depth/2)
+                    points.append(self.polyline_point(x=x_initial,
+                                                      y=0,
+                                                      z=z_coord))
+                    points.append(self.polyline_point(x=x_initial + profile_width,
+                                                      y=0,
+                                                      z=z_coord))
+
+                    name1 = self.create_polyline(points, segments, profile_name + "_low", covered=False)
+                    points = points[:1]
+                    z_coord = position_z_final + (profile_height/2 - i*skin_depth/2)
+                    points.append(self.polyline_point(x=x_initial,
+                                                      y=0,
+                                                      z=z_coord))
+                    points.append(self.polyline_point(x=x_initial + profile_width,
+                                                      y=0,
+                                                      z=z_coord))
+                    name2 = self.create_polyline(points, segments, profile_name + "_high", covered=False)
+
+                else:
+                    # layer type Wound
+                    dimension = profile_width
+                    if profile_width < 3*skin_depth:
+                        continue
+
+                    # create vertical lines to be swept for sheet
+                    x_coord = (sweep_path_x - profile_width)/2 + i*skin_depth/2
+                    z_initial = position_z_final - profile_height/2
+                    points.append(self.polyline_point(x=x_coord,
+                                                      y=0,
+                                                      z=z_initial))
+                    points.append(self.polyline_point(x=x_coord,
+                                                      y=0,
+                                                      z=z_initial + profile_height))
+
+                    name1 = self.create_polyline(points, segments, profile_name + "_in", covered=False)
+                    points = points[:1]
+                    x_coord = (sweep_path_x + profile_width)/2 - i*skin_depth/2
+                    points.append(self.polyline_point(x=x_coord,
+                                                      y=0,
+                                                      z=z_initial))
+                    points.append(self.polyline_point(x=x_coord,
+                                                      y=0,
+                                                      z=z_initial + profile_height))
+                    name2 = self.create_polyline(points, segments, profile_name + "_out", covered=False)
+                points = points[:1]
+                object_names.append(name1)
+                object_names.append(name2)
+            else:
+                # conductor type Circle
+                dimension = profile_diameter
+                if profile_diameter < 3*skin_depth:
+                    continue
+
+                profile_name = self.create_circle(sweep_path_x/2, 0, position_z_final,
+                                                  profile_diameter - skin_depth*i, profile_segments_num, profile_name,
+                                                  axis='Y', covered=False)
+                object_names.append(profile_name)
+
+        if skin_depth < 0.02*dimension:
+            add_warning_message("Skin layer is too thin, it is recommended to use Impedance Boundary")
 
     def create_sweep_path(self, sweep_path_x, sweep_path_y, position_z, fillet_radius,
                           layer_number, segmentation_angle=0, turn_num=0):
@@ -1110,32 +1201,22 @@ class RMCore(PQCore):
 
 # depending on bobbin we can inherit bobbin, createturn, drawwdg from PQCore. speak with JMark
 class EPCore(PQCore):
-    def __init__(self, args_list):
-        super(EPCore, self).__init__(args_list)
-
-        self.MECoreLength = self.dim_D1
-        self.MECoreWidth = self.dim_D6
-        self.MECoreHeight = self.dim_D4/2
-        self.MSLegWidth = (self.dim_D1 - self.dim_D2)/2
-        self.MCLegWidth = self.dim_D3
-        self.MSlotDepth = self.dim_D5/2
-
     def draw_geometry(self, core_type='EP'):
-        self.create_box(-(self.MECoreLength/2), -(self.MECoreWidth/2), -self.MECoreHeight - self.airgap_both,
-                        self.MECoreLength, self.MECoreWidth, self.MECoreHeight - self.airgap_side,
+        self.create_box(-(self.dim_D1/2), -(self.dim_D6/2), -self.dim_D4/2 - self.airgap_both,
+                        self.dim_D1, self.dim_D6, self.dim_D4/2 - self.airgap_side,
                         core_type + '_Core_Bottom')
 
-        self.create_cylinder(0, (self.dim_D6/2) - self.dim_D7, -self.MSlotDepth - self.airgap_both,
-                             self.dim_D2, self.MSlotDepth, self.segments_number, 'XCyl1')
+        self.create_cylinder(0, (self.dim_D6/2) - self.dim_D7, -self.dim_D5/2 - self.airgap_both,
+                             self.dim_D2, self.dim_D5/2, self.segments_number, 'XCyl1')
 
-        self.create_box(-self.dim_D2/2, (self.dim_D6/2) - self.dim_D7, -self.MSlotDepth - self.airgap_both,
-                        self.dim_D2, self.dim_D7, self.MSlotDepth, 'Box2')
+        self.create_box(-self.dim_D2/2, (self.dim_D6/2) - self.dim_D7, -self.dim_D5/2 - self.airgap_both,
+                        self.dim_D2, self.dim_D7, self.dim_D5/2, 'Box2')
 
         self.unite('Box2,XCyl1')
         self.subtract(core_type + '_Core_Bottom', 'Box2')
 
-        self.create_cylinder(0, (self.dim_D6/2) - self.dim_D7, -self.MSlotDepth - self.airgap_both,
-                             self.dim_D3, self.MSlotDepth, self.segments_number, 'XCyl2')
+        self.create_cylinder(0, (self.dim_D6/2) - self.dim_D7, -self.dim_D5/2 - self.airgap_both,
+                             self.dim_D3, self.dim_D5/2, self.segments_number, 'XCyl2')
 
         self.unite(core_type + '_Core_Bottom,XCyl2')
         self.move(core_type + '_Core_Bottom', 0, (-self.dim_D6/2.0) + self.dim_D7, 0)
