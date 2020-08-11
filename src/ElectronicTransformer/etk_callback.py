@@ -478,6 +478,7 @@ class Step3:
         self.coil_material = self.step3.Properties["define_setup/coil_material"]
 
         self.adaptive_frequency = self.step3.Properties["define_setup/adaptive_frequency"]
+        self.draw_skin_layers = self.step3.Properties["define_setup/draw_skin_layers"]
         self.percentage_error = self.step3.Properties["define_setup/percentage_error"]
         self.number_passes = self.step3.Properties["define_setup/number_passes"]
 
@@ -560,6 +561,7 @@ class Step3:
         self.core_material.Value = setup_def_dict["core_material"]
         self.coil_material.Value = setup_def_dict["coil_material"]
         self.adaptive_frequency.Value = float(setup_def_dict["adaptive_frequency"])
+        self.draw_skin_layers.Value = setup_def_dict["draw_skin_layers"]
         self.percentage_error.Value = float(setup_def_dict["percentage_error"])
         self.number_passes.Value = int(setup_def_dict["number_passes"])
 
@@ -603,6 +605,7 @@ class Step3:
             ("core_material", self.core_material.Value),
             ("coil_material", self.coil_material.Value),
             ("adaptive_frequency", str(self.adaptive_frequency.Value)),
+            ("draw_skin_layers", str(self.draw_skin_layers.Value)),
             ("percentage_error", str(self.percentage_error.Value)),
             ("number_passes", self.number_passes.Value),
             ("transformer_sides", self.transformer_sides.Value),
@@ -958,7 +961,8 @@ class TransformerClass(Step1, Step2, Step3):
         """function to turn on feedback for thermal coupling"""
         for i in range(len(solids)):
             solids.insert(i * 2 + 1, "22cel")
-
+        add_info_message(solids)
+        return
         self.design.SetObjectTemperature(
             [
                 "NAME:TemperatureSettings",
@@ -1324,7 +1328,7 @@ class TransformerClass(Step1, Step2, Step3):
         layers_sections_delete_list = []
         core_list = []
 
-        obj_list = self.editor.GetObjectsInGroup('Solids')
+        obj_list = self.editor.GetObjectsInGroup('Solids')  # get solids to avoid terminals and skin layers
         for each_obj in obj_list:
             if "Layer" in each_obj:
                 layers_list.append(each_obj)
@@ -1350,10 +1354,9 @@ class TransformerClass(Step1, Step2, Step3):
                 self.assign_material(boards, '"polyamide"')
 
         adapt_freq = self.create_setup()
-        self.enable_thermal(obj_list)
+        self.enable_thermal(layers_list[:])  # send a copy of the list
 
         self.create_terminal_sections(layers_list, layer_sections_list, layers_sections_delete_list)
-
         self.assign_winding_excitations(layer_sections_list)
         self.assign_matrix_winding()
         self.calculate_leakage()
@@ -1388,7 +1391,7 @@ class TransformerClass(Step1, Step2, Step3):
         bobbin_list = self.editor.GetMatchedObjectName("Bobbin")
         boards_list = self.editor.GetMatchedObjectName("Board*")
 
-        x_zero_region = False
+        x_zero_region = False # todo should disable for U and UI cores
         if not self.full_model.Value:
             self.split_geom(core_list + layers_and_skins + bobbin_list + boards_list)
 
