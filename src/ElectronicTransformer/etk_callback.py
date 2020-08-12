@@ -227,7 +227,7 @@ class Step1:
             transformer_definition["core_dimensions"]["D_" + str(i)] = d_value
 
         transformer_definition["core_dimensions"]["airgap"] = OrderedDict([
-            ("define_airgap", self.define_airgap.Value)
+            ("define_airgap", bool(self.define_airgap.Value))  # need to specify boolean due to bug 324104
         ])
         if self.define_airgap.Value:
             transformer_definition["core_dimensions"]["airgap"]["airgap_on_leg"] = self.airgap_on_leg.Value
@@ -280,6 +280,7 @@ class Step2:
             self.number_of_layers.ReadOnly = True
         else:
             self.number_of_layers.ReadOnly = False
+        update_ui(self.step2)
 
     def populate_ui_data_step2(self):
         # read data for step 2
@@ -387,7 +388,7 @@ class Step2:
                      "side_margin", "conductor_type"]:
             winding_definition[prop] = str(self.winding_prop.Properties[prop].Value)
 
-        winding_definition["include_bobbin"] = self.winding_prop.Properties["include_bobbin"].Value
+        winding_definition["include_bobbin"] = bool(self.include_bobbin.Value)
 
         winding_definition["layers_definition"] = OrderedDict()
         if self.conductor_type.Value == "Circular":
@@ -549,6 +550,11 @@ class Step3:
             num_layers = transformer_definition["winding_definition"]["number_of_layers"]
             self.windings_definition = WindingForm(number_undefined_layers=int(num_layers))
 
+        if transformer_definition["core_dimensions"]["core_type"] in ["U", "UI"]:
+            # cannot split U and UI core due to the nature of the cores
+            self.full_model.Value = True
+            self.full_model.ReadOnly = True
+
         update_ui(self.step3)
 
         if self.windings_definition.defined_layers_list:
@@ -605,7 +611,7 @@ class Step3:
             ("core_material", self.core_material.Value),
             ("coil_material", self.coil_material.Value),
             ("adaptive_frequency", str(self.adaptive_frequency.Value)),
-            ("draw_skin_layers", str(self.draw_skin_layers.Value)),
+            ("draw_skin_layers", bool(self.draw_skin_layers.Value)),
             ("percentage_error", str(self.percentage_error.Value)),
             ("number_passes", self.number_passes.Value),
             ("transformer_sides", self.transformer_sides.Value),
@@ -613,11 +619,11 @@ class Step3:
             ("voltage", str(self.voltage.Value)),
             ("resistance", str(self.resistance.Value)),
             ("offset", str(self.offset.Value)),
-            ("full_model", str(self.full_model.Value)),
+            ("full_model", bool(self.full_model.Value)),
             ("project_path", self.project_path.Value),
         ])
 
-        freq_dict = OrderedDict([("frequency_sweep", self.frequency_sweep.Value)])
+        freq_dict = OrderedDict([("frequency_sweep", bool(self.frequency_sweep.Value))])
         if self.frequency_sweep.Value:
             freq_dict["start_frequency"] = str(self.start_frequency.Value)
             freq_dict["start_frequency_unit"] = self.start_frequency_unit.Value
@@ -673,6 +679,7 @@ class TransformerClass(Step1, Step2, Step3):
         Step3.__init__(self, self.step1)
 
     def write_json_data(self):
+        add_info_message(transformer_definition)
         write_path = os.path.join(self.project_path.Value, self.design_name + '_parameters.json')
         with open(write_path, "w") as output_f:
             json.dump(transformer_definition, output_f, indent=4)
@@ -805,114 +812,17 @@ class TransformerClass(Step1, Step2, Step3):
              ["NAME:MatrixGroup"]
              ])
 
-    def create_skin_layers_and_mesh(self, adapt_freq, coil_material, core_list):
+    def assign_mesh(self, layers_list, core_list):
         """Function to create 'manual' skin layers from face sheets and to assign mesh operations to
         core geometry and windings in which we do not require skin layers (thinner than 3 skin depths)"""
 
-        mesh_op_sz = max([float(Lx) for Lx in self.draw_class.core_dims]) / 20.0
+        dimension_list = []
+        for i in range(1, 9):
+            dimension_list.append(float(transformer_definition["core_dimensions"]["D_" + str(i)]))
 
-        layer_names = self.editor.GetMatchedObjectName("Layer*")
-        layer_names = [name for name in layer_names if "Section" not in name]
-
-        sigma = 58000000 if coil_material == 'Copper_temperature' else 38000000
-        skin_depth = 503.292121 * math.sqrt(1 / (sigma * adapt_freq)) * 1000  # convert to mm
-
-        # first assign mesh operation for cores
+        mesh_op_sz = max(dimension_list)/20.0
         self.assign_length_op(core_list, mesh_op_sz)
-
-        for layer in layer_names:
-            layer_number = int(layer.split("_")[0][5:])
-            face_ids = [int(ID) for ID in self.editor.GetFaceIDs(layer)]
-
-            my_dict = {}
-            list_of_round_faces = []
-            for ID in face_ids:
-                try:
-                    # DE190482, fails on round objects, need to handle separate
-                    my_dict[ID] = self.editor.GetFaceCenter(ID)
-                except:
-                    list_of_round_faces.append(ID)
-                    # oDesktop.ClearMessages("", "", 2)  # clear error message since EDT cannot catch DE187113 # todo
-
-            # sort by Z coordinate to get top and bottom face
-            sorted_dict = sorted(my_dict.items(), key=lambda x: float(x[1][2]))
-
-            bot_face_id = sorted_dict[0][0]
-            top_face_id = sorted_dict[-1][0]
-
-            if self.layer_type.Value == 'Planar':
-                height = self.draw_class.WdgParDict[layer_number][1]
-                if height < 3 * skin_depth:
-                    # that means we do not need skin here
-                    self.assign_length_op([layer], mesh_op_sz)
-                    continue
-
-                for index in range(1, 3):
-                    skin_depth_layer = skin_depth / index  # to get two layers of skin depth
-
-                    self.create_object_from_face(layer, [bot_face_id])
-                    self.draw_class.rename(layer + "_ObjectFromFace1", layer + "_bot" + str(index))
-                    self.draw_class.move(layer + "_bot" + str(index), 0, 0, skin_depth_layer)
-                    self.create_object_from_face(layer, [top_face_id])
-                    self.draw_class.rename(layer + "_ObjectFromFace1", layer + "_top" + str(index))
-                    self.draw_class.move(layer + "_top" + str(index), 0, 0, -skin_depth_layer)
-
-            else:
-                # make validation that skindepth is required
-                # grab from table width values for all layers
-                width = self.draw_class.WdgParDict[layer_number][0]
-
-                if width < 3 * skin_depth:
-                    # that means we do not need skin here
-                    self.assign_length_op([layer], mesh_op_sz)
-                    continue
-
-                for ID in list_of_round_faces:
-                    my_dict[ID] = [0, 0, 0]  # just to fill with IDs which have failed due to round shape
-
-                # pick all faces except top and bottom face
-                if self.conductor_type.Value == 'Rectangular':
-                    wound_faces = [int(key) for key in my_dict.keys() if int(key) not in [bot_face_id, top_face_id]]
-                else:
-                    wound_faces = [int(key) for key in my_dict.keys()]
-
-                self.draw_class.rename(layer, layer + "_forskin")
-                self.editor.Copy(
-                    [
-                        "NAME:Selections",
-                        "Selections:=", layer + "_forskin"
-                    ])
-                self.editor.Paste()
-                self.draw_class.rename(layer + "_forskin1", layer)
-
-                for index in range(1, 3):
-                    self.editor.MoveFaces(
-                        [
-                            "NAME:Selections",
-                            "Selections:=", layer + "_forskin",
-                            "NewPartsModelFlag:=", "Model"
-                        ],
-                        [
-                            "NAME:Parameters",
-                            [
-                                "NAME:MoveFacesParameters",
-                                "MoveAlongNormalFlag:=", True,
-                                "OffsetDistance:=", str(-skin_depth / 2) + "mm",
-                                "MoveVectorX:="	, "0mm",
-                                "MoveVectorY:="		, "0mm",
-                                "MoveVectorZ:="		, "0mm",
-                                "FacesToMove:="		, wound_faces
-                            ]
-                        ])
-
-                    self.create_object_from_face(layer + "_forskin", wound_faces)
-
-                # delete object only after loop since create object from faces twice
-                self.editor.Delete(
-                    [
-                        "NAME:Selections",
-                        "Selections:="	, layer + "_forskin"
-                    ])
+        self.assign_length_op(layers_list, mesh_op_sz/2)
 
     def excitation_strategy_change(self):
         if self.excitation_strategy.Value == "Voltage":
@@ -1376,7 +1286,7 @@ class TransformerClass(Step1, Step2, Step3):
                 ])
         self.module_boundary_setup.SetEddyEffect(["NAME:Eddy Effect Setting", eddy_list])
 
-        # self.create_skin_layers_and_mesh(adapt_freq, coil_material, core_list)
+        self.assign_mesh(layers_list, core_list)
 
         sheet_objects = self.editor.GetMatchedObjectName("Layer*")
         layers_and_skins = []
@@ -1391,7 +1301,7 @@ class TransformerClass(Step1, Step2, Step3):
         bobbin_list = self.editor.GetMatchedObjectName("Bobbin")
         boards_list = self.editor.GetMatchedObjectName("Board*")
 
-        x_zero_region = False # todo should disable for U and UI cores
+        x_zero_region = False
         if not self.full_model.Value:
             self.split_geom(core_list + layers_and_skins + bobbin_list + boards_list)
 
