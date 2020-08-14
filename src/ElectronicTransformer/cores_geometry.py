@@ -427,7 +427,7 @@ class ECore(Cores):
                 turn_spacing = float(winding_parameters_dict[layer_name]["insulation_thickness"])
 
                 if self.include_bobbin:
-                    self.draw_board(slot_height, dim_D2, dim_D3 + 2*side_margin,
+                    self.draw_board(slot_height, dim_D2, dim_D3,
                                     dim_D6, bobbin_thickness, -dim_D5 + margin,
                                     layer_num+1, ECoredim_D8)
 
@@ -448,11 +448,10 @@ class ECore(Cores):
                                             turn_num=turn_num+1)
 
                 margin += layer_spacing + conductor_height + bobbin_thickness
-
         else:
             # ---- Wound transformer ---- #
             if self.include_bobbin:
-                self.draw_bobbin(slot_height - 2*top_bottom_margin + self.airgap_both, dim_D2, dim_D3 + 2*side_margin,
+                self.draw_bobbin(slot_height+ self.airgap_both, dim_D2, dim_D3,
                                  dim_D6, bobbin_thickness, ECoredim_D8)
 
             margin = side_margin + bobbin_thickness
@@ -1035,27 +1034,27 @@ class PQCore(ECore):
 
 # ETDCore inherit from PQCore functions DrawWdg, CreateSingleTurn, draw_bobbin
 class ETDCore(PQCore):
-    def draw_geometry(self, coreName):
+    def draw_geometry(self, core_name):
         self.create_box(-(self.dim_D1/2), -(self.dim_D6/2), -self.dim_D4 - self.airgap_both,
                         self.dim_D1, self.dim_D6, self.dim_D4 - self.airgap_side,
-                        coreName + '_Core_Bottom')
+                        core_name + '_Core_Bottom')
 
         self.create_cylinder(0, 0, -self.dim_D5 - self.airgap_both,
                              self.dim_D2, self.dim_D5, self.segments_number, 'XCyl1')
 
-        self.subtract(coreName + '_Core_Bottom', 'XCyl1')
+        self.subtract(core_name + '_Core_Bottom', 'XCyl1')
 
-        if coreName == 'ER' and self.dim_D7 > 0:
+        if core_name == 'ER' and self.dim_D7 > 0:
             self.create_box(-self.dim_D7/2, -self.dim_D6/2, -self.dim_D5 - self.airgap_both,
                             self.dim_D7, self.dim_D6, self.dim_D5, 'Tool')
-            self.subtract(coreName + '_Core_Bottom', 'Tool')
+            self.subtract(core_name + '_Core_Bottom', 'Tool')
 
         self.create_cylinder(0, 0, -self.dim_D5 - self.airgap_both,
                              self.dim_D3, self.dim_D5 - self.airgap_center, self.segments_number, 'XCyl2')
 
-        self.unite(coreName + '_Core_Bottom,XCyl2')
-        self.duplicate_mirror(coreName + '_Core_Bottom', 0, 0, 1)
-        self.rename(coreName + '_Core_Bottom_1', coreName + '_Core_Top')
+        self.unite(core_name + '_Core_Bottom,XCyl2')
+        self.duplicate_mirror(core_name + '_Core_Bottom', 0, 0, 1)
+        self.rename(core_name + '_Core_Bottom_1', core_name + '_Core_Top')
 
         self.oEditor.FitAll()
 

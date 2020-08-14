@@ -66,6 +66,21 @@ def add_error_message(msg):
     oDesktop.AddMessage("", "", 2, "ACT:" + str(msg))
 
 
+def verify_input_data(function):
+    """
+    Check that all input data is present in JSON file for each step
+    :param function: function to populate ui
+    :return: None
+    """
+    try:
+        function()
+    except ValueError:
+        msg = "Please verify that integer numbers in input file have proper format eg 1 and not 1.0"
+        return add_error_message(msg)
+    except KeyError as e:
+        return add_error_message("Please specify parameter:{} in input file".format(e))
+
+
 class Step1:
     def __init__(self, step):
         self.step1 = step.Wizard.Steps["step1"]
@@ -127,20 +142,14 @@ class Step1:
 
                 return add_error_message("Please correct following line: {} in file: {}".format(
                                                                                             match_line.group(1), path))
-        try:
-            self.populate_ui_data_step1()
-        except ValueError:
-            msg = "Please verify that integer numbers in input file have proper format eg 1 and not 1.0"
-            return add_error_message(msg)
-        except KeyError as e:
-            return add_error_message("Please specify parameter:{} in input file".format(e))
+        verify_input_data(self.populate_ui_data_step1)
 
     def refresh_step1(self):
         """create buttons and HTML data for first step"""
         setup_button(self.step1, "readData", "Read Settings File", ButtonPositionType.Left, self.read_data)
         setup_button(self.step1, "helpButton", "Help", ButtonPositionType.Center, help_button_clicked, style="blue")
 
-        self.show_core_img()
+        self.prefill_core_dimensions()
 
         for key in transformer_definition:
             transformer_definition.pop(key, None)
@@ -150,6 +159,7 @@ class Step1:
         self.segmentation_angle.Value = int(transformer_definition["core_dimensions"]["segmentation_angle"])
         self.supplier.Value = transformer_definition["core_dimensions"]["supplier"]
         self.core_type.Value = transformer_definition["core_dimensions"]["core_type"]
+        self.prefill_core_dimensions(only_menu=True)  # populate drop down menu once we read core type
         self.core_model.Value = transformer_definition["core_dimensions"]["core_model"]
 
         for i in range(1, 9):
@@ -184,8 +194,6 @@ class Step1:
 
     def show_core_img(self):
         """invoked to change image and core dimensions when supplier or core type changed"""
-        self.core_model.Options.Clear()
-
         if self.core_type.Value not in ['EP', 'ER', 'PQ', 'RM']:
             width = 300
             height = 200
@@ -198,15 +206,22 @@ class Step1:
                                                                                       self.core_type.Value)
 
         report = self.step1.UserInterface.GetComponent("coreImage")
-        report.SetHtmlContent(html_data)  # set core names
+        report.SetHtmlContent(html_data)
+        report.Refresh()
 
+    def prefill_core_dimensions(self, only_menu=False):
+        """
+        Set core dimensions from the predefined lists
+        :return:
+        """
+        self.core_model.Options.Clear()
         self.core_models = cores_database[self.supplier.Value][self.core_type.Value]
         for model in sorted(self.core_models.keys(), key=natural_keys):
             self.core_model.Options.Add(model)
         self.core_model.Value = self.core_model.Options[0]
-
-        report.Refresh()
-        self.insert_default_values()
+        if not only_menu:
+            self.insert_default_values()
+        self.show_core_img()
 
     def collect_ui_data_step1(self):
         """collect data from all steps, write this data to dictionary"""
@@ -275,7 +290,7 @@ class Step2:
         setup_button(self.step2, "helpButton", "Help", ButtonPositionType.Right, help_button_clicked, style="blue")
         if "winding_definition" in transformer_definition:
             # that mean that we read settings file from user and need to populate UI
-            self.populate_ui_data_step2()
+            verify_input_data(self.populate_ui_data_step2)
             # disable change of number of layers because Sides are already specified
             self.number_of_layers.ReadOnly = True
         else:
@@ -536,7 +551,7 @@ class Step3:
 
         if "setup_definition" in transformer_definition:
             # that mean that we read settings file from user and need to populate UI
-            self.populate_ui_data_step3()
+            verify_input_data(self.populate_ui_data_step3)
 
         if self.defined_layers_list:
             # came after read an input file
@@ -679,7 +694,10 @@ class TransformerClass(Step1, Step2, Step3):
         Step3.__init__(self, self.step1)
 
     def write_json_data(self):
-        add_info_message(transformer_definition)
+        """
+        Save transformer definition to the file
+        :return: None
+        """
         write_path = os.path.join(self.project_path.Value, self.design_name + '_parameters.json')
         with open(write_path, "w") as output_f:
             json.dump(transformer_definition, output_f, indent=4)
@@ -871,6 +889,7 @@ class TransformerClass(Step1, Step2, Step3):
         """function to turn on feedback for thermal coupling"""
         for i in range(len(solids)):
             solids.insert(i * 2 + 1, "22cel")
+
         add_info_message(solids)
         return
         self.design.SetObjectTemperature(
@@ -1305,12 +1324,13 @@ class TransformerClass(Step1, Step2, Step3):
         if not self.full_model.Value:
             self.split_geom(core_list + layers_and_skins + bobbin_list + boards_list)
 
+            # if terminals were created on the wrong side mirror them to be inside of the conducor
             first_vertex_id_first_terminal = int(self.editor.GetVertexIDsFromObject(terminals[0])[0])
             x_coord = float(self.editor.GetVertexPosition(first_vertex_id_first_terminal)[0])
             if x_coord >= 0:
                 self.mirror(",".join(terminals))
-
             x_zero_region = True
+            self.set_symmetry_multiplier()
 
         self.create_region(x_zero_region)
 
@@ -1322,10 +1342,6 @@ class TransformerClass(Step1, Step2, Step3):
         self.project.SetActiveDesign(self.design_name)
         self.editor.FitAll()
 
-        if self.project_path.Value is None:
-            # that means that we are here due to auto run after reading a file
-            return
-
         self.write_json_data()
 
         # self.project.SaveAs(os.path.join(self.project_path.Value, self.design_name + '.aedt'), True) # todo
@@ -1335,8 +1351,8 @@ class TransformerClass(Step1, Step2, Step3):
         oDesktop.EnableAutoSave(self.flag_auto_save)
 
     def create_model(self):
-        get_time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
-        self.design_name = 'Transformer_' + get_time
+        time_now = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        self.design_name = 'Transformer_' + time_now
 
         self.project.InsertDesign("Maxwell 3D", self.design_name, "EddyCurrent", "")
         self.design = self.project.SetActiveDesign(self.design_name)
@@ -1352,22 +1368,22 @@ class TransformerClass(Step1, Step2, Step3):
         self.module_fields_reporter = self.design.GetModule("FieldsReporter")
 
         args = [transformer_definition, self.project, self.design, self.editor]
-        all_cores = {'E': ECore(args), 'EI': EICore(args), 'U': UCore(args), 'UI': UICore(args),
-                     'PQ': PQCore(args), 'ETD': ETDCore(args), 'EQ': ETDCore(args),
-                     'EC': ETDCore(args), 'RM': RMCore(args), 'EP': EPCore(args),
-                     'EFD': EFDCore(args), 'ER': ETDCore(args), 'P': PCore(args),
-                     'PT': PCore(args), 'PH': PCore(args)}
+        all_cores = {'E': ECore, 'EI': EICore, 'U': UCore, 'UI': UICore,
+                     'PQ': PQCore, 'ETD': ETDCore, 'EQ': ETDCore,
+                     'EC': ETDCore, 'RM': RMCore, 'EP': EPCore,
+                     'EFD': EFDCore, 'ER': ETDCore, 'P': PCore,
+                     'PT': PCore, 'PH': PCore}
 
-        cores_arguments = {'EC': 'EC', 'ETD': 'ETD', 'EQ': 'EQ', 'ER': 'ER', 'P': 'P', 'PT': 'PT', 'PH': 'PH'}
+        cores_arguments = ['EC', 'ETD', 'EQ', 'ER', 'P', 'PT', 'PH']
 
         self.flag_auto_save = oDesktop.GetAutoSaveEnabled()
         oDesktop.EnableAutoSave(False)
 
-        self.draw_class = all_cores[self.core_type.Value]
+        draw_class = all_cores[self.core_type.Value](args)
         if self.core_type.Value in cores_arguments:
-            self.draw_class.draw_geometry(cores_arguments[self.core_type.Value])
+            draw_class.draw_geometry(self.core_type.Value)
         else:
-            self.draw_class.draw_geometry()
+            draw_class.draw_geometry()
 
     def check_winding(self):
         if self.skip_check.Value:
@@ -1496,6 +1512,30 @@ class TransformerClass(Step1, Step2, Step3):
             if maximum_possible_width / 2 > self.core_dimensions["D_2"].Value:
                 raise UserErrorMessageException("Cannot accommodate all windings, increase D_2")
 
+    def set_symmetry_multiplier(self):
+        """
+        Set symmetry multiplier equal to 2 due to cut of the geometry
+        :return:
+        """
+        self.design.ChangeProperty(
+            [
+                "NAME:AllTabs",
+                [
+                    "NAME:Maxwell3D",
+                    [
+                        "NAME:PropServers",
+                        "Design Settings"
+                    ],
+                    [
+                        "NAME:ChangedProps",
+                        [
+                            "NAME:Symmetry/Multiplier",
+                            "Value:="	, "2"
+                        ]
+                    ]
+                ]
+            ])
+
 
 def on_init_step1(step):
     """invoke on step initialisation, only once when you open the app"""
@@ -1514,8 +1554,8 @@ def callback_step1(_step):
     transformer.callback_step1()
 
 
-def on_supplier_core_type_change(_step, _prop):
-    transformer.show_core_img()
+def on_supplier_or_core_type_change(_step, _prop):
+    transformer.prefill_core_dimensions()
 
 
 def on_core_model_change(_step, _prop):

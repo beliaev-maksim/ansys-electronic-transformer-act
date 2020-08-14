@@ -38,14 +38,14 @@
 				<property name="supplier" caption="Supplier:" control="select" default="Ferroxcube">
 					<attributes options="Ferroxcube,Phillips" />
 					<callbacks>
-						<onvalidate>on_supplier_core_type_change</onvalidate>
+						<onvalidate>on_supplier_or_core_type_change</onvalidate>
 					</callbacks>
 				</property>
 
 				<propertygroup name="core_type" caption="Core Type:" control="select" default="E" display="property">
 					<attributes options="E,EI,EC,EFD,EP,EQ,ER,ETD,P,PT,PH,PQ,RM,U,UI" />
 					<callbacks>
-						<onvalidate>on_supplier_core_type_change</onvalidate>
+						<onvalidate>on_supplier_or_core_type_change</onvalidate>
 					</callbacks>
 
           <property name="core_model" caption="Core Model:" control="select" >
