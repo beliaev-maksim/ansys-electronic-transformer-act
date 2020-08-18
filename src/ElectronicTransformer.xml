@@ -48,8 +48,7 @@
 						<onvalidate>on_supplier_or_core_type_change</onvalidate>
 					</callbacks>
 
-          <property name="core_model" caption="Core Model:" control="select" >
-            <attributes options="1" />
+          <property name="core_model" caption="Core Model:" control="select">
             <callbacks>
                 <onvalidate>on_core_model_change</onvalidate>
             </callbacks>

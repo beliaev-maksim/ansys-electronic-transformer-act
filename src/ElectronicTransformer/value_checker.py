@@ -51,11 +51,16 @@ def validityCheckTable(step, prop):
                 return add_error_message(str(prop.Caption) + ' must be Zero for True Surface or greater than 7!')
 
 
+def validate_aedt_version():
+    """Raise error message for unsupported versions"""
+    if float(oDesktop.GetVersion()[:-2]) < 2021.1:
+        error = "Electronics Desktop Version is unsupported. Please use version 2021R1 or higher"
+        add_error_message(error)
+        raise UserErrorMessageException(error)
+
+
 def check_core_dimensions(step):
-    # stop invoking for unsupported versions
-    if float(oDesktop.GetVersion()[:-2]) < 2020.2:
-        raise UserErrorMessageException("Electronics Desktop Version is unsupported." +
-                                        "Please use version 2020R2 or higher")
+    validate_aedt_version()
 
     D_1 = float(step.Properties["core_properties/core_type/D_1"].Value)
     D_2 = float(step.Properties["core_properties/core_type/D_2"].Value)
