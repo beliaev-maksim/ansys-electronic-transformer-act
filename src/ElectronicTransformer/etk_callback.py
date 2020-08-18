@@ -154,6 +154,8 @@ class Step1:
         for key in transformer_definition:
             transformer_definition.pop(key, None)
 
+        validate_aedt_version()
+
     def populate_ui_data_step1(self):
         # read data for step 1
         self.segmentation_angle.Value = int(transformer_definition["core_dimensions"]["segmentation_angle"])
