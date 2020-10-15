@@ -203,9 +203,9 @@ class Step1:
             width = 275
             height = 360
 
-        html_data = '<img width="{}" height="{}" src="{}/images/{}Core.png"/>'.format(width, height,
-                                                                                      ExtAPI.Extension.InstallDir,
-                                                                                      self.core_type.Value)
+        html_data = '<img width="{}" height="{}" src="file:///{}/images/{}Core.png"/>'.format(width, height,
+                                                                                          ExtAPI.Extension.InstallDir,
+                                                                                          self.core_type.Value)
 
         report = self.step1.UserInterface.GetComponent("coreImage")
         report.SetHtmlContent(html_data)
@@ -892,8 +892,6 @@ class TransformerClass(Step1, Step2, Step3):
         for i in range(len(solids)):
             solids.insert(i * 2 + 1, "22cel")
 
-        add_info_message(solids)
-        return
         self.design.SetObjectTemperature(
             [
                 "NAME:TemperatureSettings",
