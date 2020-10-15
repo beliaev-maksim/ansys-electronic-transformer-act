@@ -248,7 +248,12 @@
       <description>Core/winding material, frequency, winding connections</description>
 
 			<componentstyle
-			component="analyzeButton"
+			component="analyze_button"
+			background-color="Transparent"
+			border-color="Transparent" />
+
+			<componentstyle
+			component="setup_analysis_button"
 			background-color="Transparent"
 			border-color="Transparent" />
 
@@ -624,7 +629,7 @@ If you change number of sides winding definition would be reset</help>
 				leftattachment=""
 				topattachment="Title"
 				rightattachment=""
-				bottomattachment="setupAnalysisButton"
+				bottomattachment="setup_analysis_button"
 
 				leftoffset="10"
 				topoffset="5"
@@ -640,12 +645,12 @@ If you change number of sides winding definition would be reset</help>
 			/>
 
 			<component
-				name="defineWindingsButton"
+				name="define_windings_button"
 
 				leftattachment=""
 				topattachment="Properties"
-				rightattachment=""
-				bottomattachment="setupAnalysisButton"
+				rightattachment="define_connections_button"
+				bottomattachment="setup_analysis_button"
 
 				leftoffset="10"
 				topoffset=""
@@ -662,16 +667,16 @@ If you change number of sides winding definition would be reset</help>
 			/>
 
 			<component
-				name="setupAnalysisButton"
+				name="define_connections_button"
 
-				leftattachment="defineWindingsButton"
+				leftattachment="define_windings_button"
 				topattachment="Properties"
-				rightattachment=""
-				bottomattachment="analyzeButton"
+				rightattachment="analyze_button"
+				bottomattachment="setup_analysis_button"
 
 				leftoffset=""
 				topoffset=""
-				rightoffset=""
+				rightoffset="10"
 				bottomoffset=""
 
 				heighttype="FitTocontent"
@@ -684,11 +689,11 @@ If you change number of sides winding definition would be reset</help>
 			/>
 
 			<component
-				name="analyzeButton"
+				name="setup_analysis_button"
 
 				leftattachment=""
-				topattachment="setupAnalysisButton"
-				rightattachment="helpButton"
+				topattachment="define_windings_button"
+				rightattachment="analyze_button"
 				bottomattachment="Submit"
 
 				leftoffset=""
@@ -700,7 +705,29 @@ If you change number of sides winding definition would be reset</help>
 				height="100"
 				maxheight="0"
 				widthtype="Percentage"
-				width="50"
+				width="30"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+
+			<component
+				name="analyze_button"
+
+				leftattachment="setup_analysis_button"
+				topattachment="define_windings_button"
+				rightattachment=""
+				bottomattachment="Submit"
+
+				leftoffset=""
+				topoffset=""
+				rightoffset=""
+				bottomoffset=""
+
+				heighttype="FitTocontent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="30"
 				maxwidth="0"
 				componenttype="buttonsComponent"
 			/>
@@ -708,8 +735,8 @@ If you change number of sides winding definition would be reset</help>
 			<component
 				name="helpButton"
 
-				leftattachment="analyzeButton"
-				topattachment="setupAnalysisButton"
+				leftattachment="analyze_button"
+				topattachment="define_windings_button"
 				rightattachment=""
 				bottomattachment="Submit"
 
