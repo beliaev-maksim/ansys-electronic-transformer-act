@@ -526,14 +526,17 @@ class Step3:
     def refresh_step3(self):
         setup_button(self.step3, "helpButton", "Help", ButtonPositionType.Right, help_button_clicked, style="blue")
 
-        setup_button(self.step3, "analyzeButton", "Analyze", ButtonPositionType.Center, self.analyze_click,
+        setup_button(self.step3, "analyze_button", "Analyze", ButtonPositionType.Center, self.analyze_click,
                      active=False)
 
-        setup_button(self.step3, "setupAnalysisButton", "Setup Analysis", ButtonPositionType.Center,
+        setup_button(self.step3, "setup_analysis_button", "Setup Analysis", ButtonPositionType.Center,
                      self.setup_analysis_click, active=False)
 
-        setup_button(self.step3, "defineWindingsButton", "Define Windings", ButtonPositionType.Center,
+        setup_button(self.step3, "define_windings_button", "Define Windings", ButtonPositionType.Center,
                      self.define_windings_click)
+
+        setup_button(self.step3, "define_connections_button", "Define Parallel Connection", ButtonPositionType.Center,
+                     self.define_connection_click)
 
         self.analysis_set = False
         self.project = oDesktop.GetActiveProject()
@@ -575,8 +578,8 @@ class Step3:
         update_ui(self.step3)
 
         if self.windings_definition.defined_layers_list:
-            self.step3.UserInterface.GetComponent("analyzeButton").SetEnabledFlag("analyzeButton", True)
-            self.step3.UserInterface.GetComponent("setupAnalysisButton").SetEnabledFlag("setupAnalysisButton", True)
+            self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag("analyze_button", True)
+            self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag("setup_analysis_button", True)
 
     def populate_ui_data_step3(self):
         # read data for step 3
@@ -619,6 +622,9 @@ class Step3:
         pass
 
     def define_windings_click(self, _sender, _args):
+        pass
+
+    def define_connection_click(self, _sender, _args):
         pass
 
     def collect_ui_data_step3(self):
@@ -772,8 +778,8 @@ class TransformerClass(Step1, Step2, Step3):
         self.windings_definition.ShowDialog()
 
         if self.windings_definition.defined_layers_list:
-            self.step3.UserInterface.GetComponent("analyzeButton").SetEnabledFlag("analyzeButton", True)
-            self.step3.UserInterface.GetComponent("setupAnalysisButton").SetEnabledFlag("setupAnalysisButton", True)
+            self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag("analyze_button", True)
+            self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag("setup_analysis_button", True)
 
     def assign_winding_excitations(self, layer_sections_list):
         if self.excitation_strategy.Value == "Voltage":
@@ -1220,8 +1226,8 @@ class TransformerClass(Step1, Step2, Step3):
         """if number of sides was changed just clear the data in winding dialogue and disable buttons"""
         self.windings_definition.defined_layers_list = []
         self.windings_definition.defined_layers_listbox.Items.Clear()
-        self.step3.UserInterface.GetComponent("analyzeButton").SetEnabledFlag("analyzeButton", False)
-        self.step3.UserInterface.GetComponent("setupAnalysisButton").SetEnabledFlag("setupAnalysisButton", False)
+        self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag("analyze_button", False)
+        self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag("setup_analysis_button", False)
 
         if self.transformer_sides.Value < 1:
             self.transformer_sides.Value = 1
@@ -1346,8 +1352,8 @@ class TransformerClass(Step1, Step2, Step3):
 
         # self.project.SaveAs(os.path.join(self.project_path.Value, self.design_name + '.aedt'), True) # todo
         self.analysis_set = True
-        self.step3.UserInterface.GetComponent("setupAnalysisButton").SetEnabledFlag("setupAnalysisButton", False)
-        self.step3.UserInterface.GetComponent("defineWindingsButton").SetEnabledFlag("defineWindingsButton", False)
+        self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag("setup_analysis_button", False)
+        self.step3.UserInterface.GetComponent("define_windings_button").SetEnabledFlag("define_windings_button", False)
         oDesktop.EnableAutoSave(self.flag_auto_save)
 
     def create_model(self):
