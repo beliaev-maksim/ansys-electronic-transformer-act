@@ -2,7 +2,8 @@
   <author>ANSYS, Inc.</author>
   <guid shortid="ElectronicsWizard">beb238e5-6315-4602-a3f5-f004e6c02805</guid>
   <script src="core_data.py"/>
-	<script src="etk_callback.py"/>
+  <script src="circuit.py"/>
+  <script src="etk_callback.py"/>
   <script src="forms.py"/>
   <script src="value_checker.py"/>
   <script src="cores_geometry.py"/>
@@ -271,7 +272,7 @@
 					<attributes options="Copper,Aluminum" />
 				</property>
 
-				<property  name="adaptive_frequency" caption="Adaptive frequency [Hz]" control="float" default="1000">
+				<property  name="adaptive_frequency" caption="Adaptive frequency [kHz]" control="float" default="100">
           <callbacks>
             <OnValidate>GEThanOne</OnValidate>
           </callbacks>
