@@ -53,7 +53,7 @@ class Cores(object):
         self.winding_parameters_dict = transformer_definition["winding_definition"]["layers_definition"]
 
         self.draw_skin = transformer_definition["setup_definition"]["draw_skin_layers"]
-        self.frequency = float(transformer_definition["setup_definition"]["adaptive_frequency"])
+        self.frequency = float(transformer_definition["setup_definition"]["adaptive_frequency"]) * 1000  # scale to Hz
         self.coil_material = transformer_definition["setup_definition"]["coil_material"]
 
     def create_polyline(self, points, segments, name, covered=True, closed=True, color='(165 42 42)'):

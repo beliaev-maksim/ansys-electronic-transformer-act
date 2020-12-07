@@ -4,13 +4,13 @@
 #
 #            ACT Written by : Maksim Beliaev (maksim.beliaev@ansys.com)
 #            Tested by: Mark Christini (mark.christini@ansys.com)
-#            Last updated : 08.08.2020
-
+#            Last updated : 10.12.2020
+# todo disclaimer
+import copy
 import datetime
 import os
 import re
 from webbrowser import open as webopen
-import math
 from collections import OrderedDict
 import json
 
@@ -18,7 +18,7 @@ import json
 # from .cores_geometry import ECore, EFDCore, EICore, EPCore, ETDCore, PCore, PQCore, UCore, UICore, RMCore
 # from .core_data import core_material_dict, cores_database, core_frequency_curves
 # from .value_checker import check_core_dimensions
-# from .forms import WindingForm
+# from .forms import WindingForm, ConnectionForm
 
 # object to save UI settings that are cross shared between classes
 transformer_definition = OrderedDict()
@@ -72,13 +72,15 @@ def verify_input_data(function):
     :param function: function to populate ui
     :return: None
     """
-    try:
-        function()
-    except ValueError:
-        msg = "Please verify that integer numbers in input file have proper format eg 1 and not 1.0"
-        return add_error_message(msg)
-    except KeyError as e:
-        return add_error_message("Please specify parameter:{} in input file".format(e))
+    def check(*args):
+        try:
+            function(*args)
+        except ValueError:
+            msg = "Please verify that integer numbers in input file have proper format eg 1 and not 1.0"
+            return add_error_message(msg)
+        except KeyError as e:
+            return add_error_message("Please specify parameter:{} in input file".format(e))
+    return check
 
 
 class Step1:
@@ -142,7 +144,7 @@ class Step1:
 
                 return add_error_message("Please correct following line: {} in file: {}".format(
                                                                                             match_line.group(1), path))
-        verify_input_data(self.populate_ui_data_step1)
+        self.populate_ui_data_step1()
 
     def refresh_step1(self):
         """create buttons and HTML data for first step"""
@@ -156,6 +158,7 @@ class Step1:
 
         validate_aedt_version()
 
+    @verify_input_data
     def populate_ui_data_step1(self):
         # read data for step 1
         self.segmentation_angle.Value = int(transformer_definition["core_dimensions"]["segmentation_angle"])
@@ -292,13 +295,14 @@ class Step2:
         setup_button(self.step2, "helpButton", "Help", ButtonPositionType.Right, help_button_clicked, style="blue")
         if "winding_definition" in transformer_definition:
             # that mean that we read settings file from user and need to populate UI
-            verify_input_data(self.populate_ui_data_step2)
+            self.populate_ui_data_step2()
             # disable change of number of layers because Sides are already specified
             self.number_of_layers.ReadOnly = True
         else:
             self.number_of_layers.ReadOnly = False
         update_ui(self.step2)
 
+    @verify_input_data
     def populate_ui_data_step2(self):
         # read data for step 2
         winding_def = transformer_definition["winding_definition"]
@@ -391,6 +395,7 @@ class Step2:
     def reset_step2():
         """when back button on step3 is clicked we return one step back and we need to delete all winding definitions"""
         transformer_definition.pop("winding_definition", None)
+        transformer_definition.pop("connections_definition", None)
         transformer_definition.pop("setup_definition", None)
 
     def check_winding(self):
@@ -516,14 +521,20 @@ class Step3:
         self.stop_frequency_unit = self.step3.Properties["define_setup/frequency_sweep/stop_frequency_unit"]
         self.samples = self.step3.Properties["define_setup/frequency_sweep/samples"]
 
-        self.windings_definition = None
+        self.windings_def_form = None
+        self.connection_def_form = ConnectionForm()
 
         self.analysis_set = False
         self.project = None
 
         self.defined_layers_list = []
+        self.defined_connections_dict = {}
 
     def refresh_step3(self):
+        """
+        Method is called every time when step layout opens
+        :return:
+        """
         setup_button(self.step3, "helpButton", "Help", ButtonPositionType.Right, help_button_clicked, style="blue")
 
         setup_button(self.step3, "analyze_button", "Analyze", ButtonPositionType.Center, self.analyze_click,
@@ -535,8 +546,8 @@ class Step3:
         setup_button(self.step3, "define_windings_button", "Define Windings", ButtonPositionType.Center,
                      self.define_windings_click)
 
-        setup_button(self.step3, "define_connections_button", "Define Parallel Connection", ButtonPositionType.Center,
-                     self.define_connection_click)
+        setup_button(self.step3, "define_connections_button", "Define Connections", ButtonPositionType.Center,
+                     self.define_connection_click, active=False)
 
         self.analysis_set = False
         self.project = oDesktop.GetActiveProject()
@@ -556,11 +567,11 @@ class Step3:
 
         if "setup_definition" in transformer_definition:
             # that mean that we read settings file from user and need to populate UI
-            verify_input_data(self.populate_ui_data_step3)
+            self.populate_ui_data_step3()
 
         if self.defined_layers_list:
             # came after read an input file
-            self.windings_definition = WindingForm(defined_layers_list=self.defined_layers_list)
+            self.windings_def_form = WindingForm(defined_layers_list=self.defined_layers_list)
             if self.transformer_sides.Value == 1:
                 self.resistance.Visible = False
         else:
@@ -568,7 +579,7 @@ class Step3:
             self.transformer_sides.Value = 1
             self.resistance.Visible = False
             num_layers = transformer_definition["winding_definition"]["number_of_layers"]
-            self.windings_definition = WindingForm(number_undefined_layers=int(num_layers))
+            self.windings_def_form = WindingForm(number_undefined_layers=int(num_layers))
 
         if transformer_definition["core_dimensions"]["core_type"] in ["U", "UI"]:
             # cannot split U and UI core due to the nature of the cores
@@ -577,12 +588,21 @@ class Step3:
 
         update_ui(self.step3)
 
-        if self.windings_definition.defined_layers_list:
-            self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag("analyze_button", True)
-            self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag("setup_analysis_button", True)
+        if self.windings_def_form.defined_layers_list:
+            self.step3.UserInterface.GetComponent("define_connections_button").SetEnabledFlag(
+                "define_connections_button", True
+            )
+            if self.defined_connections_dict:
+                self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag("analyze_button", True)
+                self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag("setup_analysis_button",
+                                                                                              True)
 
+    @verify_input_data
     def populate_ui_data_step3(self):
-        # read data for step 3
+        """
+        Fill values in the user interface from the dictionary
+        :return:
+        """
         setup_def_dict = transformer_definition["setup_definition"]
         self.core_material.Value = setup_def_dict["core_material"]
         self.coil_material.Value = setup_def_dict["coil_material"]
@@ -615,6 +635,8 @@ class Step3:
         for key in layer_dict.keys():
             self.defined_layers_list.extend([key + "_" + "Layer" + str(lay_num) for lay_num in layer_dict[key]])
 
+        self.defined_connections_dict = copy.deepcopy(setup_def_dict["connections_definition"])
+
     def analyze_click(self, _sender, _args):
         pass
 
@@ -628,8 +650,7 @@ class Step3:
         pass
 
     def collect_ui_data_step3(self):
-        """collect data from all steps, write this data to dictionary"""
-        # step 3
+        """collect data from UI, write this data to dictionary"""
         transformer_definition["setup_definition"] = OrderedDict([
             ("core_material", self.core_material.Value),
             ("coil_material", self.coil_material.Value),
@@ -660,10 +681,11 @@ class Step3:
         for i in range(1, self.transformer_sides.Value + 1):
             side_definition.append(("Side_" + str(i),
                                     [layer.replace("Side_{}_Layer".format(i), "") for layer in
-                                     self.windings_definition.defined_layers_list if "Side_" + str(i) in layer]))
+                                     self.windings_def_form.defined_layers_list if "Side_" + str(i) in layer]))
 
             transformer_definition["setup_definition"]["layer_side_definition"] = OrderedDict(side_definition)
 
+        transformer_definition["setup_definition"]["connections_definition"] = self.defined_connections_dict
 
 class TransformerClass(Step1, Step2, Step3):
     """Main class which serves to manipulate Step classes. We initialize these classes from current class.
@@ -742,7 +764,7 @@ class TransformerClass(Step1, Step2, Step3):
                 "StreamlinePlot:="	, False,
                 "AdjacentSidePlot:="	, False,
                 "FullModelPlot:="	, False,
-                "IntrinsicVar:="	, "Freq=\'{}Hz\' Phase=\'0deg\'".format(adapt_freq),
+                "IntrinsicVar:="	, "Freq=\'{}kHz\' Phase=\'0deg\'".format(adapt_freq),
                 "PlotGeomInfo:="	, [1, "Surface", "FacesList", len(object_list)] + ids_list,
                 "FilterBoxes:="		, [0],
                 [
@@ -768,45 +790,61 @@ class TransformerClass(Step1, Step2, Step3):
             ], "Field")
 
     def define_windings_click(self, _sender, _args):
-        self.windings_definition.number_of_sides = self.transformer_sides.Value
+        self.windings_def_form.number_of_sides = self.transformer_sides.Value
 
         # if layers read from file and after that number of sides was changed
-        if not self.windings_definition.defined_layers_list:
-            self.windings_definition.number_undefined_layers = int(self.number_of_layers.Value)
+        if not self.windings_def_form.defined_layers_list:
+            self.windings_def_form.number_undefined_layers = int(self.number_of_layers.Value)
 
-        self.windings_definition.refresh_ui_on_show()
-        self.windings_definition.ShowDialog()
+        self.windings_def_form.refresh_ui_on_show()
+        self.windings_def_form.ShowDialog()
+        if self.windings_def_form.defined_layers_list:
+            self.collect_ui_data_step3()
+            self.step3.UserInterface.GetComponent("define_connections_button").SetEnabledFlag(
+                "define_connections_button", True
+            )
+            # todo check if defined layers where changed
 
-        if self.windings_definition.defined_layers_list:
+    def define_connection_click(self, _sender, _args):
+        """
+        When click on Define connections button we prepopulate UI with data and show it
+        :param _sender: unused
+        :param _args: unused
+        :return:
+        """
+        if self.defined_connections_dict:
+            self.connection_def_form.connections_dict = self.defined_connections_dict
+        else:
+            self.connection_def_form.winding_def_dict = transformer_definition["setup_definition"][
+                                                                                                "layer_side_definition"]
+
+        self.connection_def_form.ShowDialog()
+        self.defined_connections_dict = self.connection_def_form.connections_dict
+
+        if self.defined_connections_dict:
             self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag("analyze_button", True)
             self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag("setup_analysis_button", True)
 
     def assign_winding_excitations(self, layer_sections_list):
-        if self.excitation_strategy.Value == "Voltage":
-            self.create_winding("Side_1", "Voltage", current=0, resistance=1e-06, inductance=0,
-                                voltage=self.voltage.Value)
-        else:
-            self.create_winding("Side_1", "Current", current=self.voltage.Value, resistance=0, inductance=0, voltage=0)
 
-        for i in range(2, self.transformer_sides.Value+1):
-            self.create_winding("Side_" + str(i), "Voltage", current=0, resistance=self.resistance.Value, inductance=0,
-                                voltage=0)
+        # create winding for each layer for further assignment in circuit
+        for i in range(self.number_of_layers.Value):
+            self.create_winding("Layer_" + str(i+1), "External")
 
         for section in layer_sections_list:
-            for definition in self.windings_definition.defined_layers_list:
-                if section.split("_")[0] == definition.split("_")[-1]:
-                    side = definition.split("_")[1]
+            layer = section.split("_")[0]
+            layer_num = layer[5:]
 
-                    point_terminal = True if int(side) > 1 else False
-                    self.module_boundary_setup.AssignCoilTerminal(
-                        [
-                            "NAME:" + section,
-                            "Objects:=", [section],
-                            "ParentBndID:=", "Side_" + side,
-                            "Conductor number:=", "1",
-                            "Winding:="	, "Side_" + side,
-                            "Point out of terminal:=", point_terminal
-                        ])
+            point_terminal = True  # if int(side) > 1 else False  # todo does it matter in external circuit?
+            self.module_boundary_setup.AssignCoilTerminal(
+                [
+                    "NAME:" + section,
+                    "Objects:=", [section],
+                    "ParentBndID:=", "Layer_" + layer_num,
+                    "Conductor number:=", "1",
+                    "Winding:="	, "Layer_" + layer_num,
+                    "Point out of terminal:=", point_terminal
+                ])
 
     def create_winding(self, name, winding_type, current=0.0, resistance=0.0, inductance=0.0, voltage=0.0):
         self.module_boundary_setup.AssignWindingGroup(
@@ -825,10 +863,10 @@ class TransformerClass(Step1, Step2, Step3):
     def assign_matrix_winding(self):
         """Function to assign RL matrix to a winding group"""
         matrix_entry = ["NAME:MatrixEntry"]
-        for i in range(1, self.transformer_sides.Value + 1):
+        for i in range(1, self.number_of_layers.Value + 1):
             matrix_entry.append([
                  "NAME:MatrixEntry",
-                 "Source:=", "Side_" + str(i),
+                 "Source:=", "Layer_" + str(i),
                  "NumberOfTurns:=", "1"
              ])
 
@@ -837,6 +875,66 @@ class TransformerClass(Step1, Step2, Step3):
              matrix_entry,
              ["NAME:MatrixGroup"]
              ])
+
+        self.reduce_matrix()
+
+    def reduce_matrix(self):
+        for i in range(self.number_of_layers.Value):
+            # this loop is only required in 2021R1 and below. There is a bug in matrix reduction IDs, so we reserve some
+            self.module_parameter_setup.AssignForce(
+                [
+                    "NAME:Force1",
+                    "Reference CS:=", "Global",
+                    "Is Virtual:=", True,
+                    "Objects:="	, ["Layer1_1"]
+                ])
+            self.module_parameter_setup.DeleteParameters(["Force1"])
+
+        def reduce(target_dict):
+            reduction_list = []
+            for key, val in target_dict.items():
+                if isinstance(val, dict):
+                    new_s = reduce(val)
+                    reduction_type = "Series" if "S" in key else "Parallel"
+                    self.module_parameter_setup.AddReduceOp("Matrix1", "ReduceMatrix1",
+                                        [
+                                            "NAME:" + key,
+                                            "Type:=", "Join in " + reduction_type,
+                                            "Sources:="	, new_s
+                                        ])
+                    reduction_list.append(key)
+                else:
+                    reduction_list.append("Layer_" + key)
+
+            reduction_str = ",".join(reduction_list)
+            return reduction_str
+
+        def rename(side_num, side_definition):
+            layer = "Layer_" + list(side_definition.keys())[0]
+            self.design.ChangeProperty(
+                [
+                    "NAME:AllTabs",
+                    [
+                        "NAME:Maxwell3D",
+                        [
+                            "NAME:PropServers",
+                            "BoundarySetup:" + layer
+                        ],
+                        [
+                            "NAME:ChangedProps",
+                            [
+                                "NAME:Name",
+                                "Value:=", "Side_" + side_num
+                            ]
+                        ]
+                    ]
+                ])
+
+        for side_num, side_def in self.defined_connections_dict.items():
+            if not any(isinstance(val, dict) for val in side_def.values()):
+                rename(side_num, side_def)
+            else:
+                reduce(side_def)
 
     def assign_mesh(self, layers_list, core_list):
         """Function to create 'manual' skin layers from face sheets and to assign mesh operations to
@@ -925,22 +1023,22 @@ class TransformerClass(Step1, Step2, Step3):
 
     def create_setup(self):
         """function which grabs parameters from UI and inserts Setup1 according to them"""
-        max_num_passes = int(self.step3.Properties["define_setup/number_passes"].Value)
-        percent_error = float(self.step3.Properties["define_setup/percentage_error"].Value)
+        max_num_passes = int(self.number_passes.Value)
+        percent_error = float(self.percentage_error.Value)
 
-        adapt_freq = self.step3.Properties["define_setup/adaptive_frequency"].Value
-        frequency = str(adapt_freq) + 'Hz'
+        adapt_freq = self.adaptive_frequency.Value
+        frequency = str(adapt_freq) + 'kHz'
 
-        start_sweep_freq = (str(self.step3.Properties["define_setup/frequency_sweep/start_frequency"].Value) +
-                            str(self.step3.Properties["define_setup/frequency_sweep/start_frequency_unit"].Value))
+        start_sweep_freq = (str(self.start_frequency.Value) +
+                            str(self.start_frequency_unit.Value))
 
-        stop_sweep_freq = (str(self.step3.Properties["define_setup/frequency_sweep/stop_frequency"].Value) +
-                           str(self.step3.Properties["define_setup/frequency_sweep/stop_frequency_unit"].Value))
+        stop_sweep_freq = (str(self.stop_frequency.Value) +
+                           str(self.stop_frequency_unit.Value))
 
-        samples = int(self.step3.Properties["define_setup/frequency_sweep/samples"].Value)
+        samples = int(self.samples.Value)
 
-        if self.step3.Properties["define_setup/frequency_sweep"].Value:
-            if self.step3.Properties["define_setup/frequency_sweep/scale"].Value == 'Linear':
+        if self.frequency_sweep.Value:
+            if self.step3.Properties["define_setup/frequency_sweep/scale"].Value == 'Linear':  # todo in read/write JSON
                 self.insert_setup(max_num_passes, percent_error, frequency, True,
                                   'LinearCount', start_sweep_freq, stop_sweep_freq, samples)
             else:
@@ -1224,8 +1322,8 @@ class TransformerClass(Step1, Step2, Step3):
 
     def check_sides(self):
         """if number of sides was changed just clear the data in winding dialogue and disable buttons"""
-        self.windings_definition.defined_layers_list = []
-        self.windings_definition.defined_layers_listbox.Items.Clear()
+        self.windings_def_form.defined_layers_list = []
+        self.windings_def_form.defined_layers_listbox.Items.Clear()
         self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag("analyze_button", False)
         self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag("setup_analysis_button", False)
 
@@ -1293,8 +1391,9 @@ class TransformerClass(Step1, Step2, Step3):
 
         self.create_terminal_sections(layers_list, layer_sections_list, layers_sections_delete_list)
         self.assign_winding_excitations(layer_sections_list)
+        self.create_circuit()
         self.assign_matrix_winding()
-        self.calculate_leakage()
+        # self.calculate_leakage()
         self.create_loss_report()
 
         self.module_boundary_setup.SetCoreLoss(core_list, False)
@@ -1330,7 +1429,7 @@ class TransformerClass(Step1, Step2, Step3):
         if not self.full_model.Value:
             self.split_geom(core_list + layers_and_skins + bobbin_list + boards_list)
 
-            # if terminals were created on the wrong side mirror them to be inside of the conducor
+            # if terminals were created on the wrong side mirror them to be inside of the conductor
             first_vertex_id_first_terminal = int(self.editor.GetVertexIDsFromObject(terminals[0])[0])
             x_coord = float(self.editor.GetVertexPosition(first_vertex_id_first_terminal)[0])
             if x_coord >= 0:
@@ -1542,6 +1641,24 @@ class TransformerClass(Step1, Step2, Step3):
                 ]
             ])
 
+    def create_circuit(self):
+        if self.excitation_strategy.Value == "Voltage":
+            current = 0
+            voltage = self.voltage.Value
+        else:
+            voltage = 0
+            current = self.voltage.Value
+
+        circuit = Circuit(self.defined_connections_dict, self.project, self.design_name,
+                          current=current, voltage=voltage,
+                          resistance=self.resistance.Value, frequency=self.adaptive_frequency.Value)
+        circuit.create()
+        circuit_path = os.path.join(self.project.GetPath(), "circuit.sph")
+
+        circuit.design.ExportNetlist("", circuit_path)
+
+        self.project.SetActiveDesign(self.design_name)
+        self.module_boundary_setup.EditExternalCircuit(circuit_path, [], [], [], [])  # import circuit
 
 def on_init_step1(step):
     """invoke on step initialisation, only once when you open the app"""
@@ -1606,7 +1723,7 @@ def on_init_step3(_step):
 
 
 def create_buttons_step3(_step):
-    """invoke on step1 refresh, Every time when step layout is opened."""
+    """invoke on step3 refresh, Every time when step layout is opened."""
     transformer.refresh_step3()
 
 

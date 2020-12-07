@@ -1,3 +1,4 @@
+from abc import ABCMeta, abstractmethod
 import clr
 clr.AddReference("Ans.UI.Toolkit")
 clr.AddReference("Ans.UI.Toolkit.Base")
@@ -16,6 +17,8 @@ from Ansys.UI.Toolkit.Drawing import *
 from Ansys.Utilities import *
 
 import ctypes  # lib to get screen resolution
+import copy
+from collections import OrderedDict
 
 
 class WindingForm(Ansys.UI.Toolkit.Dialog):
@@ -267,6 +270,8 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.Name = 'WindingDefinition'
         self.Text = 'Define Windings'
 
+        self.BeforeClose += Ansys.UI.Toolkit.WindowCloseEventDelegate(self.cancel_clicked)
+
     def refresh_ui_on_show(self):
         """function to call externally after fill the list of layers to update the UI"""
         if len(self.available_layers_listbox.Items) == 0 and len(self.defined_layers_listbox.Items) == 0:
@@ -354,7 +359,7 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
     def define_layer(self, side_number, all_available=False):
         all_available_layers_list = list(self.available_layers_listbox.Items)[:]
         selected_layers_list = sorted(list(self.available_layers_listbox.SelectedItems))
-        # need to remove selection before use Irems.Remove
+        # need to remove selection before use Items.Remove
         self.available_layers_listbox.ClearSelectedItems()
 
         layers_list = all_available_layers_list if all_available else selected_layers_list
@@ -466,6 +471,429 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.Hide()
 
 
+class ConnectionFormUI(Ansys.UI.Toolkit.Dialog):
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        self.screen_width = ctypes.windll.user32.GetSystemMetrics(0)
+        self.screen_height = ctypes.windll.user32.GetSystemMetrics(1)
+
+        button_x_size = 120
+        button_y_size = 35
+
+        # define components from UI library
+        self.side_label = Ansys.UI.Toolkit.Label()
+        self.connections_label = Ansys.UI.Toolkit.Label()
+        self.connect_label = Ansys.UI.Toolkit.Label()
+
+        self.connections_listbox = Ansys.UI.Toolkit.ListBox()
+
+        self.side_dropdown = Ansys.UI.Toolkit.ComboBox()
+
+        self.serial_button = Ansys.UI.Toolkit.Button()
+        self.parallel_button = Ansys.UI.Toolkit.Button()
+        self.ungroup_button = Ansys.UI.Toolkit.Button()
+
+        self.ok_button = Ansys.UI.Toolkit.Button()
+        self.cancel_button = Ansys.UI.Toolkit.Button()
+
+        # Describe all properties of components on init of class
+        #
+        # Side Label
+        #
+        self.side_label.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
+                                                             Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.side_label.Location = Ansys.UI.Toolkit.Drawing.Point(20, 23)
+        self.side_label.Size = Ansys.UI.Toolkit.Drawing.Size(210, 23)
+        self.side_label.Text = "Transformer side:"
+
+        #
+        # Side DropDown
+        #
+        self.side_dropdown.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
+                                                                Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.side_dropdown.Location = Ansys.UI.Toolkit.Drawing.Point(235, 20)
+        self.side_dropdown.Size = Ansys.UI.Toolkit.Drawing.Size(50, 27)
+        self.side_dropdown.SelectionChanged += self.side_change
+
+        #
+        # Connections Label
+        #
+        self.connections_label.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
+                                                                    Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.connections_label.Location = Ansys.UI.Toolkit.Drawing.Point(20, 70)
+        self.connections_label.Size = Ansys.UI.Toolkit.Drawing.Size(200, 23)
+        self.connections_label.Text = "Connections:"
+        #
+        # Connections list
+        #
+        self.connections_listbox.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
+                                                                      Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.connections_listbox.Location = Ansys.UI.Toolkit.Drawing.Point(20, 100)
+        self.connections_listbox.IsMultiSelectable = True
+        self.connections_listbox.Size = Ansys.UI.Toolkit.Drawing.Size(960, 300)
+
+        #
+        # Connect Label
+        #
+        self.connect_label.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
+                                                                Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.connect_label.Location = Ansys.UI.Toolkit.Drawing.Point(20, 413)
+        self.connect_label.Size = Ansys.UI.Toolkit.Drawing.Size(110, 23)
+        self.connect_label.Text = "Connect:"
+        #
+        # Serial Button
+        #
+        self.serial_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
+                                                                Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.serial_button.Location = Ansys.UI.Toolkit.Drawing.Point(130, 410)
+        self.serial_button.Size = Ansys.UI.Toolkit.Drawing.Size(button_x_size, button_y_size)
+        self.serial_button.Text = "Serial"
+        self.serial_button.Click += self.serial_click
+        #
+        # Parallel Button
+        #
+        self.parallel_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
+                                                                  Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.parallel_button.Location = Ansys.UI.Toolkit.Drawing.Point(270, 410)
+        self.parallel_button.Size = Ansys.UI.Toolkit.Drawing.Size(button_x_size, button_y_size)
+        self.parallel_button.Text = "Parallel"
+        self.parallel_button.Click += self.parallel_click
+
+        #
+        # Ungroup Button
+        #
+        self.ungroup_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
+                                                                 Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.ungroup_button.Location = Ansys.UI.Toolkit.Drawing.Point(410, 410)
+        self.ungroup_button.Size = Ansys.UI.Toolkit.Drawing.Size(button_x_size, button_y_size)
+        self.ungroup_button.Text = "Ungroup"
+        self.ungroup_button.Click += self.ungroup_click
+
+        #
+        # OK Button
+        #
+        self.ok_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
+                                                            Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.ok_button.Location = Ansys.UI.Toolkit.Drawing.Point(650, 450)
+        self.ok_button.Size = Ansys.UI.Toolkit.Drawing.Size(button_x_size, button_y_size)
+        self.ok_button.Text = "OK"
+        self.ok_button.Click += self.ok_clicked
+        #
+        # Cancel Button
+        #
+        self.cancel_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
+                                                                Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.cancel_button.Location = Ansys.UI.Toolkit.Drawing.Point(800, 450)
+        self.cancel_button.Size = Ansys.UI.Toolkit.Drawing.Size(button_x_size, button_y_size)
+        self.cancel_button.Text = "Cancel"
+        self.cancel_button.Click += self.cancel_clicked
+
+        #
+        # Define the main form. Put here all listed above components
+        #
+        self.ClientSize = Ansys.UI.Toolkit.Drawing.Size(1000, 500)
+        self.Location = Ansys.UI.Toolkit.Drawing.Point(self.screen_width / 3, self.screen_height / 3)
+
+        self.Controls.Add(self.side_label)
+        self.Controls.Add(self.side_dropdown)
+
+        self.Controls.Add(self.connections_label)
+        self.Controls.Add(self.connections_listbox)
+
+        self.Controls.Add(self.connect_label)
+        self.Controls.Add(self.serial_button)
+        self.Controls.Add(self.parallel_button)
+        self.Controls.Add(self.ungroup_button)
+
+        self.Controls.Add(self.cancel_button)
+        self.Controls.Add(self.ok_button)
+
+        self.MaximizeBox = False
+        self.Name = 'ConnectionDefinition'
+        self.Text = 'Define Connections'
+
+        self.VisibilityChanged += Ansys.UI.Toolkit.EventDelegate(self.on_show)
+
+    @abstractmethod
+    def on_show(self, _sender, _e):
+        """
+        Called on Window show
+        :param _sender:
+        :param _e:
+        :return:
+        """
+
+    @abstractmethod
+    def side_change(self, _sender, _e):
+        """
+        Called when drop down menu Side value is changed
+        :param _sender: unused
+        :param _e: unused
+        :return:
+        """
+
+    @abstractmethod
+    def serial_click(self, _sender, _e):
+        """
+        Serial button clicked
+        :param _sender: unused
+        :param _e: unused
+        :return:
+        """
+        self.group_connection(conn_type="S")
+
+    @abstractmethod
+    def parallel_click(self, _sender, _e):
+        """
+        Parallel button clicked
+        :param _sender: unused
+        :param _e: unused
+        :return:
+        """
+
+    @abstractmethod
+    def ungroup_click(self, _sender, _e):
+        """
+        Ungroup button clicked. Ungroup connection and refill dictionary
+        :param _sender: unused
+        :param _e: unused
+        :return:
+        """
+
+    @abstractmethod
+    def ok_clicked(self, _sender, _e):
+        """
+        OK button clicked. just close, data is stored in connections_dict
+        :param _sender: unused
+        :param _e: unused
+        :return:
+        """
+
+    @abstractmethod
+    def cancel_clicked(self, _sender, _e):
+        """
+        Cancel button clicked. Revert data to backed up
+        :param _sender: unused
+        :param _e: unused
+        :return:
+        """
+
+
+class ConnectionForm(ConnectionFormUI):
+    def __init__(self):
+        super(ConnectionForm, self).__init__()
+        self.winding_def_dict = {}
+        self.connections_dict = OrderedDict()
+        self.temp_connections_dict = OrderedDict()
+        self.active_side = "1"
+        self._id = 0
+        self.backup = None
+
+    def on_show(self, _sender, _e):
+        if self.Visible:
+            if not self.connections_dict:
+                self._id = 1
+                # no connections defined, make copy of mutable object
+                temp_dict = copy.deepcopy(self.winding_def_dict)
+                for key, val in temp_dict.items():
+                    self.temp_connections_dict[key[5:]] = OrderedDict((item, "Layer") for item in val)
+            else:
+                self.temp_connections_dict = copy.deepcopy(self.connections_dict)
+                self._id = self.find_max_id(self.temp_connections_dict) + 1
+
+            self.active_side = "1"
+            self.fill_sides()
+
+    @property
+    def new_id(self):
+        """
+            Function to generate new ID for parallel or serial connection dict keys
+        """
+        self._id += 1
+        return self._id
+
+    def find_max_id(self, target_dict, max_id=0):
+        """
+        Find maximum ID used for key in dictionary
+        :param target_dict: dict to check
+        :param max_id: maximum ID found, used for recursion
+        :return:
+        """
+        for key, val in target_dict.items():
+            if isinstance(val, dict):
+                if "S" in key or "P" in key:
+                    max_id = int(key[1:])  # cut S/P part
+
+                new_id = self.find_max_id(val, max_id)
+                max_id = max(new_id, max_id)
+
+        return max_id
+
+    def fill_sides(self):
+        """
+        Prefill transformers sides dropdown menu
+        :return:
+        """
+        self.side_dropdown.Clear()
+        for side in self.temp_connections_dict:
+            self.side_dropdown.AddItem(side)
+
+        self.side_dropdown.SelectedIndex = 0  # also triggers SelectionChanged event
+
+    def fill_lists(self):
+        """Fill both listboxes on show of window. Fill layers per side if nothing was specified,
+        otherwise populate already defined connections from dictionary"""
+
+        self.connections_listbox.Items.Clear()
+        for layer in sorted(self.temp_connections_dict[self.active_side].keys()):
+            val = self.temp_connections_dict[self.active_side][layer]
+            if isinstance(val, dict):
+                self.connections_listbox.Items.Add((self.dict_to_str(val, conn_type=layer)))
+            else:
+                self.connections_listbox.Items.Add(('Layer' + layer))
+
+    def dict_to_str(self, conn_dict, conn_type="", str_item=""):
+        """
+        Construct a string from dictionary. This string will represent element in UI
+        :param conn_dict: dict from which we construct
+        :param conn_type: S (Serial) or P (parallel)
+        :param str_item: constructed str, need for recursion
+        :return:
+        """
+        str_item += conn_type + "("
+        layers = []
+        for key, val in conn_dict.items():
+            if isinstance(val, dict):
+                nested = self.dict_to_str(val, conn_type=key)
+                layers.append(nested)
+            else:
+                layers.append(key)
+
+        str_item += ",".join(layers) + ")"
+
+        return str_item
+
+    def side_change(self, _sender, _e):
+        """
+        Called when drop down menu Side value is changed
+        :param _sender:
+        :param _e:
+        :return:
+        """
+        self.active_side = self.side_dropdown.Text
+        self.fill_lists()
+
+    def serial_click(self, _sender, _e):
+        """
+        Serial button clicked
+        :param _sender: unused
+        :param _e: unused
+        :return:
+        """
+        self.group_connection(conn_type="S")
+
+    def parallel_click(self, _sender, _e):
+        """
+        Parallel button clicked
+        :param _sender: unused
+        :param _e: unused
+        :return:
+        """
+        self.group_connection(conn_type="P")
+
+    def group_connection(self, conn_type):
+        """
+        Group selection. Take multiple items and unite them under same key in dict
+        :param conn_type: S or P for Serial and Parallel
+        :return:
+        """
+        selected_connections_list = sorted(list(self.connections_listbox.SelectedItems))
+        if len(selected_connections_list) < 2:
+            return MessageBox.Show(self,
+                                   "You need at least 2 selections to create a connection",
+                                   "Error",
+                                   MessageBoxType.Error,
+                                   MessageBoxButtons.OK, MessageBoxDefaultButton.Button1)
+
+        # need to remove selection before use Items.Remove
+        self.connections_listbox.ClearSelectedItems()
+
+        temp_dict = OrderedDict()
+        new_id = str(self.new_id)
+        self.temp_connections_dict[self.active_side][conn_type + new_id] = temp_dict
+        for item in selected_connections_list:
+            self.connections_listbox.Items.Remove(item)
+            if "Layer" in item.Text:
+                key = item.Text.replace("Layer", "")
+            else:
+                key = item.Text.split("(")[0]
+
+            val = self.temp_connections_dict[self.active_side].pop(key)
+            temp_dict[key] = val
+
+        self.fill_lists()
+
+    def ungroup_click(self, _sender, _e):
+        """
+        Ungroup button clicked. Ungroup connection and refill dictionary
+        :param _sender: unused
+        :param _e: unused
+        :return:
+        """
+        selected_connections_list = sorted(list(self.connections_listbox.SelectedItems))
+        if len(selected_connections_list) == 0:
+            return MessageBox.Show(self,
+                                   "You need at least 1 selection to ungroup a connection",
+                                   "Error",
+                                   MessageBoxType.Error,
+                                   MessageBoxButtons.OK, MessageBoxDefaultButton.Button1)
+
+        # need to remove selection before use Items.Remove
+        self.connections_listbox.ClearSelectedItems()
+
+        for item in selected_connections_list:
+            self.connections_listbox.Items.Remove(item)
+            if "Layer" not in item.Text:
+                key = item.Text.split("(")[0]
+                val = self.temp_connections_dict[self.active_side].pop(key)
+                self.temp_connections_dict[self.active_side].update(val)
+
+        self.fill_lists()
+
+    def ok_clicked(self, _sender, _e):
+        """
+        OK button clicked. just close, data is stored in connections_dict
+        :param _sender: unused
+        :param _e: unused
+        :return:
+        """
+        valid, side = self.validate()
+        if not valid:
+            msg = "You cannot have more than 1 item in the site list, please use connect Serial/Parallel button. "
+            msg += "Undefined side: {}".format(side)
+            return MessageBox.Show(self, msg, "Error",
+                                   MessageBoxType.Error, MessageBoxButtons.OK, MessageBoxDefaultButton.Button1)
+        self.connections_dict = copy.deepcopy(self.temp_connections_dict)
+        self.Hide()
+
+    def cancel_clicked(self, _sender, _e):
+        """
+        Cancel button clicked. Revert data to backed up
+        :param _sender: unused
+        :param _e: unused
+        :return:
+        """
+        self.temp_connections_dict = copy.deepcopy(self.connections_dict)
+        self.Hide()
+
+    def validate(self):
+        for side, val in self.temp_connections_dict.items():
+            if len(val) > 1:
+                return False, side
+        return True, 0
+
+
 class TabularDataEditor:
     DialogName = "TabularDataDialog"
     ComponentName = "TabularDataEditorDialog"
@@ -486,7 +914,7 @@ class TabularDataEditor:
         if args.ButtonName == "Cancel":
             self.prop.Cancel()
             self.prop.CopyFrom(self.propClone, True)
-            # we change the property so we have to refresh the compoenent with the "old" table
+            # we change the property so we have to refresh the component with the "old" table
             tabular_data_comp.SetPropertyTable(self.prop)
             tabular_data_comp.Refresh()
         elif args.ButtonName == "Apply":
