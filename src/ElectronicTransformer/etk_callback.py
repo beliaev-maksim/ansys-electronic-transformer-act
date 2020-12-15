@@ -10,13 +10,14 @@ import copy
 import datetime
 import os
 import re
+import shutil
 from webbrowser import open as webopen
 from collections import OrderedDict
 import json
+from abc import ABCMeta, abstractmethod
 
 # all below imports are done by ACT, here they are listed for information purpose to increase transparency
 # from .cores_geometry import ECore, EFDCore, EICore, EPCore, ETDCore, PCore, PQCore, UCore, UICore, RMCore
-# from .core_data import core_material_dict, cores_database, core_frequency_curves
 # from .value_checker import check_core_dimensions
 # from .forms import WindingForm, ConnectionForm
 
@@ -83,7 +84,9 @@ def verify_input_data(function):
     return check
 
 
-class Step1:
+class Step1(object):
+    __metaclass__ = ABCMeta
+
     def __init__(self, step):
         self.step1 = step.Wizard.Steps["step1"]
 
@@ -109,6 +112,7 @@ class Step1:
         self.airgap_on_leg = self.step1.Properties["core_properties/define_airgap/airgap_on_leg"]
 
         self.core_models = []
+        self.cores_database = {}
 
     def read_data(self, _sender, _args):
         """
@@ -119,7 +123,7 @@ class Step1:
         :return: None
         """
         global transformer_definition
-        path = ExtAPI.UserInterface.UIRenderer.ShowFileOpenDialog('Text Files(*.txt;*.json;)|*.txt;*.json;')
+        path = ExtAPI.UserInterface.UIRenderer.ShowFileOpenDialog('Text Files(*.json;)|*.json;')
 
         if path is None:
             return
@@ -151,7 +155,8 @@ class Step1:
         setup_button(self.step1, "readData", "Read Settings File", ButtonPositionType.Left, self.read_data)
         setup_button(self.step1, "helpButton", "Help", ButtonPositionType.Center, help_button_clicked, style="blue")
 
-        self.prefill_core_dimensions()
+        self.read_core_dimensions()
+        self.prefill_supplier()
 
         for key in transformer_definition:
             transformer_definition.pop(key, None)
@@ -164,7 +169,7 @@ class Step1:
         self.segmentation_angle.Value = int(transformer_definition["core_dimensions"]["segmentation_angle"])
         self.supplier.Value = transformer_definition["core_dimensions"]["supplier"]
         self.core_type.Value = transformer_definition["core_dimensions"]["core_type"]
-        self.prefill_core_dimensions(only_menu=True)  # populate drop down menu once we read core type
+        self.prefill_core_types(only_menu=True)  # populate drop down menu once we read core type
         self.core_model.Value = transformer_definition["core_dimensions"]["core_model"]
 
         for i in range(1, 9):
@@ -185,18 +190,6 @@ class Step1:
         check_core_dimensions(self.step1)
         self.collect_ui_data_step1()
 
-    def insert_default_values(self):
-        """invoke when Core Model is changed: set core names"""
-        # set core values for selected type
-        for j in range(1, 9):
-            try:
-                self.core_dimensions["D_" + str(j)].Value = float(self.core_models[self.core_model.Value][j - 1])
-                self.core_dimensions["D_" + str(j)].Visible = True
-            except ValueError:
-                self.core_dimensions["D_" + str(j)].Visible = False
-
-        update_ui(self.step1)
-
     def show_core_img(self):
         """invoked to change image and core dimensions when supplier or core type changed"""
         if self.core_type.Value not in ['EP', 'ER', 'PQ', 'RM']:
@@ -214,19 +207,76 @@ class Step1:
         report.SetHtmlContent(html_data)
         report.Refresh()
 
-    def prefill_core_dimensions(self, only_menu=False):
+    def prefill_supplier(self):
+        """
+        Read supplier from input data
+        :return:
+        """
+        self.supplier.Options.Clear()
+        for key in sorted(self.cores_database.keys()):
+            self.supplier.Options.Add(key)
+
+        self.supplier.Value = self.supplier.Options[0]
+        self.prefill_core_types()
+
+    def prefill_core_types(self, only_menu=False):
+        """
+        Read core types from input data
+        :return:
+        """
+        self.core_type.Options.Clear()
+        for key in sorted(self.cores_database[self.supplier.Value].keys()):
+            self.core_type.Options.Add(key)
+
+        if not only_menu:
+            self.core_type.Value = self.core_type.Options[0]
+        self.prefill_core_models(only_menu)
+
+    def prefill_core_models(self, only_menu=False):
+        """
+        Read core models from input data
+        :return:
+        """
+        self.core_model.Options.Clear()
+        self.core_models = self.cores_database[self.supplier.Value][self.core_type.Value]
+        for model in sorted(self.core_models.keys(), key=natural_keys):
+            self.core_model.Options.Add(model)
+        self.core_model.Value = self.core_model.Options[0]
+
+        self.show_core_img()
+
+        if not only_menu:
+            self.prefill_core_dimensions()
+
+        update_ui(self.step1)
+
+    def prefill_core_dimensions(self):
         """
         Set core dimensions from the predefined lists
         :return:
         """
-        self.core_model.Options.Clear()
-        self.core_models = cores_database[self.supplier.Value][self.core_type.Value]
-        for model in sorted(self.core_models.keys(), key=natural_keys):
-            self.core_model.Options.Add(model)
-        self.core_model.Value = self.core_model.Options[0]
-        if not only_menu:
-            self.insert_default_values()
-        self.show_core_img()
+        for j in range(1, 9):
+            try:
+                self.core_dimensions["D_" + str(j)].Value = float(self.core_models[self.core_model.Value][j - 1])
+                self.core_dimensions["D_" + str(j)].Visible = True
+            except ValueError:
+                self.core_dimensions["D_" + str(j)].Visible = False
+
+    def read_core_dimensions(self):
+        """
+        Read all possible core dimensions from input file
+        :return:
+        """
+        lib_path = os.path.join(oDesktop.GetPersonalLibDirectory(), 'ElectronicTransformer')
+        core_dims_json = os.path.join(lib_path, "core_dimensions.json")
+        if not os.path.isfile(core_dims_json):
+            # file does not exist, copy it from root location
+            if not os.path.exists(lib_path):
+                os.makedirs(lib_path)
+            shutil.copy(os.path.join(ExtAPI.Extension.InstallDir, "core_dimensions.json"), core_dims_json)
+
+        with open(core_dims_json) as file:
+            self.cores_database = json.load(file)
 
     def collect_ui_data_step1(self):
         """collect data from all steps, write this data to dictionary"""
@@ -254,7 +304,9 @@ class Step1:
             transformer_definition["core_dimensions"]["airgap"]["airgap_value"] = str(self.airgap_value.Value)
 
 
-class Step2:
+class Step2(object):
+    __metaclass__ = ABCMeta
+
     def __init__(self, step):
         self.step2 = step.Wizard.Steps["step2"]
 
@@ -273,8 +325,10 @@ class Step2:
 
         self.skip_check = self.step2.Properties["winding_properties/skip_check"]
 
-    def init_data_step2(self):
-        # initialize tables
+        self.materials = {}
+
+    def init_tables_step2(self):
+        """initialize tables with some initial data"""
         self.table_layers.AddRow()
         self.table_layers.Properties["conductor_width"].Value = 0.2
         self.table_layers.Properties["conductor_height"].Value = 0.2
@@ -292,14 +346,15 @@ class Step2:
         self.table_layers_circles.SaveActiveRow()
 
     def refresh_step2(self):
+        """
+        each time step layout is opening
+        :return:
+        """
         setup_button(self.step2, "helpButton", "Help", ButtonPositionType.Right, help_button_clicked, style="blue")
         if "winding_definition" in transformer_definition:
             # that mean that we read settings file from user and need to populate UI
             self.populate_ui_data_step2()
-            # disable change of number of layers because Sides are already specified
-            self.number_of_layers.ReadOnly = True
-        else:
-            self.number_of_layers.ReadOnly = False
+
         update_ui(self.step2)
 
     @verify_input_data
@@ -354,52 +409,54 @@ class Step2:
         self.change_captions(need_refresh=False)
 
     def callback_step2(self):
+        """
+        Called when Next button is clicked on step 2
+        :return:
+        """
         # invoke validation from value_checker file
         self.check_winding()
         self.check_board_bobbin()
-
-        # read custom material file and dataset points for it
-        lib_path = os.path.join(oDesktop.GetPersonalLibDirectory(), 'Materials')
-        mat_data_file = os.path.join(lib_path, "matdata.tab")
-        if os.path.isfile(mat_data_file):
-            with open(mat_data_file) as Inmat:
-                next(Inmat)
-                for line in Inmat:
-                    line = line.split()
-                    core_material_dict[line[0]] = line[1:]
-
-                    core_mat_file = os.path.join(lib_path, line[0] + '.tab')
-                    if not os.path.isfile(core_mat_file):
-                        raise UserErrorMessageException(
-                            'File {} in directory {} does not exist!'.format(line[0] + '.tab', lib_path))
-
-                    with open(core_mat_file) as datasheet:
-                        buffer_list = []
-                        for line_data in datasheet:
-                            if not ("""X" \t"Y""" in line_data):
-                                line_array = line_data.rstrip().split()
-                                try:
-                                    buffer_list.append([float(str(a).replace(',', '.')) for a in line_array])
-                                except:
-                                    raise UserErrorMessageException('Wrong values in file {}'.format(line[0] + '.tab'))
-                        core_frequency_curves[line[0]] = buffer_list
-        else:
-            if not os.path.exists(lib_path):
-                os.makedirs(lib_path)
-            with open(mat_data_file, 'w') as file:
-                file.write('Material Name\tConductivity\tCm\tx\ty\tdensity\n')
+        self.read_material_data()
 
         self.collect_ui_data_step2()
+
+    def read_material_data(self):
+        """
+        Read material definition dictionary from json file
+        :return:
+        """
+        lib_path = os.path.join(oDesktop.GetPersonalLibDirectory(), 'ElectronicTransformer')
+        materials_json = os.path.join(lib_path, "material_properties.json")
+        if not os.path.isfile(materials_json):
+            # file does not exist, copy it from root location
+            if not os.path.exists(lib_path):
+                os.makedirs(lib_path)
+            shutil.copy(os.path.join(ExtAPI.Extension.InstallDir, "material_properties.json"), materials_json)
+
+        with open(materials_json) as file:
+            self.materials = json.load(file)
+
+        if not self.materials:
+            raise UserErrorMessageException("Materials are not defined in {}".format(materials_json))
+
+        for mat, mat_definition in self.materials.items():
+            for prop in ["conductivity", "cm", "x", "y", "density", "mu(freq)"]:
+                if prop not in mat_definition:
+                    msg = 'Property {} is not specified for material {}'.format(prop, mat)
+                    raise UserErrorMessageException(msg)
 
     @staticmethod
     def reset_step2():
         """when back button on step3 is clicked we return one step back and we need to delete all winding definitions"""
         transformer_definition.pop("winding_definition", None)
-        transformer_definition.pop("connections_definition", None)
         transformer_definition.pop("setup_definition", None)
 
+    @abstractmethod
     def check_winding(self):
-        pass
+        """
+        Validate that windings fit into core. For this we need to have access to core dimensions
+        :return:
+        """
 
     def collect_ui_data_step2(self):
         """collect data from all steps, write this data to dictionary"""
@@ -463,6 +520,14 @@ class Step2:
         if need_refresh:
             update_ui(self.step2)
 
+    @staticmethod
+    def warn_about_winding_def_clean_up():
+        if "setup_definition" in transformer_definition:
+            msg = "Number of layers changed, this will cause clean up of winding and connection definitions"
+            add_warning_message(msg)
+            transformer_definition["setup_definition"]["layer_side_definition"] = {}
+            transformer_definition["setup_definition"]["connections_definition"] = {}
+
     def update_rows(self):
         """when user changes number of layers we append/delete rows in tables"""
         if self.number_of_layers.Value < 1:
@@ -493,7 +558,9 @@ class Step2:
                 table.SaveActiveRow()
 
 
-class Step3:
+class Step3(object):
+    __metaclass__ = ABCMeta
+
     def __init__(self, step):
         self.step3 = step.Wizard.Steps["step3"]
 
@@ -520,6 +587,7 @@ class Step3:
         self.stop_frequency = self.step3.Properties["define_setup/frequency_sweep/stop_frequency"]
         self.stop_frequency_unit = self.step3.Properties["define_setup/frequency_sweep/stop_frequency_unit"]
         self.samples = self.step3.Properties["define_setup/frequency_sweep/samples"]
+        self.scale = self.step3.Properties["define_setup/frequency_sweep/scale"]
 
         self.windings_def_form = None
         self.connection_def_form = ConnectionForm()
@@ -527,8 +595,10 @@ class Step3:
         self.analysis_set = False
         self.project = None
 
-        self.defined_layers_list = []
+        self.defined_layers_dict = []
         self.defined_connections_dict = {}
+
+        self.materials = {}  # should be redefined in child class (from class 2)
 
     def refresh_step3(self):
         """
@@ -560,26 +630,24 @@ class Step3:
         # add materials from dictionary
         self.core_material.Options.Clear()
         material = None
-        for material in sorted(core_material_dict):
+        for material in sorted(self.materials.keys()):
             self.core_material.Options.Add(material)
 
-        self.core_material.Value = material  # todo, potentially check if material exists in list after read from JSON
+        self.core_material.Value = material
 
         if "setup_definition" in transformer_definition:
-            # that mean that we read settings file from user and need to populate UI
+            # that means that we read settings file from user and need to populate UI
             self.populate_ui_data_step3()
-
-        if self.defined_layers_list:
-            # came after read an input file
-            self.windings_def_form = WindingForm(defined_layers_list=self.defined_layers_list)
-            if self.transformer_sides.Value == 1:
-                self.resistance.Visible = False
+            self.resistance.Visible = False if self.transformer_sides.Value == 1 else True
         else:
-            # either first run or clicked back from step3 and regenerate the model
+            # just refresh variables in case if user clicked back button and came back to the page or first run
+            self.defined_layers_dict = {}
+            self.defined_connections_dict = {}
+
+            self.connection_def_form.connections_dict = {}
+
             self.transformer_sides.Value = 1
             self.resistance.Visible = False
-            num_layers = transformer_definition["winding_definition"]["number_of_layers"]
-            self.windings_def_form = WindingForm(number_undefined_layers=int(num_layers))
 
         if transformer_definition["core_dimensions"]["core_type"] in ["U", "UI"]:
             # cannot split U and UI core due to the nature of the cores
@@ -588,7 +656,7 @@ class Step3:
 
         update_ui(self.step3)
 
-        if self.windings_def_form.defined_layers_list:
+        if self.defined_layers_dict:
             self.step3.UserInterface.GetComponent("define_connections_button").SetEnabledFlag(
                 "define_connections_button", True
             )
@@ -600,7 +668,7 @@ class Step3:
     @verify_input_data
     def populate_ui_data_step3(self):
         """
-        Fill values in the user interface from the dictionary
+        Fill values in the user interface from the dictionary, only when start from text file
         :return:
         """
         setup_def_dict = transformer_definition["setup_definition"]
@@ -612,13 +680,16 @@ class Step3:
         self.number_passes.Value = int(setup_def_dict["number_passes"])
 
         self.transformer_sides.Value = int(setup_def_dict["transformer_sides"])
+        self.check_sides(manual=True)
+
         self.excitation_strategy.Value = setup_def_dict["excitation_strategy"]
         self.voltage.Value = float(setup_def_dict["voltage"])
         self.resistance.Value = float(setup_def_dict["resistance"])
         self.offset.Value = float(setup_def_dict["offset"])
         self.full_model.Value = setup_def_dict["full_model"]
 
-        self.project_path.Value = setup_def_dict["project_path"]
+        if os.path.isdir(setup_def_dict["project_path"]):
+            self.project_path.Value = setup_def_dict["project_path"]
 
         freq_dict = setup_def_dict["frequency_sweep_definition"]
         self.frequency_sweep.Value = freq_dict["frequency_sweep"]
@@ -629,23 +700,28 @@ class Step3:
             self.stop_frequency.Value = float(freq_dict["stop_frequency"])
             self.stop_frequency_unit.Value = freq_dict["stop_frequency_unit"]
             self.samples.Value = int(freq_dict["samples"])
+            self.scale.Value = freq_dict["scale"]
 
-        self.defined_layers_list = []
-        layer_dict = setup_def_dict["layer_side_definition"]
-        for key in layer_dict.keys():
-            self.defined_layers_list.extend([key + "_" + "Layer" + str(lay_num) for lay_num in layer_dict[key]])
-
+        self.defined_layers_dict = copy.deepcopy(setup_def_dict["layer_side_definition"])
         self.defined_connections_dict = copy.deepcopy(setup_def_dict["connections_definition"])
 
+    @abstractmethod
+    def check_sides(self, manual=False):
+        """if number of sides was changed this method will be called"""
+
+    @abstractmethod
     def analyze_click(self, _sender, _args):
         pass
 
+    @abstractmethod
     def setup_analysis_click(self, _sender="", _args=""):
         pass
 
+    @abstractmethod
     def define_windings_click(self, _sender, _args):
         pass
 
+    @abstractmethod
     def define_connection_click(self, _sender, _args):
         pass
 
@@ -674,18 +750,13 @@ class Step3:
             freq_dict["stop_frequency"] = str(self.stop_frequency.Value)
             freq_dict["stop_frequency_unit"] = self.stop_frequency_unit.Value
             freq_dict["samples"] = self.samples.Value
+            freq_dict["scale"] = self.scale.Value
 
         transformer_definition["setup_definition"]["frequency_sweep_definition"] = freq_dict
 
-        side_definition = []
-        for i in range(1, self.transformer_sides.Value + 1):
-            side_definition.append(("Side_" + str(i),
-                                    [layer.replace("Side_{}_Layer".format(i), "") for layer in
-                                     self.windings_def_form.defined_layers_list if "Side_" + str(i) in layer]))
-
-            transformer_definition["setup_definition"]["layer_side_definition"] = OrderedDict(side_definition)
-
+        transformer_definition["setup_definition"]["layer_side_definition"] = self.defined_layers_dict
         transformer_definition["setup_definition"]["connections_definition"] = self.defined_connections_dict
+
 
 class TransformerClass(Step1, Step2, Step3):
     """Main class which serves to manipulate Step classes. We initialize these classes from current class.
@@ -710,6 +781,8 @@ class TransformerClass(Step1, Step2, Step3):
 
         self.flag_auto_save = True
 
+        self.circuit = None
+
     def initialize_step1(self):
         """separate init is required because we do not have access to steps without XML callback"""
         Step1.__init__(self, self.step1)
@@ -717,7 +790,7 @@ class TransformerClass(Step1, Step2, Step3):
     def initialize_step2(self):
         """separate init is required because we do not have access to steps without XML callback"""
         Step2.__init__(self, self.step1)
-        Step2.init_data_step2(self)
+        Step2.init_tables_step2(self)
 
     def initialize_step3(self):
         """separate init is required because we do not have access to steps without XML callback"""
@@ -733,6 +806,11 @@ class TransformerClass(Step1, Step2, Step3):
             json.dump(transformer_definition, output_f, indent=4)
 
     def mirror(self, objects):
+        """
+        Mirrors object around YZ plane
+        :param objects: (str) objects, comma separated
+        :return:
+        """
         self.editor.Mirror(
             [
                 "NAME:Selections",
@@ -790,20 +868,40 @@ class TransformerClass(Step1, Step2, Step3):
             ], "Field")
 
     def define_windings_click(self, _sender, _args):
-        self.windings_def_form.number_of_sides = self.transformer_sides.Value
+        """
+        When user clicks on the button to define winding side. Open UI for user input
+        :param _sender:
+        :param _args:
+        :return:
+        """
+        # initialize classes each time since forms are unstable and may cause:
+        # System.InvalidOperationException: Collection was modified; enumeration operation may not execute.
+        if self.defined_layers_dict:
+            self.windings_def_form = WindingForm(defined_layers_dict=self.defined_layers_dict)
+        else:
+            num_layers = transformer_definition["winding_definition"]["number_of_layers"]
+            self.windings_def_form = WindingForm(number_undefined_layers=int(num_layers))
 
-        # if layers read from file and after that number of sides was changed
-        if not self.windings_def_form.defined_layers_list:
-            self.windings_def_form.number_undefined_layers = int(self.number_of_layers.Value)
+        self.windings_def_form.number_of_sides = self.transformer_sides.Value
 
         self.windings_def_form.refresh_ui_on_show()
         self.windings_def_form.ShowDialog()
-        if self.windings_def_form.defined_layers_list:
-            self.collect_ui_data_step3()
+
+        if self.windings_def_form.defined_layers_dict != self.defined_layers_dict:
+            # user made changes
+            self.defined_layers_dict = copy.deepcopy(self.windings_def_form.defined_layers_dict)
+            self.defined_connections_dict = {}
+            self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag(
+                "analyze_button", False
+            )
+            self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag(
+                "setup_analysis_button", False
+            )
+
+        if self.defined_layers_dict:
             self.step3.UserInterface.GetComponent("define_connections_button").SetEnabledFlag(
                 "define_connections_button", True
             )
-            # todo check if defined layers where changed
 
     def define_connection_click(self, _sender, _args):
         """
@@ -812,20 +910,24 @@ class TransformerClass(Step1, Step2, Step3):
         :param _args: unused
         :return:
         """
-        if self.defined_connections_dict:
-            self.connection_def_form.connections_dict = self.defined_connections_dict
-        else:
-            self.connection_def_form.winding_def_dict = transformer_definition["setup_definition"][
-                                                                                                "layer_side_definition"]
+
+        self.connection_def_form.connections_dict = self.defined_connections_dict
+        if not self.defined_connections_dict:
+            self.connection_def_form.winding_def_dict = self.defined_layers_dict
 
         self.connection_def_form.ShowDialog()
-        self.defined_connections_dict = self.connection_def_form.connections_dict
+        self.defined_connections_dict = copy.deepcopy(self.connection_def_form.connections_dict)
 
         if self.defined_connections_dict:
             self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag("analyze_button", True)
             self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag("setup_analysis_button", True)
 
     def assign_winding_excitations(self, layer_sections_list):
+        """
+        Create and assign coil terminals to windings
+        :param layer_sections_list:
+        :return:
+        """
 
         # create winding for each layer for further assignment in circuit
         for i in range(self.number_of_layers.Value):
@@ -847,6 +949,16 @@ class TransformerClass(Step1, Step2, Step3):
                 ])
 
     def create_winding(self, name, winding_type, current=0.0, resistance=0.0, inductance=0.0, voltage=0.0):
+        """
+        Creates new winding
+        :param name: name of the winding
+        :param winding_type: type (Current|Voltage|External)
+        :param current: current value in A
+        :param resistance:  resistance in Ohm, only for Voltage type
+        :param inductance: in uH, only for Voltage type
+        :param voltage: voltage, in V
+        :return:
+        """
         self.module_boundary_setup.AssignWindingGroup(
             [
                 "NAME:" + name,
@@ -854,7 +966,7 @@ class TransformerClass(Step1, Step2, Step3):
                 "IsSolid:=", True,
                 "Current:=", str(current) + "A",
                 "Resistance:="	, str(resistance) + "ohm",
-                "Inductance:="		, str(inductance) + "nH",
+                "Inductance:="		, str(inductance) + "uH",
                 "Voltage:="		, str(voltage) + "V",
                 "ParallelBranchesNum:="	, "1",
                 "Phase:="		, "0deg"
@@ -879,6 +991,10 @@ class TransformerClass(Step1, Step2, Step3):
         self.reduce_matrix()
 
     def reduce_matrix(self):
+        """
+        Run matrix reduction algorithm
+        :return:
+        """
         for i in range(self.number_of_layers.Value):
             # this loop is only required in 2021R1 and below. There is a bug in matrix reduction IDs, so we reserve some
             self.module_parameter_setup.AssignForce(
@@ -891,17 +1007,24 @@ class TransformerClass(Step1, Step2, Step3):
             self.module_parameter_setup.DeleteParameters(["Force1"])
 
         def reduce(target_dict):
+            """
+            Run matrix reduction, join Serial/Parallel
+            :param target_dict:
+            :return:
+            """
             reduction_list = []
             for key, val in target_dict.items():
                 if isinstance(val, dict):
-                    new_s = reduce(val)
-                    reduction_type = "Series" if "S" in key else "Parallel"
+                    new_red_str = reduce(val)
+                    reduction_type = "Series" if "S" in key[:1] else "Parallel"
+                    name = key.split("_", maxsplit=1)[1] if "Side" in key else key
+
                     self.module_parameter_setup.AddReduceOp("Matrix1", "ReduceMatrix1",
-                                        [
-                                            "NAME:" + key,
-                                            "Type:=", "Join in " + reduction_type,
-                                            "Sources:="	, new_s
-                                        ])
+                                                            [
+                                                                "NAME:" + name,
+                                                                "Type:=", "Join in " + reduction_type,
+                                                                "Sources:=", new_red_str
+                                                            ])
                     reduction_list.append(key)
                 else:
                     reduction_list.append("Layer_" + key)
@@ -910,6 +1033,12 @@ class TransformerClass(Step1, Step2, Step3):
             return reduction_str
 
         def rename(side_num, side_definition):
+            """
+            rename winding and circuit element to be Side_XXX for better UX
+            :param side_num: transformer side number
+            :param side_definition: dict with single layer in it
+            :return:
+            """
             layer = "Layer_" + list(side_definition.keys())[0]
             self.design.ChangeProperty(
                 [
@@ -930,10 +1059,19 @@ class TransformerClass(Step1, Step2, Step3):
                     ]
                 ])
 
-        for side_num, side_def in self.defined_connections_dict.items():
+            # also rename component in circuit
+            comp = self.circuit.get_comp_by_name(layer)[0]
+            self.circuit.change_prop(comp, "name", "Side_" + side_num)
+
+        connections = copy.deepcopy(self.defined_connections_dict)
+        for side_num, side_def in connections.items():
             if not any(isinstance(val, dict) for val in side_def.values()):
                 rename(side_num, side_def)
             else:
+                # replace key and append name of the side for main key, for better UX
+                main_connection = list(side_def.keys())[0]
+                side_def[main_connection + "_Side_" + side_num] = side_def.pop(main_connection)
+
                 reduce(side_def)
 
     def assign_mesh(self, layers_list, core_list):
@@ -945,8 +1083,8 @@ class TransformerClass(Step1, Step2, Step3):
             dimension_list.append(float(transformer_definition["core_dimensions"]["D_" + str(i)]))
 
         mesh_op_sz = max(dimension_list)/20.0
-        self.assign_length_op(core_list, mesh_op_sz)
-        self.assign_length_op(layers_list, mesh_op_sz/2)
+        self.assign_length_op(core_list, mesh_op_sz, "core")
+        self.assign_length_op(layers_list, mesh_op_sz/2, "layers")
 
     def excitation_strategy_change(self):
         if self.excitation_strategy.Value == "Voltage":
@@ -969,27 +1107,92 @@ class TransformerClass(Step1, Step2, Step3):
         list_x = list(range(1, self.transformer_sides.Value + 1))[:]
         list_y = list(range(1, self.transformer_sides.Value + 1))[:]
 
-        all_leakages = []
+        all_leakages = {}
 
         for x in list_x:
             for y in list_y:
                 if x != y:
-                    equation = "Matrix1.L(Side_{0},Side_{0})*(1-sqr(Matrix1.CplCoef(Side_{0},Side_{1})))".format(x, y)
-                    all_leakages.append("LeakageInductance_{}{}".format(x, y))
-                    self.module_output_var.CreateOutputVariable("LeakageInductance_{}{}".format(x, y), equation,
-                                                                "Setup1 : LastAdaptive", "EddyCurrent", [])
+                    coupling_coef = "abs(L(Side_{0},Side_{1}))/sqrt(L(Side_{0},Side_{0})*L(Side_{1},Side_{1}))".format(
+                                                                                                                x, y)
+                    equation = "L(Side_{0},Side_{0})*{1}".format(x, coupling_coef)
+                    all_leakages["Leakage_Inductance_{}{}".format(x, y)] = equation
 
             list_y.remove(x)
 
         if self.transformer_sides.Value <= 1:
-            all_leakages = ["Matrix1.L(Side_1,Side_1)"]
+            all_leakages["Leakage_Inductance_11"] = "L(Side_1,Side_1)"
 
-        self.module_report.CreateReport("Leakage inductance", "EddyCurrent", "Data Table", "Setup1 : LastAdaptive", [],
-                                        ["Freq:=", ["All"]],
+        self.module_report.CreateReport("Leakage Inductance", "EddyCurrent", "Data Table", "Setup1 : LastAdaptive",
                                         [
-                                            "X Component:="	, "Freq",
-                                            "Y Component:="		, all_leakages
-                                        ], [])
+                                            "Context:=", "Matrix1",
+                                            "PointCount:="	, 1001,
+                                            "Matrix:="		, "ReduceMatrix1"
+                                        ],
+                                        [
+                                            "Freq:="		, ["All"]
+                                        ],
+                                        [
+                                            "X Component:="		, "Freq",
+                                            "Y Component:="		, list(all_leakages.values())
+                                        ])
+
+        for key, val in all_leakages.items():
+            self.module_report.ChangeProperty(
+                [
+                    "NAME:AllTabs",
+                    [
+                        "NAME:Trace",
+                        [
+                            "NAME:PropServers",
+                            "Leakage Inductance:" + val
+                        ],
+                        [
+                            "NAME:ChangedProps",
+                            [
+                                "NAME:Specify Name",
+                                "Value:="	, True
+                            ]
+                        ]
+                    ]
+                ])
+            self.module_report.ChangeProperty(
+                [
+                    "NAME:AllTabs",
+                    [
+                        "NAME:Trace",
+                        [
+                            "NAME:PropServers",
+                            "Leakage Inductance:" + val
+                        ],
+                        [
+                            "NAME:ChangedProps",
+                            [
+                                "NAME:Name",
+                                "Value:=", key
+                            ]
+                        ]
+                    ]
+                ])
+
+            # change format to scientific
+            self.module_report.ChangeProperty(
+                [
+                    "NAME:AllTabs",
+                    [
+                        "NAME:Data Filter",
+                        [
+                            "NAME:PropServers",
+                            "Leakage Inductance:{}:Curve1".format(key)
+                        ],
+                        [
+                            "NAME:ChangedProps",
+                            [
+                                "NAME:Number Format",
+                                "Value:="	, "Scientific"
+                            ]
+                        ]
+                    ]
+                ])
 
     def enable_thermal(self, solids):
         """function to turn on feedback for thermal coupling"""
@@ -1038,7 +1241,7 @@ class TransformerClass(Step1, Step2, Step3):
         samples = int(self.samples.Value)
 
         if self.frequency_sweep.Value:
-            if self.step3.Properties["define_setup/frequency_sweep/scale"].Value == 'Linear':  # todo in read/write JSON
+            if self.scale.Value == 'Linear':
                 self.insert_setup(max_num_passes, percent_error, frequency, True,
                                   'LinearCount', start_sweep_freq, stop_sweep_freq, samples)
             else:
@@ -1049,11 +1252,18 @@ class TransformerClass(Step1, Step2, Step3):
 
         return adapt_freq
 
-    def assign_length_op(self, objects, size):
+    def assign_length_op(self, objects, size, name):
+        """
+        Assign in selection length mesh operation
+        :param objects: selection
+        :param size: element size
+        :param name: name of the mesh
+        :return:
+        """
         self.module_mesh.AssignLengthOp(
             [
-                "NAME:Length_" + objects[0],
-                "RefineInside:=", False,
+                "NAME:Length_" + name,
+                "RefineInside:=", True,
                 "Enabled:=", True,
                 "Objects:=", objects,
                 "RestrictElem:=", False,
@@ -1114,20 +1324,33 @@ class TransformerClass(Step1, Step2, Step3):
                 "SolveInside:=", True
             ])
 
-    def change_color(self, selection, R, G, B):
+    def change_color(self, selection, rgb=(255, 255, 255)):
+        """
+        Change color of geometry object
+        :param selection: (list) object selection
+        :param rgb: (tuple) rgb color code
+        :return:
+        """
         self.editor.ChangeProperty(
             ["NAME:AllTabs", ["NAME:Geometry3DAttributeTab",
                               ["NAME:PropServers"] + selection,
                               ["NAME:ChangedProps",
                                [
                                    "NAME:Color",
-                                   "R:=", R,
-                                   "G:=", G,
-                                   "B:=", B
+                                   "R:=", rgb[0],
+                                   "G:=", rgb[1],
+                                   "B:=", rgb[2]
                                ]
                                ]]])
 
     def create_terminal_sections(self, layer_list, layer_sections_list, layers_sections_delete_list):
+        """
+        Create terminals to assign Coil Terminals
+        :param layer_list: list of layers
+        :param layer_sections_list: list of 2D sheets
+        :param layers_sections_delete_list: list of 2D sheets duplicates to remove
+        :return:
+        """
         # only for EFD core not to get an error due to section of winding
         if "CentralLegCS" in self.editor.GetCoordinateSystems():
             self.editor.SetWCS(
@@ -1160,15 +1383,22 @@ class TransformerClass(Step1, Step2, Step3):
         self.editor.Delete(["NAME:Selections", "Selections:=", ','.join(layers_sections_delete_list)])
 
     def create_new_materials(self, coil_material):
+        """
+        Create new materials in AEDT if not yet exists
+        :param coil_material:
+        :return:
+        """
         oDefinitionManager = self.project.GetDefinitionManager()
         core_material = self.core_material.Value
-
-        # check if we are not having core material already
+        # check if material not yet defined
         if not oDefinitionManager.DoesMaterialExist("Material_" + core_material):
             cord_list = ["NAME:Coordinates"]
-            for coordinate_pair in range(len(core_frequency_curves[core_material])):
-                cord_list.append(["NAME:Coordinate", "X:=", core_frequency_curves[core_material][coordinate_pair][0],
-                                  "Y:=", core_frequency_curves[core_material][coordinate_pair][1]])
+
+            permeability = self.materials[core_material]["mu(freq)"]
+            for coordinate_pair in permeability:
+                cord_list.append(["NAME:Coordinate",
+                                  "X:=", coordinate_pair[0],
+                                  "Y:=", coordinate_pair[1]])
 
             self.project.AddDataset(["NAME:$Mu_" + core_material, cord_list])
 
@@ -1184,18 +1414,18 @@ class TransformerClass(Step1, Step2, Step3):
                     ["NAME:AttachedData"],
                     ["NAME:ModifierData"],
                     "permeability:=", "pwl($Mu_" + core_material + ",Freq)",
-                    "conductivity:=", core_material_dict[core_material][0],
+                    "conductivity:=", self.materials[core_material]["conductivity"],
                     [
                         "NAME:core_loss_type",
                         "property_type:=", "ChoiceProperty",
                         "Choice:=", "Power Ferrite"
                     ],
-                    "core_loss_cm:=", core_material_dict[core_material][1],
-                    "core_loss_x:=", core_material_dict[core_material][2],
-                    "core_loss_y:=", core_material_dict[core_material][3],
+                    "core_loss_cm:=", self.materials[core_material]["cm"],
+                    "core_loss_x:=", self.materials[core_material]["x"],
+                    "core_loss_y:=", self.materials[core_material]["y"],
                     "core_loss_kdc:=", "0",
                     "thermal_conductivity:=", "5",
-                    "mass_density:=", core_material_dict[core_material][4],
+                    "mass_density:=", self.materials[core_material]["density"],
                     "specific_heat:=", "750",
                     "thermal_expansion_coeffcient:=", "1e-05"
                 ])
@@ -1320,12 +1550,22 @@ class TransformerClass(Step1, Step2, Step3):
                                                 "UseHighOrderShapeFunc:=", False
                                          ])
 
-    def check_sides(self):
-        """if number of sides was changed just clear the data in winding dialogue and disable buttons"""
-        self.windings_def_form.defined_layers_list = []
-        self.windings_def_form.defined_layers_listbox.Items.Clear()
-        self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag("analyze_button", False)
-        self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag("setup_analysis_button", False)
+    def check_sides(self, manual=False):
+        """
+        if number of sides was changed just clear the data in winding dialogue and disable buttons
+        :param manual: if want to call function from the class itself when populate UI data
+        """
+        if not manual:
+            self.defined_layers_dict = {}
+            self.step3.UserInterface.GetComponent("define_connections_button").SetEnabledFlag(
+                "define_connections_button", False
+            )
+            self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag(
+                "analyze_button", False
+            )
+            self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag(
+                "setup_analysis_button", False
+            )
 
         if self.transformer_sides.Value < 1:
             self.transformer_sides.Value = 1
@@ -1352,6 +1592,12 @@ class TransformerClass(Step1, Step2, Step3):
             pass
 
     def setup_analysis_click(self, _sender="", _args=""):
+        """
+        Run the process of model creation and setup
+        :param _sender:
+        :param _args:
+        :return:
+        """
         self.collect_ui_data_step3()
         self.create_model()
         coil_material = self.coil_material.Value + "_temperature"
@@ -1375,9 +1621,9 @@ class TransformerClass(Step1, Step2, Step3):
         self.assign_material(','.join(layers_list), '"' + coil_material + '"')
 
         if coil_material == 'Copper_temperature':
-            self.change_color(layers_list, 255, 128, 64)
+            self.change_color(layers_list, rgb=(255, 128, 64))
         else:
-            self.change_color(layers_list, 132, 135, 137)
+            self.change_color(layers_list, rgb=(132, 135, 137))
 
         if self.include_bobbin.Value:
             if self.layer_type.Value == 'Wound':
@@ -1393,7 +1639,8 @@ class TransformerClass(Step1, Step2, Step3):
         self.assign_winding_excitations(layer_sections_list)
         self.create_circuit()
         self.assign_matrix_winding()
-        # self.calculate_leakage()
+        self.import_circuit()
+        self.calculate_leakage()
         self.create_loss_report()
 
         self.module_boundary_setup.SetCoreLoss(core_list, False)
@@ -1449,13 +1696,20 @@ class TransformerClass(Step1, Step2, Step3):
 
         self.write_json_data()
 
-        # self.project.SaveAs(os.path.join(self.project_path.Value, self.design_name + '.aedt'), True) # todo
+        self.project.SaveAs(os.path.join(self.project_path.Value, self.design_name + '.aedt'), True)
         self.analysis_set = True
         self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag("setup_analysis_button", False)
         self.step3.UserInterface.GetComponent("define_windings_button").SetEnabledFlag("define_windings_button", False)
+        self.step3.UserInterface.GetComponent("define_connections_button").SetEnabledFlag(
+            "define_connections_button", False
+        )
         oDesktop.EnableAutoSave(self.flag_auto_save)
 
     def create_model(self):
+        """
+        Generate Transformer geometry
+        :return:
+        """
         time_now = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
         self.design_name = 'Transformer_' + time_now
 
@@ -1491,6 +1745,10 @@ class TransformerClass(Step1, Step2, Step3):
             draw_class.draw_geometry()
 
     def check_winding(self):
+        """
+        Validate that windings will fit into the transformer dimensions
+        :return:
+        """
         if self.skip_check.Value:
             return
 
@@ -1642,6 +1900,10 @@ class TransformerClass(Step1, Step2, Step3):
             ])
 
     def create_circuit(self):
+        """
+        Create Maxwell Circuit
+        :return:
+        """
         if self.excitation_strategy.Value == "Voltage":
             current = 0
             voltage = self.voltage.Value
@@ -1649,16 +1911,22 @@ class TransformerClass(Step1, Step2, Step3):
             voltage = 0
             current = self.voltage.Value
 
-        circuit = Circuit(self.defined_connections_dict, self.project, self.design_name,
-                          current=current, voltage=voltage,
-                          resistance=self.resistance.Value, frequency=self.adaptive_frequency.Value)
-        circuit.create()
-        circuit_path = os.path.join(self.project.GetPath(), "circuit.sph")
-
-        circuit.design.ExportNetlist("", circuit_path)
-
+        self.circuit = Circuit(self.defined_connections_dict, self.project, self.design_name,
+                               current=current, voltage=voltage,
+                               resistance=self.resistance.Value, frequency=self.adaptive_frequency.Value)
+        self.circuit.create()
         self.project.SetActiveDesign(self.design_name)
+
+    def import_circuit(self):
+        """
+        Export circuit from Maxwell Circuit design and import into Maxwell Eddy Current
+        :return:
+        """
+        circuit_path = os.path.join(self.project.GetPath(), self.design_name + "_circuit.sph")
+        self.circuit.design.ExportNetlist("", circuit_path)
+
         self.module_boundary_setup.EditExternalCircuit(circuit_path, [], [], [], [])  # import circuit
+
 
 def on_init_step1(step):
     """invoke on step initialisation, only once when you open the app"""
@@ -1677,12 +1945,34 @@ def callback_step1(_step):
     transformer.callback_step1()
 
 
-def on_supplier_or_core_type_change(_step, _prop):
-    transformer.prefill_core_dimensions()
+def on_supplier_change(_step, _prop):
+    """
+    When supplier value is changed
+    :param _step: unused
+    :param _prop: unused
+    :return:
+    """
+    transformer.prefill_core_types()
+
+
+def on_core_type_change(_step, _prop):
+    """
+    When core type value is changed
+    :param _step: unused
+    :param _prop: unused
+    :return:
+    """
+    transformer.prefill_core_models()
 
 
 def on_core_model_change(_step, _prop):
-    transformer.insert_default_values()
+    """
+    When core model value is changed
+    :param _step: unused
+    :param _prop: unused
+    :return:
+    """
+    transformer.prefill_core_dimensions()
 
 
 def on_init_step2(_step):
@@ -1706,14 +1996,33 @@ def callback_step2(_step):
 
 
 def on_layers_number_change(_step, _prop):
+    """
+    When number of layers changed
+    :param _step: unused
+    :param _prop: unused
+    :return:
+    """
     transformer.update_rows()
+    transformer.warn_about_winding_def_clean_up()
 
 
 def on_layer_type_change(_step, _prop):
+    """
+    When layer type changed (Wound/Planar)
+    :param _step: unused
+    :param _prop: unused
+    :return:
+    """
     transformer.change_captions()
 
 
 def on_excitation_strategy_change(_step, _prop):
+    """
+    When change from Voltage to Current or other way
+    :param _step: unused
+    :param _prop: unused
+    :return:
+    """
     transformer.excitation_strategy_change()
 
 

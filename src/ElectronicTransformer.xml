@@ -1,7 +1,6 @@
-<extension name="ElectronicTransformer" version="2" minorversion="0" icon="images\logo.jpg" loadasdefault="False">
+<extension name="ElectronicTransformer" version="2" minorversion="0" icon="images\logo.jpg" loadasdefault="True">
   <author>ANSYS, Inc.</author>
   <guid shortid="ElectronicsWizard">beb238e5-6315-4602-a3f5-f004e6c02805</guid>
-  <script src="core_data.py"/>
   <script src="circuit.py"/>
   <script src="etk_callback.py"/>
   <script src="forms.py"/>
@@ -36,17 +35,15 @@
                     </callbacks>
                 </property>
 
-				<property name="supplier" caption="Supplier:" control="select" default="Ferroxcube">
-					<attributes options="Ferroxcube,Phillips" />
+				<property name="supplier" caption="Supplier:" control="select">
 					<callbacks>
-						<onvalidate>on_supplier_or_core_type_change</onvalidate>
+						<onvalidate>on_supplier_change</onvalidate>
 					</callbacks>
 				</property>
 
-				<propertygroup name="core_type" caption="Core Type:" control="select" default="E" display="property">
-					<attributes options="E,EI,EC,EFD,EP,EQ,ER,ETD,P,PT,PH,PQ,RM,U,UI" />
+				<propertygroup name="core_type" caption="Core Type:" control="select" display="property">
 					<callbacks>
-						<onvalidate>on_supplier_or_core_type_change</onvalidate>
+						<onvalidate>on_core_type_change</onvalidate>
 					</callbacks>
 
           <property name="core_model" caption="Core Model:" control="select">

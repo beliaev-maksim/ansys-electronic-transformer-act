@@ -47,7 +47,7 @@ class Circuit:
             conn_type = conn_type[:1]
             for key, val in target_dict.items():
                 if isinstance(val, dict):
-                    if key[:3] == conn_type:
+                    if key[:1] == conn_type:
                         new_dict = target_dict.pop(key)
                         target_dict.update(new_dict)
                         return
@@ -116,6 +116,27 @@ class Circuit:
                 ]
             ])
 
+    def get_comp_by_name(self, name):
+        """
+        Searches component by its name
+        :param name: name of the comp
+        :return: list of instance IDs
+        """
+        result = self.editor.FindElements(
+            [
+                "NAME:SearchProps",
+                "Prop:=", ["name", name, 2]
+            ],
+            [
+                "NAME:Parameters",
+                "Filter:=", 2,
+                "MatchAll:=", False,
+                "MatchCase:=", False,
+                "SearchSubCkt:=", True,
+                "SearchSelectionOnly:=", False
+            ])
+        return result
+
     def create_winding(self, winding_number, x, y):
         """
         Create a winding component and give it a name the same as in excitation
@@ -142,9 +163,15 @@ class Circuit:
 
         component_name = self.create_component(name, x=0, y=-1, angle=angle)
 
+        x_init = 1
         if source_type == "Voltage":
             self.change_prop(component_name, prop_name="Va", prop_value=self.voltage, netlist_unit="V")
             self.change_prop(component_name, prop_name="VFreq", prop_value=self.frequency, netlist_unit="")
+
+            name = "Maxwell Circuit Elements\\Passive Elements:Res"
+            component_name = self.create_component(name, x=1, y=-1, angle=0)
+            self.change_prop(component_name, prop_name="R", prop_value="0.001", netlist_unit="Ohm")
+            x_init = 2
         elif source_type == "Current":
             self.change_prop(component_name, prop_name="Ia", prop_value=self.current, netlist_unit="A")
             self.change_prop(component_name, prop_name="IFreq", prop_value=self.frequency, netlist_unit="")
@@ -153,7 +180,7 @@ class Circuit:
 
         self.wire(0, -1, 0, 0)
         self.wire(max_x, -1, max_x, 0)
-        self.wire(1, -1, max_x, -1)
+        self.wire(x_init, -1, max_x, -1)
 
     def create_ground(self):
         x = -2
@@ -280,8 +307,8 @@ class Circuit:
 
         if "P" in conn_type:
             # if parallel connection we need to draw a vertical wire at the beginning of nested circuit and at the end
-            self.wire(x, y, x, y + target_dict["y_size"] - 2)
-            self.wire(x + 2 * target_dict["x_size"], y, x + 2 * target_dict["x_size"], y + target_dict["y_size"] - 2)
+            self.wire(x, y, x, y + target_dict["y_size"] - 1)
+            self.wire(x + 2 * target_dict["x_size"], y, x + 2 * target_dict["x_size"], y + target_dict["y_size"] - 1)
             max_x = target_dict["x_size"]  # save max_x in case if there are nested serial circuits inside
 
         for i, key in enumerate(all_keys):
@@ -341,7 +368,12 @@ class Circuit:
         self.editor.ZoomToFit()
 
     def create(self):
-        for winding, definition in self.winding_connection.items():
+        """
+        Main function that loops through all winding sides and creates a circuit for each side
+        """
+
+        # sort by winding side first and iterate
+        for winding, definition in sorted(self.winding_connection.items(), key=lambda x: int(x[0])):
             self.page = int(winding)  # set new page for each side: Primary, Secondary, etc
             if self.page > 1:
                 self.editor.CreatePage("Page{}".format(self.page))
@@ -369,36 +401,97 @@ if __name__ == '__main__':
     from AEDTLib.Desktop import Desktop
     import random
 
-    windings = {
-            "1": {
-                "P6": {
-                    "S3": {
-                        "7": "Layer",
-                        "P2": {
-                            "1": "Layer",
-                            "2": "Layer"
-                        }
-                    },
-                    "S5": {
-                        "4": "Layer",
-                        "3": "Layer"
-                    },
-                    "S4": {
-                        "6": "Layer",
-                        "5": "Layer"
-                    }
-                }
-            },
-            "2": {
-                "S7": {
-                    "8": "Layer",
-                    "9": "Layer"
-                }
-            },
-            "3": {
-                "10": "Layer"
-            }
-        }
+    connections = {"S444444": {"72727": "layer", "987987987": "layer",
+                               "P9": {
+                                   "S4": {
+                                       "P1": {
+                                           "1": "layer",
+                                           "2": "layer"
+                                       },
+                                       "P2": {
+                                           "3": "layer",
+                                           "S78": {
+                                               "55": "layer",
+                                               "P1": {
+                                                   "66": "layer",
+                                                   "77": "layer"
+                                               }
+                                           },
+                                           "S7": {
+                                               "555": "layer",
+                                               "P1": {
+                                                   "666": "layer",
+                                                   "777": "layer"
+                                               }
+                                           },
+                                           "19": "layer"
+                                       },
+                                       "S3": {
+                                           "5": "layer",
+                                           "6": "layer"
+                                       }
+                                   },
+                                   "S8": {
+                                       "P5": {
+                                           "7": "layer",
+                                           "8": "layer"
+                                       },
+                                       "P6": {
+                                           "9": "layer",
+                                           "10": "layer"
+                                       },
+                                       "P7": {
+                                           "11": "layer",
+                                           "12": "layer",
+                                           "99": "layer"
+                                       }
+                                   },
+                                   "7": "layer",
+                                   "S9": {
+                                       "S4": {
+                                           "P1": {
+                                               "1": "layer",
+                                               "2": "layer"
+                                           },
+                                           "P2": {
+                                               "3": "layer",
+                                               "S78": {
+                                                   "55": "layer",
+                                                   "P1": {
+                                                       "66": "layer",
+                                                       "77": "layer"
+                                                   }
+                                               },
+                                               "4": "layer",
+                                               "19": "layer"
+                                           },
+                                           "S3": {
+                                               "5": "layer",
+                                               "6": "layer"
+                                           }
+                                       },
+                                       "S8": {
+                                           "P5": {
+                                               "7": "layer",
+                                               "8": "layer"
+                                           },
+                                           "P6": {
+                                               "9": "layer",
+                                               "10": "layer"
+                                           },
+                                           "P7": {
+                                               "11": "layer",
+                                               "12": "layer",
+                                               "99": "layer"
+                                           }
+                                       },
+                                       "7": "layer"
+                                   }
+                               }
+                               }}
+
+    conn2 = copy.deepcopy(connections)
+    windings = {"2": connections, "1": conn2}
     with Desktop("2021.1", release_on_exit=True):
         oDesktop.RestoreWindow()
         oProject = oDesktop.GetActiveProject()

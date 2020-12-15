@@ -1,5 +1,9 @@
 from abc import ABCMeta, abstractmethod
 import clr
+import ctypes  # lib to get screen resolution
+import copy
+from collections import OrderedDict
+
 clr.AddReference("Ans.UI.Toolkit")
 clr.AddReference("Ans.UI.Toolkit.Base")
 clr.AddReference("Ans.Utilities")
@@ -16,17 +20,20 @@ from Ansys.UI.Toolkit import *
 from Ansys.UI.Toolkit.Drawing import *
 from Ansys.Utilities import *
 
-import ctypes  # lib to get screen resolution
-import copy
-from collections import OrderedDict
+
+def message_box(self, msg):
+    MessageBox.Show(self, msg,
+                    "Error", MessageBoxType.Error,
+                    MessageBoxButtons.OK, MessageBoxDefaultButton.Button1)
 
 
-class WindingForm(Ansys.UI.Toolkit.Dialog):
-    def __init__(self, number_undefined_layers=0, defined_layers_list=[]):
-        self.number_of_sides = 2
-        self.number_undefined_layers = number_undefined_layers
-        self.defined_layers_list = defined_layers_list
+class WindingFormUI(Ansys.UI.Toolkit.Dialog):
+    """
+        Abstract class that represents UI definition of the winding dialog
+    """
+    __metaclass__ = ABCMeta
 
+    def __init__(self):
         self.screen_width = ctypes.windll.user32.GetSystemMetrics(0)
         self.screen_height = ctypes.windll.user32.GetSystemMetrics(1)
 
@@ -64,7 +71,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.available_layers_label.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                          Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.available_layers_label.Location = Ansys.UI.Toolkit.Drawing.Point(20, 20)
-        self.available_layers_label.Name = "ExLabel"
         self.available_layers_label.Size = Ansys.UI.Toolkit.Drawing.Size(120, 23)
         self.available_layers_label.Text = "Available Layers"
         #
@@ -73,7 +79,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.defined_layers_label.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                        Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.defined_layers_label.Location = Ansys.UI.Toolkit.Drawing.Point(360, 20)
-        self.defined_layers_label.Name = "ReduceLabel"
         self.defined_layers_label.Size = Ansys.UI.Toolkit.Drawing.Size(161, 23)
         self.defined_layers_label.Text = "Defined Windings"
         #
@@ -82,7 +87,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.move_to_side_label.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                      Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.move_to_side_label.Location = Ansys.UI.Toolkit.Drawing.Point(200, 20)
-        self.move_to_side_label.Name = "to side label"
         self.move_to_side_label.Size = Ansys.UI.Toolkit.Drawing.Size(161, 23)
         self.move_to_side_label.Text = "Move to side >"
         #
@@ -91,7 +95,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.available_layers_listbox.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                            Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.available_layers_listbox.Location = Ansys.UI.Toolkit.Drawing.Point(20, 45)
-        self.available_layers_listbox.Name = "ExcList"
         self.available_layers_listbox.IsMultiSelectable = True
         self.available_layers_listbox.Size = Ansys.UI.Toolkit.Drawing.Size(170, 250)
         self.available_layers_listbox.SelectionChanged += self.update_buttons
@@ -101,7 +104,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.defined_layers_listbox.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                          Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.defined_layers_listbox.Location = Ansys.UI.Toolkit.Drawing.Point(330, 45)
-        self.defined_layers_listbox.Name = "ReduceList"
         self.defined_layers_listbox.IsMultiSelectable = True
         self.defined_layers_listbox.Size = Ansys.UI.Toolkit.Drawing.Size(170, 250)
         self.defined_layers_listbox.SelectionChanged += self.update_buttons
@@ -111,7 +113,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.primary_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                  Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.primary_button.Location = Ansys.UI.Toolkit.Drawing.Point(200, 50)
-        self.primary_button.Name = "PrimButton"
         self.primary_button.Size = Ansys.UI.Toolkit.Drawing.Size(30, 27)
         self.primary_button.Text = "1"
         self.primary_button.Click += self.primary_add
@@ -121,7 +122,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.secondary_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                    Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.secondary_button.Location = Ansys.UI.Toolkit.Drawing.Point(245, 50)
-        self.secondary_button.Name = "SecButton"
         self.secondary_button.Size = Ansys.UI.Toolkit.Drawing.Size(30, 27)
         self.secondary_button.Text = "2"
         self.secondary_button.Click += self.secondary_add
@@ -131,7 +131,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.tertiary_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                   Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.tertiary_button.Location = Ansys.UI.Toolkit.Drawing.Point(290, 50)
-        self.tertiary_button.Name = "tertiary_button"
         self.tertiary_button.Size = Ansys.UI.Toolkit.Drawing.Size(30, 27)
         self.tertiary_button.Text = "3"
         self.tertiary_button.Click += self.tertiary_add
@@ -141,7 +140,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.custom_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                 Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.custom_button.Location = Ansys.UI.Toolkit.Drawing.Point(200, 90)
-        self.custom_button.Name = "custom_button"
         self.custom_button.Size = Ansys.UI.Toolkit.Drawing.Size(70, 27)
         self.custom_button.Text = "Custom:"
         self.custom_button.Click += self.custom_add
@@ -151,7 +149,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.custom_sides_number.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                       Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.custom_sides_number.Location = Ansys.UI.Toolkit.Drawing.Point(280, 91)
-        self.custom_sides_number.Name = "custom_number_box"
         self.custom_sides_number.Size = Ansys.UI.Toolkit.Drawing.Size(40, 27)
         #
         # RemoveButton
@@ -159,7 +156,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.remove_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                 Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.remove_button.Location = Ansys.UI.Toolkit.Drawing.Point(200, 145)
-        self.remove_button.Name = "RemoveButton"
         self.remove_button.Size = Ansys.UI.Toolkit.Drawing.Size(120, 27)
         self.remove_button.Text = "< Remove"
         self.remove_button.Click += self.remove
@@ -169,7 +165,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.all_to_side_label.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                     Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.all_to_side_label.Location = Ansys.UI.Toolkit.Drawing.Point(200, 195)
-        self.all_to_side_label.Name = "all to side label"
         self.all_to_side_label.Size = Ansys.UI.Toolkit.Drawing.Size(161, 23)
         self.all_to_side_label.Text = "Move All to side >>"
         #
@@ -178,7 +173,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.all_primary_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                      Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.all_primary_button.Location = Ansys.UI.Toolkit.Drawing.Point(200, 220)
-        self.all_primary_button.Name = "PrimButton"
         self.all_primary_button.Size = Ansys.UI.Toolkit.Drawing.Size(30, 27)
         self.all_primary_button.Text = "1"
         self.all_primary_button.Click += self.all_primary
@@ -188,7 +182,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.all_secondary_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                        Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.all_secondary_button.Location = Ansys.UI.Toolkit.Drawing.Point(245, 220)
-        self.all_secondary_button.Name = "SecButton"
         self.all_secondary_button.Size = Ansys.UI.Toolkit.Drawing.Size(30, 27)
         self.all_secondary_button.Text = "2"
         self.all_secondary_button.Click += self.all_secondary
@@ -198,7 +191,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.all_tertiary_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                       Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.all_tertiary_button.Location = Ansys.UI.Toolkit.Drawing.Point(290, 220)
-        self.all_tertiary_button.Name = "SecButton"
         self.all_tertiary_button.Size = Ansys.UI.Toolkit.Drawing.Size(30, 27)
         self.all_tertiary_button.Text = "3"
         self.all_tertiary_button.Click += self.all_tertiary
@@ -208,7 +200,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.all_custom_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                     Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.all_custom_button.Location = Ansys.UI.Toolkit.Drawing.Point(200, 260)
-        self.all_custom_button.Name = "all_custom_button"
         self.all_custom_button.Size = Ansys.UI.Toolkit.Drawing.Size(70, 27)
         self.all_custom_button.Text = "Custom:"
         self.all_custom_button.Click += self.all_custom
@@ -218,7 +209,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.all_custom_sides_number.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                           Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.all_custom_sides_number.Location = Ansys.UI.Toolkit.Drawing.Point(280, 261)
-        self.all_custom_sides_number.Name = "all_custom_number_box"
         self.all_custom_sides_number.Size = Ansys.UI.Toolkit.Drawing.Size(40, 27)
         #
         # OK
@@ -226,7 +216,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.ok_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                             Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.ok_button.Location = Ansys.UI.Toolkit.Drawing.Point(330, 305)
-        self.ok_button.Name = "RedOK"
         self.ok_button.Size = Ansys.UI.Toolkit.Drawing.Size(80, 27)
         self.ok_button.Text = "OK"
         self.ok_button.Click += self.ok_clicked
@@ -236,7 +225,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.cancel_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
                                                                 Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
         self.cancel_button.Location = Ansys.UI.Toolkit.Drawing.Point(420, 305)
-        self.cancel_button.Name = "RedCancel"
         self.cancel_button.Size = Ansys.UI.Toolkit.Drawing.Size(80, 27)
         self.cancel_button.Text = "Cancel"
         self.cancel_button.Click += self.cancel_clicked
@@ -259,7 +247,6 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.Controls.Add(self.all_to_side_label)
         self.Controls.Add(self.all_custom_button)
         self.Controls.Add(self.all_custom_sides_number)
-        # self.Controls.Add(
         self.Controls.Add(self.tertiary_button)
         self.Controls.Add(self.all_primary_button)
         self.Controls.Add(self.all_secondary_button)
@@ -271,6 +258,111 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         self.Text = 'Define Windings'
 
         self.BeforeClose += Ansys.UI.Toolkit.WindowCloseEventDelegate(self.cancel_clicked)
+
+    @abstractmethod
+    def update_buttons(self, _sender, _e):
+        """Function to enable or disable buttons when list of layers or definitions is changed"""
+
+    @abstractmethod
+    def primary_add(self, _sender, _e):
+        """
+        When click on Add Primary [1] button
+        :param _sender: unused
+        :param _e: unused
+        :return: None
+        """
+
+    @abstractmethod
+    def secondary_add(self, _sender, _e):
+        """
+        When click on Add Secondary [2] button
+        :param _sender: unused
+        :param _e: unused
+        :return: None
+        """
+
+    @abstractmethod
+    def tertiary_add(self, _sender, _e):
+        """
+        When click on Add Tertiary [3] button
+        :param _sender: unused
+        :param _e: unused
+        :return: None
+        """
+
+    @abstractmethod
+    def custom_add(self, _sender, _e):
+        """
+        On click of Custom button we grab number from Drop Down box and pass it as argument
+        :param _sender: unused
+        :param _e: unused
+        :return: None
+        """
+        """"""
+
+    @abstractmethod
+    def all_primary(self, _sender, _e):
+        """
+        When click on All Primary [1] button
+        :param _sender: unused
+        :param _e: unused
+        :return: None
+        """
+
+    @abstractmethod
+    def all_secondary(self, _sender, _e):
+        """
+        When click on All Secondary [2] button
+        :param _sender: unused
+        :param _e: unused
+        :return: None
+        """
+
+    @abstractmethod
+    def all_tertiary(self, _sender, _e):
+        """
+        When click on All Tertiary [3] button
+        :param _sender: unused
+        :param _e: unused
+        :return: None
+        """
+
+    @abstractmethod
+    def all_custom(self, _sender, _e):
+        """On click of Custom button we grab number from Drop Down box and pass it as argument"""
+
+    @abstractmethod
+    def remove(self, _sender, _e):
+        """
+        Function to remove item from defined list and move it to undefined layers.
+        """
+
+    @abstractmethod
+    def ok_clicked(self, _sender, _e):
+        """
+        OK button clicked
+        :param _sender: unused
+        :param _e: unused
+        :return: None
+        """
+
+    @abstractmethod
+    def cancel_clicked(self, _sender, _e):
+        """
+        Cancel button clicked
+        :param _sender: unused
+        :param _e: unused
+        :return: None
+        """
+
+
+class WindingForm(WindingFormUI):
+    def __init__(self, number_undefined_layers=0, defined_layers_dict={}):
+        super(WindingForm, self).__init__()
+
+        self.number_of_sides = 1
+        self.number_undefined_layers = number_undefined_layers
+        self.defined_layers_dict = copy.deepcopy(defined_layers_dict)
 
     def refresh_ui_on_show(self):
         """function to call externally after fill the list of layers to update the UI"""
@@ -287,8 +379,9 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
         for i in range(1, self.number_undefined_layers+1):
             self.available_layers_listbox.Items.Add(('Layer' + str(i)))
 
-        for item in self.defined_layers_list:
-            self.defined_layers_listbox.Items.Add(item)
+        for side, val in self.defined_layers_dict.items():
+            for layer in val:
+                self.defined_layers_listbox.Items.Add("Side_{}_Layer{}".format(side, layer))
 
     def update_buttons(self, sender, e):
         """Function to enable or disable buttons when list of layers or definitions is changed"""
@@ -358,7 +451,7 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
 
     def define_layer(self, side_number, all_available=False):
         all_available_layers_list = list(self.available_layers_listbox.Items)[:]
-        selected_layers_list = sorted(list(self.available_layers_listbox.SelectedItems))
+        selected_layers_list = sorted(list(self.available_layers_listbox.SelectedItems))[:]
         # need to remove selection before use Items.Remove
         self.available_layers_listbox.ClearSelectedItems()
 
@@ -422,56 +515,41 @@ class WindingForm(Ansys.UI.Toolkit.Dialog):
 
         self.update_all_to_buttons()
 
-    def reset(self):
-        """Clear both lists. Defined list could be only in case if OK was clicked at least once.
-        Otherwise we need to create only undefined list of layers."""
-        self.defined_layers_listbox.Items.Clear()
-        self.available_layers_listbox.Items.Clear()
-
-        if not self.defined_layers_list:
-            for i in range(1, self.number_undefined_layers+1):
-                self.available_layers_listbox.Items.Add(('Layer' + str(i)))
-        else:
-            for item in self.defined_layers_list:
-                self.defined_layers_listbox.Items.Add(item)
-
-    def verify_sides_assignment(self):
+    def verify_sides_assignment(self, target_dict):
         """function to verify that layers were assigned to each of sides"""
-        check_list = []
-        for layer in self.defined_layers_list:
-            check_list.append(layer.split("_")[1])
-
-        return all([str(item) in check_list for item in list(range(1, self.number_of_sides+1))])
+        defined_sides = [int(key) for key in target_dict]
+        result = sorted(defined_sides) == list(range(1, self.number_of_sides+1))
+        return result
 
     def ok_clicked(self, sender, e):
-        self.defined_layers_list = []  # clear the list each time OK clicked not to append multiple times
+        final_dict = {}
         if len(self.available_layers_listbox.Items) > 0:
-            return MessageBox.Show(self,
-                                   "Windings are not Defined.\nPlease define all layers as windings",
-                                   "Error",
-                                   MessageBoxType.Error,
-                                   MessageBoxButtons.OK, MessageBoxDefaultButton.Button1)
+            return message_box(self, "Windings are not Defined.\nPlease define all layers as windings")
 
         for item in self.defined_layers_listbox.Items:
-            self.defined_layers_list.append(item.Text)
+            _, side, layer = item.Text.split("_")
+            if side not in final_dict:
+                final_dict[side] = []
 
-        completed = self.verify_sides_assignment()
+            final_dict[side].append(layer[5:])
+
+        completed = self.verify_sides_assignment(final_dict)
 
         if not completed:
-            self.defined_layers_list = []  # clear the list in case if it was wrong (it is not listbox)
-            return MessageBox.Show(self,
-                            "Not all sides are used. Please redefine windings or decrease number of Transformer sides",
-                            "Error",
-                            MessageBoxType.Error,
-                            MessageBoxButtons.OK, MessageBoxDefaultButton.Button1)
+            msg = "Not all sides are used. Please redefine windings or decrease number of Transformer sides"
+            return message_box(self, msg)
+
+        self.defined_layers_dict = copy.deepcopy(final_dict)
         self.Hide()
 
     def cancel_clicked(self, sender, e):
-        self.reset()
         self.Hide()
 
 
 class ConnectionFormUI(Ansys.UI.Toolkit.Dialog):
+    """
+    Abstract class that represents UI definition of the connection dialog
+    """
     __metaclass__ = ABCMeta
 
     def __init__(self):
@@ -691,13 +769,21 @@ class ConnectionForm(ConnectionFormUI):
         self.backup = None
 
     def on_show(self, _sender, _e):
+        """
+        Everytime UI visibility is changed, this method is called. This will prefill sides and lists in UI
+        Note: due to bug in core, this method is fired always twice
+        :param _sender: unused
+        :param _e: unused
+        :return:
+        """
         if self.Visible:
+            self.temp_connections_dict = OrderedDict()
             if not self.connections_dict:
                 self._id = 1
                 # no connections defined, make copy of mutable object
                 temp_dict = copy.deepcopy(self.winding_def_dict)
                 for key, val in temp_dict.items():
-                    self.temp_connections_dict[key[5:]] = OrderedDict((item, "Layer") for item in val)
+                    self.temp_connections_dict[key] = OrderedDict((item, "Layer") for item in val)
             else:
                 self.temp_connections_dict = copy.deepcopy(self.connections_dict)
                 self._id = self.find_max_id(self.temp_connections_dict) + 1
@@ -736,7 +822,7 @@ class ConnectionForm(ConnectionFormUI):
         :return:
         """
         self.side_dropdown.Clear()
-        for side in self.temp_connections_dict:
+        for side in sorted(self.temp_connections_dict):
             self.side_dropdown.AddItem(side)
 
         self.side_dropdown.SelectedIndex = 0  # also triggers SelectionChanged event
@@ -746,7 +832,8 @@ class ConnectionForm(ConnectionFormUI):
         otherwise populate already defined connections from dictionary"""
 
         self.connections_listbox.Items.Clear()
-        for layer in sorted(self.temp_connections_dict[self.active_side].keys()):
+        # natural_keys are defined in etk_callback, due to ACT architecture no explicit import
+        for layer in sorted(self.temp_connections_dict[self.active_side].keys(), key=natural_keys):
             val = self.temp_connections_dict[self.active_side][layer]
             if isinstance(val, dict):
                 self.connections_listbox.Items.Add((self.dict_to_str(val, conn_type=layer)))
@@ -810,11 +897,7 @@ class ConnectionForm(ConnectionFormUI):
         """
         selected_connections_list = sorted(list(self.connections_listbox.SelectedItems))
         if len(selected_connections_list) < 2:
-            return MessageBox.Show(self,
-                                   "You need at least 2 selections to create a connection",
-                                   "Error",
-                                   MessageBoxType.Error,
-                                   MessageBoxButtons.OK, MessageBoxDefaultButton.Button1)
+            return message_box(self, "You need at least 2 selections to create a connection")
 
         # need to remove selection before use Items.Remove
         self.connections_listbox.ClearSelectedItems()
@@ -843,11 +926,7 @@ class ConnectionForm(ConnectionFormUI):
         """
         selected_connections_list = sorted(list(self.connections_listbox.SelectedItems))
         if len(selected_connections_list) == 0:
-            return MessageBox.Show(self,
-                                   "You need at least 1 selection to ungroup a connection",
-                                   "Error",
-                                   MessageBoxType.Error,
-                                   MessageBoxButtons.OK, MessageBoxDefaultButton.Button1)
+            return message_box(self, "You need at least 1 selection to ungroup a connection")
 
         # need to remove selection before use Items.Remove
         self.connections_listbox.ClearSelectedItems()
@@ -872,8 +951,8 @@ class ConnectionForm(ConnectionFormUI):
         if not valid:
             msg = "You cannot have more than 1 item in the site list, please use connect Serial/Parallel button. "
             msg += "Undefined side: {}".format(side)
-            return MessageBox.Show(self, msg, "Error",
-                                   MessageBoxType.Error, MessageBoxButtons.OK, MessageBoxDefaultButton.Button1)
+            return message_box(self, msg)
+
         self.connections_dict = copy.deepcopy(self.temp_connections_dict)
         self.Hide()
 
@@ -948,9 +1027,7 @@ class TabularDataEditor:
         component.WidthValue = 100
         component.HeightType = Ansys.ACT.Interfaces.UserInterface.ComponentLengthType.Percentage
         component.HeightValue = 100
-        component.CustomHTMLFile = str(ExtAPI.Extension.InstallDir) + r'\testComp.html'
-        component.CustomCSSFile = str(ExtAPI.Extension.InstallDir) + r'\testComp.css'
-        component.CustomJSFile = str(ExtAPI.Extension.InstallDir) + r'\testComp.js'
+        component.CustomJSFile = r'file:///' + str(ExtAPI.Extension.InstallDir) + r'\custom_table.js'
         component.ComponentType = "tabularDataComponent"
         layout.Components.Add(component)
 
