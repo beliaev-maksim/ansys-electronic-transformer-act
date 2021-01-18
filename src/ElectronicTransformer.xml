@@ -18,12 +18,27 @@
       <description>Dimensions, shape, supplier</description>
 
 			<componentstyle
-			component="readData"
+			component="read_data_button"
 			background-color="Transparent"
 			border-color="Transparent" />
 
 			<componentstyle
-			component="helpButton"
+			component="open_library_button"
+			background-color="Transparent"
+			border-color="Transparent" />
+
+			<componentstyle
+			component="open_examples_button"
+			background-color="Transparent"
+			border-color="Transparent" />
+
+			<componentstyle
+			component="github_button"
+			background-color="Transparent"
+			border-color="Transparent" />
+
+			<componentstyle
+			component="help_button"
 			background-color="Transparent"
 			border-color="Transparent" />
 
@@ -118,7 +133,7 @@
 		<step name="step2" caption="Winding Definition" layout="StepTwo@ElectronicTransformer" version= "1">
       <description>Dimensions, planar or wound</description>
 			<componentstyle
-			component="helpButton"
+			component="help_button"
 			background-color="Transparent"
 			border-color="Transparent" />
 
@@ -256,7 +271,7 @@
 			border-color="Transparent" />
 
 			<componentstyle
-			component="helpButton"
+			component="help_button"
 			background-color="Transparent"
 			border-color="Transparent" />
 
@@ -406,7 +421,7 @@ If you change number of sides winding definition would be reset</help>
 				leftattachment=""
 				topattachment="Title"
 				rightattachment="coreImage"
-				bottomattachment="readData"
+				bottomattachment="read_data_button"
 
 				leftoffset="10"
 				topoffset="5"
@@ -428,7 +443,7 @@ If you change number of sides winding definition would be reset</help>
 				leftattachment="Properties"
 				topattachment="Title"
 				rightattachment=""
-				bottomattachment="readData"
+				bottomattachment="read_data_button"
 
 				leftoffset=""
 				topoffset="5"
@@ -446,11 +461,55 @@ If you change number of sides winding definition would be reset</help>
 			/>
 
 			<component
-				name="readData"
+				name="read_data_button"
 
 				leftattachment=""
 				topattachment="Properties"
-				rightattachment="helpButton"
+				rightattachment="open_library_button"
+				bottomattachment="open_examples_button"
+
+				leftoffset="10"
+				topoffset=""
+				rightoffset=""
+				bottomoffset=""
+
+				heighttype="FitTocontent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="50"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+
+			<component
+				name="open_library_button"
+
+				leftattachment="read_data_button"
+				topattachment="Properties"
+				rightattachment="github_button"
+				bottomattachment="open_examples_button"
+
+				leftoffset=""
+				topoffset=""
+				rightoffset="10"
+				bottomoffset=""
+
+				heighttype="FitTocontent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="50"
+				maxwidth="0"
+				componenttype="buttonsComponent"
+			/>
+
+			<component
+				name="open_examples_button"
+
+				leftattachment=""
+				topattachment="read_data_button"
+				rightattachment="github_button"
 				bottomattachment="Submit"
 
 				leftoffset="10"
@@ -462,16 +521,16 @@ If you change number of sides winding definition would be reset</help>
 				height="100"
 				maxheight="0"
 				widthtype="Percentage"
-				width="60"
+				width="30"
 				maxwidth="0"
 				componenttype="buttonsComponent"
 			/>
 
 			<component
-				name="helpButton"
+				name="github_button"
 
-				leftattachment="readData"
-				topattachment="Properties"
+				leftattachment="open_examples_button"
+				topattachment="read_data_button"
 				rightattachment=""
 				bottomattachment="Submit"
 
@@ -487,14 +546,35 @@ If you change number of sides winding definition would be reset</help>
 				width="30"
 				maxwidth="0"
 				componenttype="buttonsComponent"
+			/>
 
+			<component
+				name="help_button"
+
+				leftattachment="github_button"
+				topattachment="read_data_button"
+				rightattachment=""
+				bottomattachment="Submit"
+
+				leftoffset=""
+				topoffset=""
+				rightoffset=""
+				bottomoffset=""
+
+				heighttype="FitTocontent"
+				height="100"
+				maxheight="0"
+				widthtype="Percentage"
+				width="30"
+				maxwidth="0"
+				componenttype="buttonsComponent"
 			/>
 
 			<component
 				name="Submit"
 
 				leftattachment=""
-				topattachment="helpButton"
+				topattachment="help_button"
 				rightattachment=""
 				bottomattachment=""
 
@@ -540,7 +620,7 @@ If you change number of sides winding definition would be reset</help>
 				leftattachment=""
 				topattachment="Title"
 				rightattachment=""
-				bottomattachment="helpButton"
+				bottomattachment="help_button"
 
 				leftoffset="10"
 				topoffset="5"
@@ -556,7 +636,7 @@ If you change number of sides winding definition would be reset</help>
 			/>
 
 			<component
-				name="helpButton"
+				name="help_button"
 
 				leftattachment=""
 				topattachment="Properties"
@@ -581,7 +661,7 @@ If you change number of sides winding definition would be reset</help>
 				name="Submit"
 
 				leftattachment=""
-				topattachment="helpButton"
+				topattachment="help_button"
 				rightattachment=""
 				bottomattachment=""
 
@@ -731,7 +811,7 @@ If you change number of sides winding definition would be reset</help>
 			/>
 
 			<component
-				name="helpButton"
+				name="help_button"
 
 				leftattachment="analyze_button"
 				topattachment="define_windings_button"
@@ -756,7 +836,7 @@ If you change number of sides winding definition would be reset</help>
 				name="Submit"
 
 				leftattachment=""
-				topattachment="helpButton"
+				topattachment="help_button"
 				rightattachment=""
 				bottomattachment=""
 

@@ -4,8 +4,7 @@
 #
 #            ACT Written by : Maksim Beliaev (maksim.beliaev@ansys.com)
 #            Tested by: Mark Christini (mark.christini@ansys.com)
-#            Last updated : 10.12.2020
-# todo disclaimer
+#            Last updated : 18.01.2021
 import copy
 import datetime
 import os
@@ -113,17 +112,41 @@ class Step1(object):
 
         self.core_models = []
         self.cores_database = {}
+        self.personal_lib_path = ""
 
-    def read_data(self, _sender, _args):
+    def github(self, _sender, _args):
+        """
+        opens GitHub page with project
+        """
+        webopen(r"https://github.com/beliaev-maksim/ansys-electronic-transformer")
+
+    def open_custom_lib(self, _sender, _args):
+        """
+        Opens folder with custom library definitions
+        """
+        os.startfile(self.personal_lib_path)
+
+    def open_examples(self, _sender, _args):
+        """
+        Opens read data method in folder with examples
+        """
+
+        root = os.path.dirname(os.path.dirname(ExtAPI.Extension.InstallDir))
+        examples_folder = os.path.join(root, "res").replace("/", "\\")
+        add_info_message(examples_folder)
+        self.read_data(_sender, _args, default_path=examples_folder)
+
+    def read_data(self, _sender, _args, default_path=""):
         """
         Function called when click button Read Settings From File. Parse json file with settings and dump them to
         transformer definition object
+        :param default_path: path to the folder that should be opened
         :param _sender: unused standard event
         :param _args: unused standard event
         :return: None
         """
         global transformer_definition
-        path = ExtAPI.UserInterface.UIRenderer.ShowFileOpenDialog('Text Files(*.json;)|*.json;')
+        path = ExtAPI.UserInterface.UIRenderer.ShowFileOpenDialog('Text Files(*.json;)|*.json;', default_path)
 
         if path is None:
             return
@@ -152,8 +175,12 @@ class Step1(object):
 
     def refresh_step1(self):
         """create buttons and HTML data for first step"""
-        setup_button(self.step1, "readData", "Read Settings File", ButtonPositionType.Left, self.read_data)
-        setup_button(self.step1, "helpButton", "Help", ButtonPositionType.Center, help_button_clicked, style="blue")
+        setup_button(self.step1, "read_data_button", "Read Settings File", ButtonPositionType.Left, self.read_data)
+        setup_button(self.step1, "open_examples_button", "Open Examples", ButtonPositionType.Left, self.open_examples)
+        setup_button(self.step1, "open_library_button", "Custom Library", ButtonPositionType.Center, self.open_custom_lib)
+        setup_button(self.step1, "github_button", "Contribute on GitHub", ButtonPositionType.Center, self.github)
+        setup_button(self.step1, "help_button", "Help", ButtonPositionType.Center, help_button_clicked, style="blue")
+        self.personal_lib_path = os.path.join(oDesktop.GetPersonalLibDirectory(), 'ElectronicTransformer')
 
         self.read_core_dimensions()
         self.prefill_supplier()
@@ -165,7 +192,9 @@ class Step1(object):
 
     @verify_input_data
     def populate_ui_data_step1(self):
-        # read data for step 1
+        """
+        Set data to UI fields from transformer_definition dictionary
+        """
         self.segmentation_angle.Value = int(transformer_definition["core_dimensions"]["segmentation_angle"])
         self.supplier.Value = transformer_definition["core_dimensions"]["supplier"]
         self.core_type.Value = transformer_definition["core_dimensions"]["core_type"]
@@ -267,12 +296,11 @@ class Step1(object):
         Read all possible core dimensions from input file
         :return:
         """
-        lib_path = os.path.join(oDesktop.GetPersonalLibDirectory(), 'ElectronicTransformer')
-        core_dims_json = os.path.join(lib_path, "core_dimensions.json")
+        core_dims_json = os.path.join(self.personal_lib_path, "core_dimensions.json")
         if not os.path.isfile(core_dims_json):
             # file does not exist, copy it from root location
-            if not os.path.exists(lib_path):
-                os.makedirs(lib_path)
+            if not os.path.exists(self.personal_lib_path):
+                os.makedirs(self.personal_lib_path)
             shutil.copy(os.path.join(ExtAPI.Extension.InstallDir, "core_dimensions.json"), core_dims_json)
 
         with open(core_dims_json) as file:
@@ -350,7 +378,7 @@ class Step2(object):
         each time step layout is opening
         :return:
         """
-        setup_button(self.step2, "helpButton", "Help", ButtonPositionType.Right, help_button_clicked, style="blue")
+        setup_button(self.step2, "help_button", "Help", ButtonPositionType.Right, help_button_clicked, style="blue")
         if "winding_definition" in transformer_definition:
             # that mean that we read settings file from user and need to populate UI
             self.populate_ui_data_step2()
@@ -605,7 +633,7 @@ class Step3(object):
         Method is called every time when step layout opens
         :return:
         """
-        setup_button(self.step3, "helpButton", "Help", ButtonPositionType.Right, help_button_clicked, style="blue")
+        setup_button(self.step3, "help_button", "Help", ButtonPositionType.Right, help_button_clicked, style="blue")
 
         setup_button(self.step3, "analyze_button", "Analyze", ButtonPositionType.Center, self.analyze_click,
                      active=False)
