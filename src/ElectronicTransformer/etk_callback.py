@@ -118,7 +118,7 @@ class Step1(object):
         """
         opens GitHub page with project
         """
-        webopen(r"https://github.com/beliaev-maksim/ansys-electronic-transformer")
+        webopen(r"https://github.com/beliaev-maksim/ansys-electronic-transformer-act")
 
     def open_custom_lib(self, _sender, _args):
         """
@@ -131,9 +131,7 @@ class Step1(object):
         Opens read data method in folder with examples
         """
 
-        root = os.path.dirname(os.path.dirname(ExtAPI.Extension.InstallDir))
-        examples_folder = os.path.join(root, "res").replace("/", "\\")
-        add_info_message(examples_folder)
+        examples_folder = os.path.join(ExtAPI.Extension.InstallDir, "examples").replace("/", "\\")
         self.read_data(_sender, _args, default_path=examples_folder)
 
     def read_data(self, _sender, _args, default_path=""):
@@ -182,11 +180,11 @@ class Step1(object):
         setup_button(self.step1, "help_button", "Help", ButtonPositionType.Center, help_button_clicked, style="blue")
         self.personal_lib_path = os.path.join(oDesktop.GetPersonalLibDirectory(), 'ElectronicTransformer')
 
-        self.read_core_dimensions()
-        self.prefill_supplier()
-
-        for key in transformer_definition:
-            transformer_definition.pop(key, None)
+        if not transformer_definition:
+            self.read_core_dimensions()
+            self.prefill_supplier()
+        else:
+            self.show_core_img()
 
         validate_aedt_version()
 
@@ -1959,6 +1957,11 @@ class TransformerClass(Step1, Step2, Step3):
 def on_init_step1(step):
     """invoke on step initialisation, only once when you open the app"""
     global transformer
+
+    # clean transformer definition since ACTs keep global variables till restart of AEDT
+    for key in transformer_definition:
+        transformer_definition.pop(key, None)
+
     transformer = TransformerClass(step)
     transformer.initialize_step1()
 
