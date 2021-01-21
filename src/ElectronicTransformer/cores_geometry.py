@@ -503,8 +503,8 @@ class ECore(Cores):
                            layer_number, fillet_radius, segmentation_angle, profile_width=0.0,
                            profile_height=0.0, profile_diameter=0.0, profile_segments_num=8, turn_num=0):
 
-        wire_center = (profile_height or profile_diameter)/2
-        path_name = self.create_sweep_path(sweep_path_x, sweep_path_y, position_z_final+wire_center, fillet_radius,
+        wire_offset = (profile_height or 0.0)/2
+        path_name = self.create_sweep_path(sweep_path_x, sweep_path_y, position_z_final+wire_offset, fillet_radius,
                                            layer_number, segmentation_angle, turn_num)
 
         profile_name = 'Layer{}'.format(layer_number)
@@ -513,14 +513,14 @@ class ECore(Cores):
 
         object_names = []
         if self.draw_skin:
-            self.create_skin_layers(profile_name, object_names, position_z_final+wire_center, profile_height,
+            self.create_skin_layers(profile_name, object_names, position_z_final+wire_offset, profile_height,
                                     profile_width, sweep_path_x, profile_segments_num, profile_diameter)
 
         if self.conductor_type == 'Rectangular':
             profile_name = self.create_rectangle((sweep_path_x - profile_width)/2, 0, position_z_final,
                                                  profile_width, profile_height, profile_name)
         else:
-            profile_name = self.create_circle(sweep_path_x/2, 0, position_z_final + profile_diameter/2,
+            profile_name = self.create_circle(sweep_path_x/2, 0, position_z_final,
                                               profile_diameter, profile_segments_num, profile_name,
                                               axis='Y')
         object_names.append(profile_name)
