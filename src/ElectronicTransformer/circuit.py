@@ -2,7 +2,7 @@ import copy
 
 
 class Circuit:
-    def __init__(self, winding_connection, oProject, design_name, voltage=None, current=None, resistance=None,
+    def __init__(self, winding_connection, oProject, design_name, voltage=None, current=None, resistance_list=None,
                  frequency=None):
         """
         :param winding_connection: dictionary with windings and corresponding connections definition
@@ -10,7 +10,7 @@ class Circuit:
         :param design_name: name of circuit design
         :param voltage: voltage to feed the primary side, in Volts
         :param current: current to feed the primary side, in Amps
-        :param resistance: resistance for all non primary sides, in Ohm
+        :param resistance_list: resistance list for all primary sides, in Ohm
         :param frequency: frequency for current/voltage source, in Hz
         """
         self.grid_cell_size = 0.00254
@@ -24,7 +24,7 @@ class Circuit:
 
         self.voltage = voltage
         self.current = current
-        self.resistance = resistance
+        self.resistance_list = resistance_list[:]
         self.frequency = frequency
 
     @property
@@ -170,13 +170,15 @@ class Circuit:
 
             name = "Maxwell Circuit Elements\\Passive Elements:Res"
             component_name = self.create_component(name, x=1, y=-1, angle=0)
-            self.change_prop(component_name, prop_name="R", prop_value="0.001", netlist_unit="Ohm")
+            self.change_prop(component_name, prop_name="R", prop_value=self.resistance_list[self.page-1],
+                             netlist_unit="Ohm")
             x_init = 2
         elif source_type == "Current":
             self.change_prop(component_name, prop_name="Ia", prop_value=self.current, netlist_unit="A")
             self.change_prop(component_name, prop_name="IFreq", prop_value=self.frequency, netlist_unit="")
         else:
-            self.change_prop(component_name, prop_name="R", prop_value=self.resistance, netlist_unit="Ohm")
+            self.change_prop(component_name, prop_name="R", prop_value=self.resistance_list[self.page-1],
+                             netlist_unit="Ohm")
 
         self.wire(0, -1, 0, 0)
         self.wire(max_x, -1, max_x, 0)

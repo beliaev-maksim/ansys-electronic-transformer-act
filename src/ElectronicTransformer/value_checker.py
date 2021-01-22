@@ -51,6 +51,15 @@ def validityCheckTable(step, prop):
                 return add_error_message(str(prop.Caption) + ' must be Zero for True Surface or greater than 7!')
 
 
+def validate_resistance(step, prop):
+    xml_path = "define_setup/table_resistance"
+    table = step.Properties[xml_path]
+
+    for i in range(table.RowCount):
+        if float(table.Value[xml_path + '/' + prop.Name][i]) <= 0:
+            table.Value[xml_path + '/' + prop.Name][i] = 1e-6
+            return add_error_message(str(prop.Caption) + ' must be greater than zero!')
+
 def validate_aedt_version():
     """Raise error message for unsupported versions"""
     if float(oDesktop.GetVersion()[:-2]) < 2021.1:
