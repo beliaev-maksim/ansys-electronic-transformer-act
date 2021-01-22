@@ -601,7 +601,7 @@ class Step3(object):
         self.transformer_sides = self.step3.Properties["define_setup/transformer_sides"]
         self.excitation_strategy = self.step3.Properties["define_setup/excitation_strategy"]
         self.voltage = self.step3.Properties["define_setup/voltage"]
-        self.resistance = self.step3.Properties["define_setup/resistance"]
+        self.table_resistance = self.step3.Properties["define_setup/table_resistance"]
 
         self.offset = self.step3.Properties["define_setup/offset"]
         self.full_model = self.step3.Properties["define_setup/full_model"]
@@ -625,6 +625,13 @@ class Step3(object):
         self.defined_connections_dict = {}
 
         self.materials = {}  # should be redefined in child class (from class 2)
+
+    def init_tables_step3(self):
+        """initialize tables with some initial data"""
+        self.table_resistance.AddRow()
+        self.table_resistance.Properties["side"].Value = 1
+        self.table_resistance.Properties["resistance"].Value = 1e-6
+        self.table_resistance.SaveActiveRow()
 
     def refresh_step3(self):
         """
@@ -664,7 +671,6 @@ class Step3(object):
         if "setup_definition" in transformer_definition:
             # that means that we read settings file from user and need to populate UI
             self.populate_ui_data_step3()
-            self.resistance.Visible = False if self.transformer_sides.Value == 1 else True
         else:
             # just refresh variables in case if user clicked back button and came back to the page or first run
             self.defined_layers_dict = {}
@@ -673,7 +679,6 @@ class Step3(object):
             self.connection_def_form.connections_dict = {}
 
             self.transformer_sides.Value = 1
-            self.resistance.Visible = False
 
         if transformer_definition["core_dimensions"]["core_type"] in ["U", "UI"]:
             # cannot split U and UI core due to the nature of the cores
@@ -710,9 +715,20 @@ class Step3(object):
 
         self.excitation_strategy.Value = setup_def_dict["excitation_strategy"]
         self.voltage.Value = float(setup_def_dict["voltage"])
-        self.resistance.Value = float(setup_def_dict["resistance"])
         self.offset.Value = float(setup_def_dict["offset"])
         self.full_model.Value = setup_def_dict["full_model"]
+
+        for j in range(0, self.table_resistance.RowCount):
+            self.table_resistance.DeleteRow(0)
+
+        try:
+            for i in range(1, int(self.transformer_sides.Value) + 1):
+                self.table_resistance.AddRow()
+                self.table_resistance.Properties["side"].Value = str(i)
+                self.table_resistance.Properties["resistance"].Value = setup_def_dict["side_loads"][i-1]
+                self.table_resistance.SaveActiveRow()
+        except IndexError:
+            return add_error_message("Number of sides does not correspond to side load (resistances) parameters")
 
         if os.path.isdir(setup_def_dict["project_path"]):
             self.project_path.Value = setup_def_dict["project_path"]
@@ -761,9 +777,9 @@ class Step3(object):
             ("percentage_error", str(self.percentage_error.Value)),
             ("number_passes", self.number_passes.Value),
             ("transformer_sides", self.transformer_sides.Value),
+            ("side_loads", []),
             ("excitation_strategy", self.excitation_strategy.Value),
             ("voltage", str(self.voltage.Value)),
-            ("resistance", str(self.resistance.Value)),
             ("offset", str(self.offset.Value)),
             ("full_model", bool(self.full_model.Value)),
             ("project_path", self.project_path.Value),
@@ -779,6 +795,11 @@ class Step3(object):
             freq_dict["scale"] = self.scale.Value
 
         transformer_definition["setup_definition"]["frequency_sweep_definition"] = freq_dict
+
+        xml_path = "define_setup/table_resistance"
+        for i in range(1, self.table_resistance.RowCount + 1):
+            resistance = self.table_resistance.Value[xml_path + "/resistance"][i - 1]
+            transformer_definition["setup_definition"]["side_loads"].append(resistance)
 
         transformer_definition["setup_definition"]["layer_side_definition"] = self.defined_layers_dict
         transformer_definition["setup_definition"]["connections_definition"] = self.defined_connections_dict
@@ -821,6 +842,7 @@ class TransformerClass(Step1, Step2, Step3):
     def initialize_step3(self):
         """separate init is required because we do not have access to steps without XML callback"""
         Step3.__init__(self, self.step1)
+        Step3.init_tables_step3(self)
 
     def write_json_data(self):
         """
@@ -1601,10 +1623,19 @@ class TransformerClass(Step1, Step2, Step3):
             self.transformer_sides.Value = self.number_of_layers.Value
             return add_warning_message("Number of transformer sides cannot be less than number of layers")
 
-        if self.transformer_sides.Value == 1:
-            self.resistance.Visible = False
-        else:
-            self.resistance.Visible = True
+        xml_path = "define_setup/table_resistance"
+        table = self.step3.Properties[xml_path]
+        num_sides_new = self.transformer_sides.Value
+        row_num = table.RowCount
+        if num_sides_new < row_num:
+            for i in range(0, row_num - num_sides_new + 1):
+                table.DeleteRow(row_num - i)
+        elif num_sides_new > row_num:
+            for i in range(row_num + 1, num_sides_new + 1):
+                table.AddRow()
+                table.Properties["side"].Value = i
+                table.Properties["resistance"].Value = table.Value[xml_path + "/resistance"][row_num - 1]
+                table.SaveActiveRow()
 
         update_ui(self.step3)
 
@@ -1939,7 +1970,8 @@ class TransformerClass(Step1, Step2, Step3):
 
         self.circuit = Circuit(self.defined_connections_dict, self.project, self.design_name,
                                current=current, voltage=voltage,
-                               resistance=self.resistance.Value, frequency=self.adaptive_frequency.Value)
+                               resistance_list=transformer_definition["setup_definition"]["side_loads"],
+                               frequency=self.adaptive_frequency.Value)
         self.circuit.create()
         self.project.SetActiveDesign(self.design_name)
 

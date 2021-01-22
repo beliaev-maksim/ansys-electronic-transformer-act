@@ -11,343 +11,349 @@
     <images>images</images>
   </interface>
 
-	<wizard name="ElectronicTransformer" caption="Electronic Transformer" version="2"
-					context="ElectronicsDesktop" icon="logo.jpg">
-		<description>Tool for automatic preparation of design for analysis of Electronic Transformers</description>
-		<step name="step1" caption="Core Definition" layout="StepOne@ElectronicTransformer" version= "1">
+  <wizard name="ElectronicTransformer" caption="Electronic Transformer" version="2"
+          context="ElectronicsDesktop" icon="logo.jpg">
+    <description>Tool for automatic preparation of design for analysis of Electronic Transformers</description>
+    <step name="step1" caption="Core Definition" layout="StepOne@ElectronicTransformer" version="1">
       <description>Dimensions, shape, supplier</description>
 
-			<componentstyle
-			component="read_data_button"
-			background-color="Transparent"
-			border-color="Transparent" />
+      <componentstyle
+          component="read_data_button"
+          background-color="Transparent"
+          border-color="Transparent"/>
 
-			<componentstyle
-			component="open_library_button"
-			background-color="Transparent"
-			border-color="Transparent" />
+      <componentstyle
+          component="open_library_button"
+          background-color="Transparent"
+          border-color="Transparent"/>
 
-			<componentstyle
-			component="open_examples_button"
-			background-color="Transparent"
-			border-color="Transparent" />
+      <componentstyle
+          component="open_examples_button"
+          background-color="Transparent"
+          border-color="Transparent"/>
 
-			<componentstyle
-			component="github_button"
-			background-color="Transparent"
-			border-color="Transparent" />
+      <componentstyle
+          component="github_button"
+          background-color="Transparent"
+          border-color="Transparent"/>
 
-			<componentstyle
-			component="help_button"
-			background-color="Transparent"
-			border-color="Transparent" />
+      <componentstyle
+          component="help_button"
+          background-color="Transparent"
+          border-color="Transparent"/>
 
-			<propertygroup name="core_properties" caption="Core Definition [1/3]">
+      <propertygroup name="core_properties" caption="Core Definition [1/3]">
 
-				<property control="integer" name="segmentation_angle" caption="Segmentation angle"  default="10">
-                    <callbacks>
-                            <OnValidate>segmentation_angle_check</OnValidate>
-                    </callbacks>
-                </property>
-
-				<property name="supplier" caption="Supplier:" control="select">
-					<callbacks>
-						<onvalidate>on_supplier_change</onvalidate>
-					</callbacks>
-				</property>
-
-				<propertygroup name="core_type" caption="Core Type:" control="select" display="property">
-					<callbacks>
-						<onvalidate>on_core_type_change</onvalidate>
-					</callbacks>
-
-          <property name="core_model" caption="Core Model:" control="select">
-            <callbacks>
-                <onvalidate>on_core_model_change</onvalidate>
-            </callbacks>
-          </property>
-
-          <property  name="D_1" caption="D_1 [mm]" control="float">
-            <callbacks>
-              <onvalidate>GEThanZero</onvalidate>
-            </callbacks>
-          </property>
-          <property  name="D_2" caption="D_2 [mm]" control="float">
-            <callbacks>
-                <onvalidate>GEThanZero</onvalidate>
-            </callbacks>
-          </property>
-          <property  name="D_3" caption="D_3 [mm]" control="float">
-            <callbacks>
-              <onvalidate>GEThanZero</onvalidate>
-            </callbacks>
-          </property>
-          <property  name="D_4" caption="D_4 [mm]" control="float">
-            <callbacks>
-              <onvalidate>GEThanZero</onvalidate>
-            </callbacks>
-          </property>
-          <property  name="D_5" caption="D_5 [mm]" control="float">
-            <callbacks>
-              <onvalidate>GEThanZero</onvalidate>
-            </callbacks>
-          </property>
-          <property  name="D_6" caption="D_6 [mm]" control="float" visibleon="E|EI|EC|EFD|EP|EQ|ER|ETD|P|PT|PH|PQ|RM|UI">
-            <callbacks>
-              <onvalidate>GEThanZero</onvalidate>
-            </callbacks>
-          </property>
-          <property  name="D_7" caption="D_7 [mm]" control="float" visibleon="E|EI|EFD|EP|ER|P|PT|PH|PQ|RM|UI">
-            <callbacks>
-              <onvalidate>GEThanZero</onvalidate>
-            </callbacks>
-          </property>
-          <property  name="D_8" caption="D_8 [mm]" control="float" visibleon="E|EI|EFD|P|PT|PH|PQ|RM|UI">
-            <callbacks>
-              <onvalidate>GEThanZero</onvalidate>
-            </callbacks>
-          </property>
-      </propertygroup>
-
-				<propertygroup name="define_airgap" caption="Define Airgap"  default="False" display="property"
-											 control="boolean">
-					<property name="airgap_on_leg" caption="Airgap On Leg:" control="select" default="Center" visibleon="True">
-						<attributes options="Center,Side,Both" />
-					</property>
-					<property name="airgap_value" caption="Airgap Value [mm]"  default="0.1" visibleon="True" control="float" >
-						<callbacks>
-							<onvalidate>GEThanZero</onvalidate>
-						</callbacks>
-					</property>
-				</propertygroup>
-			</propertygroup>
-
-			<callbacks>
-				<onrefresh>create_buttons_step1</onrefresh>
-				<onupdate>callback_step1</onupdate>
-				<oninit>on_init_step1</oninit>
-				<onreset>on_step_back</onreset>
-			</callbacks>
-		</step>
-
-		<step name="step2" caption="Winding Definition" layout="StepTwo@ElectronicTransformer" version= "1">
-      <description>Dimensions, planar or wound</description>
-			<componentstyle
-			component="help_button"
-			background-color="Transparent"
-			border-color="Transparent" />
-
-
-			<propertygroup name="winding_properties" caption="Winding Definition  [2/3]">
-					<property name="layer_type" caption="Transformer:" control="select" default="Wound">
-						<attributes options="Planar,Wound" />
-						<callbacks>
-							<OnValidate>on_layer_type_change</OnValidate>
-						</callbacks>
-					</property>
-
-					<property name="number_of_layers" caption="No. of Layers:" control="integer" default="1">
-						<callbacks>
-							<OnValidate>on_layers_number_change</OnValidate>
-						 </callbacks>
-					</property>
-
-					<property name="layer_spacing" caption="Layer spacing:" control="float" default="0">
-						<callbacks>
-							<OnValidate>GEThanZero</OnValidate>
-						</callbacks>
-					</property>
-
-					<property name="bobbin_board_thickness" caption="Bobbin thickness:" control="float" default="0.1">
-            <callbacks>
-							<OnValidate>GEThanZero</OnValidate>
-						</callbacks>
-					</property>
-
-					<property name="top_margin" caption="Top margin:" control="float" default="0">
-						<callbacks>
-							<OnValidate>GEThanZero</OnValidate>
-						</callbacks>
-					</property>
-
-					<property name="side_margin" caption="Side margin:" control="float" default="0">
-						<callbacks>
-							<OnValidate>GEThanZero</OnValidate>
-						</callbacks>
-					</property>
-
-					<property name="include_bobbin" caption="Include bobbin in geometry"  default="False" control="boolean" />
-
-					<propertygroup name="conductor_type" caption="Conductor type:" control="select" default="Rectangular"
-                         display="property">
-						<attributes options="Rectangular,Circular" />
-						<callbacks>
-							<OnValidate>on_layers_number_change</OnValidate>
-						</callbacks>
-
-						<propertytable name="table_layers" caption="Layer's properties:" visibleon="Rectangular" control="custom"
-                           display="worksheet"  class="TabularDataEditor">
-
-								<property name="conductor_width" caption="Conductor Width" control="float"  >
-									<callbacks>
-											<OnValidate>validityCheckTable</OnValidate>
-									</callbacks>
-								</property>
-
-								<property name="conductor_height" caption="Conductor Height" control="float"  >
-									<callbacks>
-											<OnValidate>validityCheckTable</OnValidate>
-									</callbacks>
-								</property>
-
-								<property name="turns_number" caption="No. of turns" control="float"  >
-									<callbacks>
-										<OnValidate>validityCheckTable</OnValidate>
-									</callbacks>
-								 </property>
-
-								 <property name="insulation_thickness" caption="Insulation thickness" control="float"  >
-									<callbacks>
-										<OnValidate>validityCheckTable</OnValidate>
-									</callbacks>
-								 </property>
-
-								<property name="layer" caption= "No. of layer" control="integer" readonly= "True"/>
-						</propertytable>
-
-						<propertytable name="table_layers_circles" caption="Layer's properties:" visibleon="Circular"
-                           control="custom" display="worksheet"  class="TabularDataEditor">
-								<property name="conductor_diameter" caption="Conductor Diameter" control="float"  >
-									<callbacks>
-											<OnValidate>validityCheckTable</OnValidate>
-									</callbacks>
-								</property>
-
-								 <property name="segments_number" caption="Number of segments" control="float"  >
-									<callbacks>
-											<OnValidate>validityCheckTable</OnValidate>
-									</callbacks>
-								</property>
-
-								<property name="turns_number" caption="No. of turns" control="float"  >
-									<callbacks>
-										<OnValidate>validityCheckTable</OnValidate>
-									</callbacks>
-								 </property>
-
-								 <property name="insulation_thickness" caption="Insulation thickness" control="float"  >
-									<callbacks>
-										<OnValidate>validityCheckTable</OnValidate>
-									</callbacks>
-								 </property>
-
-								<property name="layer" caption= "No. of layer" control="integer" readonly= "True"/>
-						</propertytable>
-          </propertygroup>
-
-          <property control="boolean" name="skip_check" caption="Skip check windings accommodation"
-                    default="False"/>
-			</propertygroup>
-
-			<callbacks>
-				<onrefresh>create_buttons_step2</onrefresh>
-				<oninit>on_init_step2</oninit>
-        <onreset>on_reset_step2</onreset>
-				<onupdate>callback_step2</onupdate>
-			</callbacks>
-		</step>
-
-		<step name="step3" caption="Analysis setup" layout="StepThree@ElectronicTransformer" version= "1">
-      <description>Core/winding material, frequency, winding connections</description>
-
-			<componentstyle
-			component="analyze_button"
-			background-color="Transparent"
-			border-color="Transparent" />
-
-			<componentstyle
-			component="setup_analysis_button"
-			background-color="Transparent"
-			border-color="Transparent" />
-
-			<componentstyle
-			component="help_button"
-			background-color="Transparent"
-			border-color="Transparent" />
-
-			<propertygroup name="define_setup" caption="Analysis Setup [3/3]">
-				<property name="core_material" caption="Core Material:" control="select" default="3C15">
-					<attributes options="3C15" />
-				</property>
-
-				<property name="coil_material" caption="Coil Material:" control="select" default="Copper">
-					<attributes options="Copper,Aluminum" />
-				</property>
-
-				<property  name="adaptive_frequency" caption="Adaptive frequency [kHz]" control="float" default="100">
+        <property control="integer" name="segmentation_angle" caption="Segmentation angle" default="10">
           <callbacks>
-            <OnValidate>GEThanOne</OnValidate>
+            <OnValidate>segmentation_angle_check</OnValidate>
           </callbacks>
         </property>
 
-				<property name="draw_skin_layers" caption="Create skin layers for mesh"  default="True" control="boolean">
-					<help>To increase accuracy of Ohmic Losses and decrease mesh size geometrical layers would be added</help>
-				</property>
+        <property name="supplier" caption="Supplier:" control="select">
+          <callbacks>
+            <onvalidate>on_supplier_change</onvalidate>
+          </callbacks>
+        </property>
 
-				<property  name="percentage_error" caption="Percentage Error" control="float" default="1">
+        <propertygroup name="core_type" caption="Core Type:" control="select" display="property">
+          <callbacks>
+            <onvalidate>on_core_type_change</onvalidate>
+          </callbacks>
+
+          <property name="core_model" caption="Core Model:" control="select">
+            <callbacks>
+              <onvalidate>on_core_model_change</onvalidate>
+            </callbacks>
+          </property>
+
+          <property name="D_1" caption="D_1 [mm]" control="float">
+            <callbacks>
+              <onvalidate>GEThanZero</onvalidate>
+            </callbacks>
+          </property>
+          <property name="D_2" caption="D_2 [mm]" control="float">
+            <callbacks>
+              <onvalidate>GEThanZero</onvalidate>
+            </callbacks>
+          </property>
+          <property name="D_3" caption="D_3 [mm]" control="float">
+            <callbacks>
+              <onvalidate>GEThanZero</onvalidate>
+            </callbacks>
+          </property>
+          <property name="D_4" caption="D_4 [mm]" control="float">
+            <callbacks>
+              <onvalidate>GEThanZero</onvalidate>
+            </callbacks>
+          </property>
+          <property name="D_5" caption="D_5 [mm]" control="float">
+            <callbacks>
+              <onvalidate>GEThanZero</onvalidate>
+            </callbacks>
+          </property>
+          <property name="D_6" caption="D_6 [mm]" control="float" visibleon="E|EI|EC|EFD|EP|EQ|ER|ETD|P|PT|PH|PQ|RM|UI">
+            <callbacks>
+              <onvalidate>GEThanZero</onvalidate>
+            </callbacks>
+          </property>
+          <property name="D_7" caption="D_7 [mm]" control="float" visibleon="E|EI|EFD|EP|ER|P|PT|PH|PQ|RM|UI">
+            <callbacks>
+              <onvalidate>GEThanZero</onvalidate>
+            </callbacks>
+          </property>
+          <property name="D_8" caption="D_8 [mm]" control="float" visibleon="E|EI|EFD|P|PT|PH|PQ|RM|UI">
+            <callbacks>
+              <onvalidate>GEThanZero</onvalidate>
+            </callbacks>
+          </property>
+        </propertygroup>
+
+        <propertygroup name="define_airgap" caption="Define Airgap" default="False" display="property"
+                       control="boolean">
+          <property name="airgap_on_leg" caption="Airgap On Leg:" control="select" default="Center" visibleon="True">
+            <attributes options="Center,Side,Both"/>
+          </property>
+          <property name="airgap_value" caption="Airgap Value [mm]" default="0.1" visibleon="True" control="float">
+            <callbacks>
+              <onvalidate>GEThanZero</onvalidate>
+            </callbacks>
+          </property>
+        </propertygroup>
+      </propertygroup>
+
+      <callbacks>
+        <onrefresh>create_buttons_step1</onrefresh>
+        <onupdate>callback_step1</onupdate>
+        <oninit>on_init_step1</oninit>
+        <onreset>on_step_back</onreset>
+      </callbacks>
+    </step>
+
+    <step name="step2" caption="Winding Definition" layout="StepTwo@ElectronicTransformer" version="1">
+      <description>Dimensions, planar or wound</description>
+      <componentstyle
+          component="help_button"
+          background-color="Transparent"
+          border-color="Transparent"/>
+
+
+      <propertygroup name="winding_properties" caption="Winding Definition  [2/3]">
+        <property name="layer_type" caption="Transformer:" control="select" default="Wound">
+          <attributes options="Planar,Wound"/>
+          <callbacks>
+            <OnValidate>on_layer_type_change</OnValidate>
+          </callbacks>
+        </property>
+
+        <property name="number_of_layers" caption="No. of Layers:" control="integer" default="1">
+          <callbacks>
+            <OnValidate>on_layers_number_change</OnValidate>
+          </callbacks>
+        </property>
+
+        <property name="layer_spacing" caption="Layer spacing:" control="float" default="0">
           <callbacks>
             <OnValidate>GEThanZero</OnValidate>
           </callbacks>
         </property>
 
-				<property  name="number_passes" caption="Max No. of passes" control="integer" default="5">
+        <property name="bobbin_board_thickness" caption="Bobbin thickness:" control="float" default="0.1">
+          <callbacks>
+            <OnValidate>GEThanZero</OnValidate>
+          </callbacks>
+        </property>
+
+        <property name="top_margin" caption="Top margin:" control="float" default="0">
+          <callbacks>
+            <OnValidate>GEThanZero</OnValidate>
+          </callbacks>
+        </property>
+
+        <property name="side_margin" caption="Side margin:" control="float" default="0">
+          <callbacks>
+            <OnValidate>GEThanZero</OnValidate>
+          </callbacks>
+        </property>
+
+        <property name="include_bobbin" caption="Include bobbin in geometry" default="False" control="boolean"/>
+
+        <propertygroup name="conductor_type" caption="Conductor type:" control="select" default="Rectangular"
+                       display="property">
+          <attributes options="Rectangular,Circular"/>
+          <callbacks>
+            <OnValidate>on_layers_number_change</OnValidate>
+          </callbacks>
+
+          <propertytable name="table_layers" caption="Layer's properties:" visibleon="Rectangular" control="custom"
+                         display="worksheet" class="TabularDataEditor">
+
+            <property name="conductor_width" caption="Conductor Width" control="float">
+              <callbacks>
+                <OnValidate>validityCheckTable</OnValidate>
+              </callbacks>
+            </property>
+
+            <property name="conductor_height" caption="Conductor Height" control="float">
+              <callbacks>
+                <OnValidate>validityCheckTable</OnValidate>
+              </callbacks>
+            </property>
+
+            <property name="turns_number" caption="No. of turns" control="float">
+              <callbacks>
+                <OnValidate>validityCheckTable</OnValidate>
+              </callbacks>
+            </property>
+
+            <property name="insulation_thickness" caption="Insulation thickness" control="float">
+              <callbacks>
+                <OnValidate>validityCheckTable</OnValidate>
+              </callbacks>
+            </property>
+
+            <property name="layer" caption="No. of layer" control="integer" readonly="True"/>
+          </propertytable>
+
+          <propertytable name="table_layers_circles" caption="Layer's properties:" visibleon="Circular"
+                         control="custom" display="worksheet" class="TabularDataEditor">
+            <property name="conductor_diameter" caption="Conductor Diameter" control="float">
+              <callbacks>
+                <OnValidate>validityCheckTable</OnValidate>
+              </callbacks>
+            </property>
+
+            <property name="segments_number" caption="Number of segments" control="float">
+              <callbacks>
+                <OnValidate>validityCheckTable</OnValidate>
+              </callbacks>
+            </property>
+
+            <property name="turns_number" caption="No. of turns" control="float">
+              <callbacks>
+                <OnValidate>validityCheckTable</OnValidate>
+              </callbacks>
+            </property>
+
+            <property name="insulation_thickness" caption="Insulation thickness" control="float">
+              <callbacks>
+                <OnValidate>validityCheckTable</OnValidate>
+              </callbacks>
+            </property>
+
+            <property name="layer" caption="No. of layer" control="integer" readonly="True"/>
+          </propertytable>
+        </propertygroup>
+
+        <property control="boolean" name="skip_check" caption="Skip check windings accommodation"
+                  default="False"/>
+      </propertygroup>
+
+      <callbacks>
+        <onrefresh>create_buttons_step2</onrefresh>
+        <oninit>on_init_step2</oninit>
+        <onreset>on_reset_step2</onreset>
+        <onupdate>callback_step2</onupdate>
+      </callbacks>
+    </step>
+
+    <step name="step3" caption="Analysis setup" layout="StepThree@ElectronicTransformer" version="1">
+      <description>Core/winding material, frequency, winding connections</description>
+
+      <componentstyle
+          component="analyze_button"
+          background-color="Transparent"
+          border-color="Transparent"/>
+
+      <componentstyle
+          component="setup_analysis_button"
+          background-color="Transparent"
+          border-color="Transparent"/>
+
+      <componentstyle
+          component="help_button"
+          background-color="Transparent"
+          border-color="Transparent"/>
+
+      <propertygroup name="define_setup" caption="Analysis Setup [3/3]">
+        <property name="core_material" caption="Core Material:" control="select" default="3C15">
+          <attributes options="3C15"/>
+        </property>
+
+        <property name="coil_material" caption="Coil Material:" control="select" default="Copper">
+          <attributes options="Copper,Aluminum"/>
+        </property>
+
+        <property name="adaptive_frequency" caption="Adaptive frequency [kHz]" control="float" default="100">
           <callbacks>
             <OnValidate>GEThanOne</OnValidate>
           </callbacks>
         </property>
 
-				<property  name="transformer_sides" caption="Transformer sides" control="integer" default="1">
-					<help>Number of transformer sides eg Primary, Secondary, etc.
-If you change number of sides winding definition would be reset</help>
-					<callbacks>
+        <property name="draw_skin_layers" caption="Create skin layers for mesh" default="True" control="boolean">
+          <help>To increase accuracy of Ohmic Losses and decrease mesh size geometrical layers would be added</help>
+        </property>
+
+        <property name="percentage_error" caption="Percentage Error" control="float" default="1">
+          <callbacks>
+            <OnValidate>GEThanZero</OnValidate>
+          </callbacks>
+        </property>
+
+        <property name="number_passes" caption="Max No. of passes" control="integer" default="5">
+          <callbacks>
+            <OnValidate>GEThanOne</OnValidate>
+          </callbacks>
+        </property>
+
+        <property name="transformer_sides" caption="Transformer sides" control="integer" default="1">
+          <help>Number of transformer sides eg Primary, Secondary, etc.
+            If you change number of sides winding definition would be reset
+          </help>
+          <callbacks>
             <onvalidate>validate_sides_number</onvalidate>
           </callbacks>
         </property>
 
-				<property  name="excitation_strategy" caption="Excitation strategy" control="select" default="Voltage">
-					<help>Voltage or Current winding type</help>
-          <attributes options="Voltage,Current" />
+        <property name="excitation_strategy" caption="Excitation strategy" control="select" default="Voltage">
+          <help>Voltage or Current winding type</help>
+          <attributes options="Voltage,Current"/>
 
-					<callbacks>
+          <callbacks>
             <onvalidate>on_excitation_strategy_change</onvalidate>
           </callbacks>
         </property>
 
-				<property  name="voltage" caption="Primary Voltage [V]" control="float" default="1">
-					<help>Voltage/Current for primary side of the transformer</help>
+        <property name="voltage" caption="Primary Voltage [V]" control="float" default="1">
+          <help>Voltage/Current for primary side of the transformer</help>
           <callbacks>
             <OnValidate>GThanZero</OnValidate>
           </callbacks>
         </property>
 
-				<property  name="resistance" caption="Load Resistance [Ohm]" control="float" default="1" visible="False">
-					<help>Load resistance specified for Secondary, Tertiary, etc sides </help>
-          <callbacks>
-            <OnValidate>GThanZero</OnValidate>
-          </callbacks>
-        </property>
+        <propertytable name="table_resistance" caption="Side loads:" control="custom" display="worksheet"
+                       class="Worksheet.TabularDataEditor.TabularDataEditor">
+          <help>Resistance specified for Primary, Secondary, etc sides</help>
 
-				<property  name="offset" caption="Region offset [%]" control="integer" default="50">
+          <property name="side" caption="Side #" control="integer" readonly="True"/>
+          <property name="resistance" caption="Resistance [Ohm]" control="float">
             <callbacks>
-                <OnValidate>GThanZero</OnValidate>
+              <OnValidate>validate_resistance</OnValidate>
             </callbacks>
+          </property>
+        </propertytable>
+
+        <property name="offset" caption="Region offset [%]" control="integer" default="50">
+          <callbacks>
+            <OnValidate>GThanZero</OnValidate>
+          </callbacks>
         </property>
 
-				<property name="full_model" caption="Make full model" control="boolean" default="False"/>
+        <property name="full_model" caption="Make full model" control="boolean" default="False"/>
 
-				<property name="project_path" caption="Save to:" control="folderopen"/>
+        <property name="project_path" caption="Save to:" control="folderopen"/>
 
-				<propertygroup name="frequency_sweep" caption="Define frequency sweep"  default="False" control="boolean"
+        <propertygroup name="frequency_sweep" caption="Define frequency sweep" default="False" control="boolean"
                        display="property">
 
           <property name="start_frequency" caption="Start freq" control="float" default="1" visibleon="True">
@@ -357,7 +363,7 @@ If you change number of sides winding definition would be reset</help>
           </property>
 
           <property name="start_frequency_unit" caption="Frequency" control="select" default="kHz" visibleon="True">
-            <attributes options="Hz,kHz,MHz" />
+            <attributes options="Hz,kHz,MHz"/>
           </property>
 
           <property name="stop_frequency" caption="Stop freq" control="float" default="1" visibleon="True">
@@ -367,7 +373,7 @@ If you change number of sides winding definition would be reset</help>
           </property>
 
           <property name="stop_frequency_unit" caption="Frequency" control="select" default="MHz" visibleon="True">
-            <attributes options="Hz,kHz,MHz" />
+            <attributes options="Hz,kHz,MHz"/>
           </property>
 
           <property name="samples" caption="Samples" control="integer" default="3" visibleon="True">
@@ -377,482 +383,482 @@ If you change number of sides winding definition would be reset</help>
           </property>
 
           <property name="scale" caption="Scale" control="select" default="Logarithmic" visibleon="True">
-            <attributes options="Logarithmic,Linear" />
+            <attributes options="Logarithmic,Linear"/>
           </property>
 
-				</propertygroup>
+        </propertygroup>
 
-			</propertygroup>
+      </propertygroup>
 
-			<callbacks>
-				<onrefresh>create_buttons_step3</onrefresh>
-				<oninit>on_init_step3</oninit>
+      <callbacks>
+        <onrefresh>create_buttons_step3</onrefresh>
+        <oninit>on_init_step3</oninit>
         <onreset>on_step_back</onreset>
-			</callbacks>
-		</step>
-	</wizard>
+      </callbacks>
+    </step>
+  </wizard>
 
-	<uidefinition>
+  <uidefinition>
     <!-- defining a custom layout -->
-		<layout name="StepOne">
-			<component
-				name="Title"
-
-				leftattachment=""
-				topattachment=""
-				rightattachment=""
-				bottomattachment="Properties"
-
-				leftoffset="10"
-				topoffset="10"
-				rightoffset="10"
-				bottomoffset=""
-
-				heighttype="FitToContent"
-				height="100" maxheight="0"
-				widthtype="Percentage"
-				width="100"
-				componenttype="startPageHeaderComponent"
-			/>
-
-			<component
-				name="Properties"
-
-				leftattachment=""
-				topattachment="Title"
-				rightattachment="coreImage"
-				bottomattachment="read_data_button"
-
-				leftoffset="10"
-				topoffset="5"
-				rightoffset=""
-				bottomoffset="5"
-
-				heighttype="Percentage"
-				height="100"
-				maxheight="0"
-				widthtype="fixed"
-				width="300"
-				componenttype="propertiesComponent"
-			/>
-
-
-			<component
-				name="coreImage"
-
-				leftattachment="Properties"
-				topattachment="Title"
-				rightattachment=""
-				bottomattachment="read_data_button"
-
-				leftoffset=""
-				topoffset="5"
-				rightoffset=""
-				bottomoffset="5"
-
-				heighttype="Percentage"
-				height="100"
-				minheight = "200"
-				maxheight="0"
-				widthtype="fixed"
-				width="310"
-				maxwidth="0"
-				componenttype="htmlComponent"
-			/>
-
-			<component
-				name="read_data_button"
-
-				leftattachment=""
-				topattachment="Properties"
-				rightattachment="open_library_button"
-				bottomattachment="open_examples_button"
-
-				leftoffset="10"
-				topoffset=""
-				rightoffset=""
-				bottomoffset=""
-
-				heighttype="FitTocontent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="50"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-
-			<component
-				name="open_library_button"
-
-				leftattachment="read_data_button"
-				topattachment="Properties"
-				rightattachment="github_button"
-				bottomattachment="open_examples_button"
-
-				leftoffset=""
-				topoffset=""
-				rightoffset="10"
-				bottomoffset=""
-
-				heighttype="FitTocontent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="50"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-
-			<component
-				name="open_examples_button"
-
-				leftattachment=""
-				topattachment="read_data_button"
-				rightattachment="github_button"
-				bottomattachment="Submit"
-
-				leftoffset="10"
-				topoffset=""
-				rightoffset=""
-				bottomoffset=""
-
-				heighttype="FitTocontent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="30"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-
-			<component
-				name="github_button"
-
-				leftattachment="open_examples_button"
-				topattachment="read_data_button"
-				rightattachment=""
-				bottomattachment="Submit"
-
-				leftoffset=""
-				topoffset=""
-				rightoffset=""
-				bottomoffset=""
-
-				heighttype="FitTocontent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="30"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-
-			<component
-				name="help_button"
-
-				leftattachment="github_button"
-				topattachment="read_data_button"
-				rightattachment=""
-				bottomattachment="Submit"
-
-				leftoffset=""
-				topoffset=""
-				rightoffset=""
-				bottomoffset=""
-
-				heighttype="FitTocontent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="30"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-
-			<component
-				name="Submit"
-
-				leftattachment=""
-				topattachment="help_button"
-				rightattachment=""
-				bottomattachment=""
-
-				leftoffset="10"
-				topoffset="10"
-				rightoffset="10"
-				bottomoffset="10"
-
-				heighttype="FitToContent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="100"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-		</layout>
-
-		<layout name="StepTwo">
-			<component
-				name="Title"
-
-				leftattachment=""
-				topattachment=""
-				rightattachment=""
-				bottomattachment="Properties"
-
-				leftoffset="10"
-				topoffset="10"
-				rightoffset="10"
-				bottomoffset=""
-
-				heighttype="FitToContent"
-				height="100" maxheight="0"
-				widthtype="Percentage"
-				width="100"
-				componenttype="startPageHeaderComponent"
-			/>
-
-			<component
-				name="Properties"
-
-				leftattachment=""
-				topattachment="Title"
-				rightattachment=""
-				bottomattachment="help_button"
-
-				leftoffset="10"
-				topoffset="5"
-				rightoffset="10"
-				bottomoffset="5"
-
-				heighttype="Percentage"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="100"
-				componenttype="propertiesComponent"
-			/>
-
-			<component
-				name="help_button"
-
-				leftattachment=""
-				topattachment="Properties"
-				rightattachment=""
-				bottomattachment="Submit"
-
-				leftoffset=""
-				topoffset=""
-				rightoffset=""
-				bottomoffset=""
-
-				heighttype="FitTocontent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="80"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-
-			<component
-				name="Submit"
-
-				leftattachment=""
-				topattachment="help_button"
-				rightattachment=""
-				bottomattachment=""
-
-				leftoffset="10"
-				topoffset="10"
-				rightoffset="10"
-				bottomoffset="10"
-
-				heighttype="FitToContent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="100"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-		</layout>
-
-		<layout name="StepThree">
-			<component
-				name="Title"
-
-				leftattachment=""
-				topattachment=""
-				rightattachment=""
-				bottomattachment="Properties"
-
-				leftoffset="10"
-				topoffset="10"
-				rightoffset="10"
-				bottomoffset=""
-
-				heighttype="FitToContent"
-				height="100" maxheight="0"
-				widthtype="Percentage"
-				width="100"
-				componenttype="startPageHeaderComponent"
-			/>
-
-			<component
-				name="Properties"
-
-				leftattachment=""
-				topattachment="Title"
-				rightattachment=""
-				bottomattachment="setup_analysis_button"
-
-				leftoffset="10"
-				topoffset="5"
-				rightoffset="10"
-				bottomoffset=""
-
-				heighttype="Percentage"
-				height="90"
-				maxheight="0"
-				widthtype="Percentage"
-				width="100"
-				componenttype="propertiesComponent"
-			/>
-
-			<component
-				name="define_windings_button"
-
-				leftattachment=""
-				topattachment="Properties"
-				rightattachment="define_connections_button"
-				bottomattachment="setup_analysis_button"
-
-				leftoffset="10"
-				topoffset=""
-				rightoffset=""
-				bottomoffset=""
-
-				heighttype="FitTocontent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="50"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-
-			<component
-				name="define_connections_button"
-
-				leftattachment="define_windings_button"
-				topattachment="Properties"
-				rightattachment="analyze_button"
-				bottomattachment="setup_analysis_button"
-
-				leftoffset=""
-				topoffset=""
-				rightoffset="10"
-				bottomoffset=""
-
-				heighttype="FitTocontent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="50"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-
-			<component
-				name="setup_analysis_button"
-
-				leftattachment=""
-				topattachment="define_windings_button"
-				rightattachment="analyze_button"
-				bottomattachment="Submit"
-
-				leftoffset=""
-				topoffset=""
-				rightoffset=""
-				bottomoffset=""
-
-				heighttype="FitTocontent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="30"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-
-			<component
-				name="analyze_button"
-
-				leftattachment="setup_analysis_button"
-				topattachment="define_windings_button"
-				rightattachment=""
-				bottomattachment="Submit"
-
-				leftoffset=""
-				topoffset=""
-				rightoffset=""
-				bottomoffset=""
-
-				heighttype="FitTocontent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="30"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-
-			<component
-				name="help_button"
-
-				leftattachment="analyze_button"
-				topattachment="define_windings_button"
-				rightattachment=""
-				bottomattachment="Submit"
-
-				leftoffset=""
-				topoffset=""
-				rightoffset=""
-				bottomoffset=""
-
-				heighttype="FitTocontent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="30"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-
-			<component
-				name="Submit"
-
-				leftattachment=""
-				topattachment="help_button"
-				rightattachment=""
-				bottomattachment=""
-
-				leftoffset="10"
-				topoffset="10"
-				rightoffset="10"
-				bottomoffset="10"
-
-				heighttype="FitToContent"
-				height="100"
-				maxheight="0"
-				widthtype="Percentage"
-				width="100"
-				maxwidth="0"
-				componenttype="buttonsComponent"
-			/>
-		</layout>
-	</uidefinition>
+    <layout name="StepOne">
+      <component
+          name="Title"
+
+          leftattachment=""
+          topattachment=""
+          rightattachment=""
+          bottomattachment="Properties"
+
+          leftoffset="10"
+          topoffset="10"
+          rightoffset="10"
+          bottomoffset=""
+
+          heighttype="FitToContent"
+          height="100" maxheight="0"
+          widthtype="Percentage"
+          width="100"
+          componenttype="startPageHeaderComponent"
+      />
+
+      <component
+          name="Properties"
+
+          leftattachment=""
+          topattachment="Title"
+          rightattachment="coreImage"
+          bottomattachment="read_data_button"
+
+          leftoffset="10"
+          topoffset="5"
+          rightoffset=""
+          bottomoffset="5"
+
+          heighttype="Percentage"
+          height="100"
+          maxheight="0"
+          widthtype="fixed"
+          width="300"
+          componenttype="propertiesComponent"
+      />
+
+
+      <component
+          name="coreImage"
+
+          leftattachment="Properties"
+          topattachment="Title"
+          rightattachment=""
+          bottomattachment="read_data_button"
+
+          leftoffset=""
+          topoffset="5"
+          rightoffset=""
+          bottomoffset="5"
+
+          heighttype="Percentage"
+          height="100"
+          minheight="200"
+          maxheight="0"
+          widthtype="fixed"
+          width="310"
+          maxwidth="0"
+          componenttype="htmlComponent"
+      />
+
+      <component
+          name="read_data_button"
+
+          leftattachment=""
+          topattachment="Properties"
+          rightattachment="open_library_button"
+          bottomattachment="open_examples_button"
+
+          leftoffset="10"
+          topoffset=""
+          rightoffset=""
+          bottomoffset=""
+
+          heighttype="FitTocontent"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="50"
+          maxwidth="0"
+          componenttype="buttonsComponent"
+      />
+
+      <component
+          name="open_library_button"
+
+          leftattachment="read_data_button"
+          topattachment="Properties"
+          rightattachment="github_button"
+          bottomattachment="open_examples_button"
+
+          leftoffset=""
+          topoffset=""
+          rightoffset="10"
+          bottomoffset=""
+
+          heighttype="FitTocontent"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="50"
+          maxwidth="0"
+          componenttype="buttonsComponent"
+      />
+
+      <component
+          name="open_examples_button"
+
+          leftattachment=""
+          topattachment="read_data_button"
+          rightattachment="github_button"
+          bottomattachment="Submit"
+
+          leftoffset="10"
+          topoffset=""
+          rightoffset=""
+          bottomoffset=""
+
+          heighttype="FitTocontent"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="30"
+          maxwidth="0"
+          componenttype="buttonsComponent"
+      />
+
+      <component
+          name="github_button"
+
+          leftattachment="open_examples_button"
+          topattachment="read_data_button"
+          rightattachment=""
+          bottomattachment="Submit"
+
+          leftoffset=""
+          topoffset=""
+          rightoffset=""
+          bottomoffset=""
+
+          heighttype="FitTocontent"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="30"
+          maxwidth="0"
+          componenttype="buttonsComponent"
+      />
+
+      <component
+          name="help_button"
+
+          leftattachment="github_button"
+          topattachment="read_data_button"
+          rightattachment=""
+          bottomattachment="Submit"
+
+          leftoffset=""
+          topoffset=""
+          rightoffset=""
+          bottomoffset=""
+
+          heighttype="FitTocontent"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="30"
+          maxwidth="0"
+          componenttype="buttonsComponent"
+      />
+
+      <component
+          name="Submit"
+
+          leftattachment=""
+          topattachment="help_button"
+          rightattachment=""
+          bottomattachment=""
+
+          leftoffset="10"
+          topoffset="10"
+          rightoffset="10"
+          bottomoffset="10"
+
+          heighttype="FitToContent"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="100"
+          maxwidth="0"
+          componenttype="buttonsComponent"
+      />
+    </layout>
+
+    <layout name="StepTwo">
+      <component
+          name="Title"
+
+          leftattachment=""
+          topattachment=""
+          rightattachment=""
+          bottomattachment="Properties"
+
+          leftoffset="10"
+          topoffset="10"
+          rightoffset="10"
+          bottomoffset=""
+
+          heighttype="FitToContent"
+          height="100" maxheight="0"
+          widthtype="Percentage"
+          width="100"
+          componenttype="startPageHeaderComponent"
+      />
+
+      <component
+          name="Properties"
+
+          leftattachment=""
+          topattachment="Title"
+          rightattachment=""
+          bottomattachment="help_button"
+
+          leftoffset="10"
+          topoffset="5"
+          rightoffset="10"
+          bottomoffset="5"
+
+          heighttype="Percentage"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="100"
+          componenttype="propertiesComponent"
+      />
+
+      <component
+          name="help_button"
+
+          leftattachment=""
+          topattachment="Properties"
+          rightattachment=""
+          bottomattachment="Submit"
+
+          leftoffset=""
+          topoffset=""
+          rightoffset=""
+          bottomoffset=""
+
+          heighttype="FitTocontent"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="80"
+          maxwidth="0"
+          componenttype="buttonsComponent"
+      />
+
+      <component
+          name="Submit"
+
+          leftattachment=""
+          topattachment="help_button"
+          rightattachment=""
+          bottomattachment=""
+
+          leftoffset="10"
+          topoffset="10"
+          rightoffset="10"
+          bottomoffset="10"
+
+          heighttype="FitToContent"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="100"
+          maxwidth="0"
+          componenttype="buttonsComponent"
+      />
+    </layout>
+
+    <layout name="StepThree">
+      <component
+          name="Title"
+
+          leftattachment=""
+          topattachment=""
+          rightattachment=""
+          bottomattachment="Properties"
+
+          leftoffset="10"
+          topoffset="10"
+          rightoffset="10"
+          bottomoffset=""
+
+          heighttype="FitToContent"
+          height="100" maxheight="0"
+          widthtype="Percentage"
+          width="100"
+          componenttype="startPageHeaderComponent"
+      />
+
+      <component
+          name="Properties"
+
+          leftattachment=""
+          topattachment="Title"
+          rightattachment=""
+          bottomattachment="setup_analysis_button"
+
+          leftoffset="10"
+          topoffset="5"
+          rightoffset="10"
+          bottomoffset=""
+
+          heighttype="Percentage"
+          height="90"
+          maxheight="0"
+          widthtype="Percentage"
+          width="100"
+          componenttype="propertiesComponent"
+      />
+
+      <component
+          name="define_windings_button"
+
+          leftattachment=""
+          topattachment="Properties"
+          rightattachment="define_connections_button"
+          bottomattachment="setup_analysis_button"
+
+          leftoffset="10"
+          topoffset=""
+          rightoffset=""
+          bottomoffset=""
+
+          heighttype="FitTocontent"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="50"
+          maxwidth="0"
+          componenttype="buttonsComponent"
+      />
+
+      <component
+          name="define_connections_button"
+
+          leftattachment="define_windings_button"
+          topattachment="Properties"
+          rightattachment="analyze_button"
+          bottomattachment="setup_analysis_button"
+
+          leftoffset=""
+          topoffset=""
+          rightoffset="10"
+          bottomoffset=""
+
+          heighttype="FitTocontent"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="50"
+          maxwidth="0"
+          componenttype="buttonsComponent"
+      />
+
+      <component
+          name="setup_analysis_button"
+
+          leftattachment=""
+          topattachment="define_windings_button"
+          rightattachment="analyze_button"
+          bottomattachment="Submit"
+
+          leftoffset=""
+          topoffset=""
+          rightoffset=""
+          bottomoffset=""
+
+          heighttype="FitTocontent"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="30"
+          maxwidth="0"
+          componenttype="buttonsComponent"
+      />
+
+      <component
+          name="analyze_button"
+
+          leftattachment="setup_analysis_button"
+          topattachment="define_windings_button"
+          rightattachment=""
+          bottomattachment="Submit"
+
+          leftoffset=""
+          topoffset=""
+          rightoffset=""
+          bottomoffset=""
+
+          heighttype="FitTocontent"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="30"
+          maxwidth="0"
+          componenttype="buttonsComponent"
+      />
+
+      <component
+          name="help_button"
+
+          leftattachment="analyze_button"
+          topattachment="define_windings_button"
+          rightattachment=""
+          bottomattachment="Submit"
+
+          leftoffset=""
+          topoffset=""
+          rightoffset=""
+          bottomoffset=""
+
+          heighttype="FitTocontent"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="30"
+          maxwidth="0"
+          componenttype="buttonsComponent"
+      />
+
+      <component
+          name="Submit"
+
+          leftattachment=""
+          topattachment="help_button"
+          rightattachment=""
+          bottomattachment=""
+
+          leftoffset="10"
+          topoffset="10"
+          rightoffset="10"
+          bottomoffset="10"
+
+          heighttype="FitToContent"
+          height="100"
+          maxheight="0"
+          widthtype="Percentage"
+          width="100"
+          maxwidth="0"
+          componenttype="buttonsComponent"
+      />
+    </layout>
+  </uidefinition>
 </extension>
