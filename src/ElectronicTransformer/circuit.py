@@ -1,3 +1,4 @@
+# copyright 2021, ANSYS Inc. Software is released under GNU license
 import copy
 
 
@@ -73,6 +74,7 @@ class Circuit:
                 if not isinstance(val, dict):
                     target_dict.pop(key)
                     target_dict["S99999"] = {key: "Layer"}
+                    break
 
     def create_component(self, name, x, y, angle=0):
         x *= self.grid_cell_size * 4
@@ -397,106 +399,3 @@ class Circuit:
                 self.create_source_or_load("Load", max_x * 2)
 
             self.create_ground()
-
-
-if __name__ == '__main__':
-    from AEDTLib.Desktop import Desktop
-    import random
-
-    connections = {"S444444": {"72727": "layer", "987987987": "layer",
-                               "P9": {
-                                   "S4": {
-                                       "P1": {
-                                           "1": "layer",
-                                           "2": "layer"
-                                       },
-                                       "P2": {
-                                           "3": "layer",
-                                           "S78": {
-                                               "55": "layer",
-                                               "P1": {
-                                                   "66": "layer",
-                                                   "77": "layer"
-                                               }
-                                           },
-                                           "S7": {
-                                               "555": "layer",
-                                               "P1": {
-                                                   "666": "layer",
-                                                   "777": "layer"
-                                               }
-                                           },
-                                           "19": "layer"
-                                       },
-                                       "S3": {
-                                           "5": "layer",
-                                           "6": "layer"
-                                       }
-                                   },
-                                   "S8": {
-                                       "P5": {
-                                           "7": "layer",
-                                           "8": "layer"
-                                       },
-                                       "P6": {
-                                           "9": "layer",
-                                           "10": "layer"
-                                       },
-                                       "P7": {
-                                           "11": "layer",
-                                           "12": "layer",
-                                           "99": "layer"
-                                       }
-                                   },
-                                   "7": "layer",
-                                   "S9": {
-                                       "S4": {
-                                           "P1": {
-                                               "1": "layer",
-                                               "2": "layer"
-                                           },
-                                           "P2": {
-                                               "3": "layer",
-                                               "S78": {
-                                                   "55": "layer",
-                                                   "P1": {
-                                                       "66": "layer",
-                                                       "77": "layer"
-                                                   }
-                                               },
-                                               "4": "layer",
-                                               "19": "layer"
-                                           },
-                                           "S3": {
-                                               "5": "layer",
-                                               "6": "layer"
-                                           }
-                                       },
-                                       "S8": {
-                                           "P5": {
-                                               "7": "layer",
-                                               "8": "layer"
-                                           },
-                                           "P6": {
-                                               "9": "layer",
-                                               "10": "layer"
-                                           },
-                                           "P7": {
-                                               "11": "layer",
-                                               "12": "layer",
-                                               "99": "layer"
-                                           }
-                                       },
-                                       "7": "layer"
-                                   }
-                               }
-                               }}
-
-    conn2 = copy.deepcopy(connections)
-    windings = {"2": connections, "1": conn2}
-    with Desktop("2021.1", release_on_exit=True):
-        oDesktop.RestoreWindow()
-        oProject = oDesktop.GetActiveProject()
-        circuit = Circuit(windings, oProject, str(random.randint(0, 10000000)), current=120, resistance=10,
-                          frequency=100000)
-        circuit.create()

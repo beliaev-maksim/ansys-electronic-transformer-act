@@ -1,12 +1,12 @@
-# already done: E, EI, ETD = EC = EQ = ER(with argument), EFD, EP, PQ, P=PH=PT(with    argument), RM, U, UI
-
-# super class Cores
-# all sub classes for core creation will inherit from here basic parameters from GUI and
-# take all functions for primitive creation like createBox, createPolyhedron, move, rename and so on
+# copyright 2021, ANSYS Inc. Software is released under GNU license
 import math
 
 
 class Cores(object):
+    """
+        all sub classes for core creation will inherit from here basic parameters from GUI and
+        take all functions for primitive creation like create_box, create_polyhedron, move, rename and so on
+    """
     CS = 'Global'
 
     def __init__(self, args_list):
@@ -425,7 +425,7 @@ class ECore(Cores):
                 conductor_width = float(winding_parameters_dict[layer_name]["conductor_width"])
                 conductor_height = float(winding_parameters_dict[layer_name]["conductor_height"])
                 num_of_turns = int(winding_parameters_dict[layer_name]["turns_number"])
-                turn_spacing = float(winding_parameters_dict[layer_name]["insulation_thickness"])
+                turn_spacing = float(winding_parameters_dict[layer_name]["turn_spacing"])
 
                 if self.include_bobbin:
                     self.draw_board(slot_height, dim_d2, dim_d3,
@@ -1063,7 +1063,7 @@ class ETDCore(PQCore):
 
         self.oEditor.FitAll()
 
-        self.draw_winding(self.e_dim_d2, self.e_dim_d3, self.e_dim_d5, self.e_dim_d6)
+        self.draw_winding(self.e_dim_d2, self.e_dim_d3, self.dim_d5, self.e_dim_d6)
 
 
 # RMCore inherit from PQCore functions DrawWdg, CreateSingleTurn, draw_bobbin
