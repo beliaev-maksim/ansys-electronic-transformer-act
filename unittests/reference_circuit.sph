@@ -1,0 +1,94 @@
+* 0;circuit_3484420.ckt
+* Project: C:/Users/mbeliaev/Desktop/Test Projects/Project1.aedt
+* Design: circuit_3484420
+
+*BeginParamDef
+*EndParamDef
+
+
+*begin toplevel circuit
+LLayer_11 net_2 net_27 1 Winding
+LLayer_1 net_23 net_31 1 Winding
+LLayer_10 net_29 net_31 1 Winding
+LLayer_777 net_22 net_23 1 Winding
+LLayer_987987987 net_33 net_34 1 Winding
+LLayer_6 net_37 net_38 1 Winding
+LLayer_19 net_38 net_41 1 Winding
+LLayer_3 net_38 net_41 1 Winding
+LLayer_7 net_34 net_63 1 Winding
+LLayer_4 net_38 net_41 1 Winding
+LLayer_5 net_36 net_37 1 Winding
+LLayer_7 net_34 net_36 1 Winding
+LLayer_72727 0 net_33 1 Winding
+LLayer_10 net_47 net_63 1 Winding
+LLayer_55 net_38 net_40 1 Winding
+LLayer_66 net_40 net_41 1 Winding
+LLayer_1 net_43 net_45 1 Winding
+LLayer_5 net_34 net_49 1 Winding
+LLayer_99 net_41 net_43 1 Winding
+LLayer_11 net_41 net_43 1 Winding
+LLayer_12 net_41 net_43 1 Winding
+LLayer_2 net_43 net_45 1 Winding
+LLayer_9 net_47 net_63 1 Winding
+LLayer_66 net_52 net_55 1 Winding
+LLayer_77 net_40 net_41 1 Winding
+LLayer_8 net_45 net_47 1 Winding
+LLayer_7 net_45 net_47 1 Winding
+LLayer_8 net_59 net_61 1 Winding
+LLayer_55 net_50 net_52 1 Winding
+LLayer_12 net_34 net_59 1 Winding
+LLayer_7 net_59 net_61 1 Winding
+LLayer_19 net_50 net_55 1 Winding
+LLayer_6 net_49 net_50 1 Winding
+LLayer_3 net_50 net_55 1 Winding
+LLayer_2 net_11 net_13 1 Winding
+LLayer_11 net_9 net_11 1 Winding
+LLayer_1 net_11 net_13 1 Winding
+LLayer_7 net_13 net_15 1 Winding
+LLayer_72727 0 net_1 1 Winding
+LLayer_5 net_4 net_5 1 Winding
+LLayer_7 net_2 net_31 1 Winding
+LLayer_77 net_8 net_9 1 Winding
+LLayer_3 net_6 net_9 1 Winding
+LLayer_7 net_2 net_4 1 Winding
+LLayer_5 net_2 net_17 1 Winding
+LLayer_6 net_5 net_6 1 Winding
+LLayer_8 net_13 net_15 1 Winding
+LLayer_9 net_15 net_31 1 Winding
+LLayer_10 net_15 net_31 1 Winding
+LLayer_99 net_9 net_11 1 Winding
+LLayer_55 net_6 net_8 1 Winding
+LLayer_12 net_9 net_11 1 Winding
+LLayer_66 net_8 net_9 1 Winding
+LLayer_987987987 net_1 net_2 1 Winding
+LLayer_4 net_6 net_9 1 Winding
+LLayer_19 net_6 net_9 1 Winding
+LLayer_6 net_17 net_18 1 Winding
+LLayer_12 net_2 net_27 1 Winding
+LLayer_3 net_18 net_23 1 Winding
+LLayer_19 net_18 net_23 1 Winding
+LLayer_55 net_18 net_20 1 Winding
+LLayer_77 net_20 net_23 1 Winding
+LLayer_2 net_23 net_31 1 Winding
+LLayer_666 net_22 net_23 1 Winding
+LLayer_66 net_20 net_23 1 Winding
+LLayer_555 net_18 net_22 1 Winding
+I1143 0 net_31 SIN (0 120 100000 0 0 0) 
+LLayer_8 net_27 net_29 1 Winding
+LLayer_7 net_27 net_29 1 Winding
+LLayer_9 net_29 net_31 1 Winding
+LLayer_99 net_2 net_27 1 Winding
+R1290 0 net_63 3
+LLayer_9 net_61 net_63 1 Winding
+LLayer_10 net_61 net_63 1 Winding
+LLayer_555 net_50 net_54 1 Winding
+LLayer_77 net_52 net_55 1 Winding
+LLayer_1 net_55 net_63 1 Winding
+LLayer_2 net_55 net_63 1 Winding
+LLayer_99 net_34 net_59 1 Winding
+LLayer_666 net_54 net_55 1 Winding
+LLayer_777 net_54 net_55 1 Winding
+LLayer_11 net_34 net_59 1 Winding
+
+*end toplevel circuit
+.end

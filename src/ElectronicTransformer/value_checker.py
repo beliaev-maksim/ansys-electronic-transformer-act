@@ -1,3 +1,6 @@
+#
+# copyright 2021, ANSYS Inc. Software is released under GNU license
+#
 def segmentation_angle_check(step, prop):
     if not (0 <= float(prop.Value) < 20):
         prop.Value = 0

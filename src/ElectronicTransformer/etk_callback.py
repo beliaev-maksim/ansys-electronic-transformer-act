@@ -1,24 +1,35 @@
 # -*- coding: utf-8 -*-
-
+#
+# copyright 2021, ANSYS Inc. Software is released under GNU license
+#
 #            Replacement of old ETK (Electronic Transformer Kit) for Maxwell
 #
 #            ACT Written by : Maksim Beliaev (maksim.beliaev@ansys.com)
 #            Tested by: Mark Christini (mark.christini@ansys.com)
-#            Last updated : 18.01.2021
+#            Last updated : 26.01.2021
 import copy
 import datetime
+import json
 import os
 import re
 import shutil
-from webbrowser import open as webopen
-from collections import OrderedDict
-import json
+import sys
 from abc import ABCMeta, abstractmethod
+from collections import OrderedDict
+from webbrowser import open as webopen
 
-# all below imports are done by ACT, here they are listed for information purpose to increase transparency
-# from .cores_geometry import ECore, EFDCore, EICore, EPCore, ETDCore, PCore, PQCore, UCore, UICore, RMCore
-# from .value_checker import check_core_dimensions
-# from .forms import WindingForm, ConnectionForm
+# all below imports are done via appending sys path due to ACT import limitations
+root_folder = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(root_folder)
+from cores_geometry import ECore, EFDCore, EICore, EPCore, ETDCore, PCore, PQCore, UCore, UICore, RMCore
+from circuit import Circuit
+
+try:
+    a = ExtAPI  # will work only when running from ACT
+    from value_checker import check_core_dimensions
+    from forms import WindingForm, ConnectionForm
+except NameError:
+    pass
 
 # object to save UI settings that are cross shared between classes
 transformer_definition = OrderedDict()
@@ -132,22 +143,31 @@ class Step1(object):
         """
 
         examples_folder = os.path.join(ExtAPI.Extension.InstallDir, "examples").replace("/", "\\")
-        self.read_data(_sender, _args, default_path=examples_folder)
+        self.read_data(_sender, _args, default_path=examples_folder, ext_filter="*.jpg")
 
-    def read_data(self, _sender, _args, default_path=""):
+    def read_data(self, _sender, _args, default_path="", ext_filter=""):
         """
         Function called when click button Read Settings From File. Parse json file with settings and dump them to
         transformer definition object
         :param default_path: path to the folder that should be opened
+        :param ext_filter: additional filter for file types
         :param _sender: unused standard event
         :param _args: unused standard event
         :return: None
         """
         global transformer_definition
-        path = ExtAPI.UserInterface.UIRenderer.ShowFileOpenDialog('Text Files(*.json;)|*.json;', default_path)
+        file_filter = 'Input Files(*.json;{0})|*.json;{0}'.format(ext_filter)
+        path = ExtAPI.UserInterface.UIRenderer.ShowFileOpenDialog(file_filter, default_path)
 
         if path is None:
             return
+
+        if path.endswith(".jpg"):
+            webopen(path)
+
+        path = path.replace(".jpg", ".json")
+        if not os.path.isfile(path):
+            add_error_message("Input File does not exist: " + path)
 
         with open(path, "r") as input_f:
             try:
@@ -388,19 +408,12 @@ class Step2(object):
         # read data for step 2
         winding_def = transformer_definition["winding_definition"]
         self.winding_prop.Properties["layer_type"].Value = winding_def["layer_type"]
-
         self.winding_prop.Properties["number_of_layers"].Value = int(winding_def["number_of_layers"])
-
         self.winding_prop.Properties["layer_spacing"].Value = float(winding_def["layer_spacing"])
-
         self.winding_prop.Properties["bobbin_board_thickness"].Value = float(winding_def["bobbin_board_thickness"])
-
         self.winding_prop.Properties["top_margin"].Value = float(winding_def["top_margin"])
-
         self.winding_prop.Properties["side_margin"].Value = float(winding_def["side_margin"])
-
         self.winding_prop.Properties["include_bobbin"].Value = winding_def["include_bobbin"]
-
         self.winding_prop.Properties["conductor_type"].Value = winding_def["conductor_type"]
 
         if self.conductor_type.Value == "Circular":
@@ -426,6 +439,8 @@ class Step2(object):
             for prop in list_of_prop:
                 if prop in ["segments_number", "turns_number"]:
                     table.Properties[prop].Value = int(layer_dict[prop])
+                elif prop == "insulation_thickness" and self.layer_type.Value == "Planar":
+                    table.Properties[prop].Value = float(layer_dict["turn_spacing"])
                 else:
                     table.Properties[prop].Value = float(layer_dict[prop])
 
@@ -457,7 +472,12 @@ class Step2(object):
             # file does not exist, copy it from root location
             if not os.path.exists(lib_path):
                 os.makedirs(lib_path)
-            shutil.copy(os.path.join(ExtAPI.Extension.InstallDir, "material_properties.json"), materials_json)
+            try:
+                install_dir = ExtAPI.Extension.InstallDir
+            except NameError:
+                install_dir = os.path.abspath(os.path.dirname(__file__))
+
+            shutil.copy(os.path.join(install_dir, "material_properties.json"), materials_json)
 
         with open(materials_json) as file:
             self.materials = json.load(file)
@@ -507,7 +527,12 @@ class Step2(object):
         for i in range(1, int(winding_definition["number_of_layers"]) + 1):
             layer_dict = OrderedDict()
             for prop in list_of_prop:
-                layer_dict[prop] = table.Value[xml_path_to_table + "/" + prop][i - 1]
+                prop_name = prop
+                if prop == "insulation_thickness" and self.layer_type.Value == "Planar":
+                    prop_name = "turn_spacing"
+
+                layer_dict[prop_name] = table.Value[xml_path_to_table + "/" + prop][i - 1]
+
             layer_dict["turns_number"] = int(table.Value[xml_path_to_table + "/turns_number"][i - 1])
             winding_definition["layers_definition"]["layer_" + str(i)] = layer_dict
 
@@ -849,7 +874,8 @@ class TransformerClass(Step1, Step2, Step3):
         Save transformer definition to the file
         :return: None
         """
-        write_path = os.path.join(self.project_path.Value, self.design_name + '_parameters.json')
+        write_path = os.path.join(transformer_definition["setup_definition"]["project_path"],
+                                  self.design_name + '_parameters.json')
         with open(write_path, "w") as output_f:
             json.dump(transformer_definition, output_f, indent=4)
 
@@ -978,14 +1004,14 @@ class TransformerClass(Step1, Step2, Step3):
         """
 
         # create winding for each layer for further assignment in circuit
-        for i in range(self.number_of_layers.Value):
+        for i in range(int(transformer_definition["winding_definition"]["number_of_layers"])):
             self.create_winding("Layer_" + str(i+1), "External")
 
         for section in layer_sections_list:
             layer = section.split("_")[0]
             layer_num = layer[5:]
 
-            point_terminal = True  # if int(side) > 1 else False  # todo does it matter in external circuit?
+            point_terminal = True
             self.module_boundary_setup.AssignCoilTerminal(
                 [
                     "NAME:" + section,
@@ -1023,7 +1049,7 @@ class TransformerClass(Step1, Step2, Step3):
     def assign_matrix_winding(self):
         """Function to assign RL matrix to a winding group"""
         matrix_entry = ["NAME:MatrixEntry"]
-        for i in range(1, self.number_of_layers.Value + 1):
+        for i in range(1, int(transformer_definition["winding_definition"]["number_of_layers"]) + 1):
             matrix_entry.append([
                  "NAME:MatrixEntry",
                  "Source:=", "Layer_" + str(i),
@@ -1043,7 +1069,7 @@ class TransformerClass(Step1, Step2, Step3):
         Run matrix reduction algorithm
         :return:
         """
-        for i in range(self.number_of_layers.Value):
+        for i in range(int(transformer_definition["winding_definition"]["number_of_layers"])):
             # this loop is only required in 2021R1 and below. There is a bug in matrix reduction IDs, so we reserve some
             self.module_parameter_setup.AssignForce(
                 [
@@ -1111,7 +1137,7 @@ class TransformerClass(Step1, Step2, Step3):
             comp = self.circuit.get_comp_by_name(layer)[0]
             self.circuit.change_prop(comp, "name", "Side_" + side_num)
 
-        connections = copy.deepcopy(self.defined_connections_dict)
+        connections = copy.deepcopy(transformer_definition["setup_definition"]["connections_definition"])
         for side_num, side_def in connections.items():
             if not any(isinstance(val, dict) for val in side_def.values()):
                 rename(side_num, side_def)
@@ -1152,8 +1178,9 @@ class TransformerClass(Step1, Step2, Step3):
         """Create equations to calculate leakage inductance.
         For N winding transformer would be N*(N-1)/2 equations"""
 
-        list_x = list(range(1, self.transformer_sides.Value + 1))[:]
-        list_y = list(range(1, self.transformer_sides.Value + 1))[:]
+        transformer_sides = transformer_definition["setup_definition"]["transformer_sides"]
+        list_x = list(range(1, transformer_sides + 1))
+        list_y = list_x[:]
 
         all_leakages = {}
 
@@ -1167,7 +1194,7 @@ class TransformerClass(Step1, Step2, Step3):
 
             list_y.remove(x)
 
-        if self.transformer_sides.Value <= 1:
+        if transformer_sides <= 1:
             all_leakages["Leakage_Inductance_11"] = "L(Side_1,Side_1)"
 
         self.module_report.CreateReport("Leakage Inductance", "EddyCurrent", "Data Table", "Setup1 : LastAdaptive",
@@ -1274,22 +1301,24 @@ class TransformerClass(Step1, Step2, Step3):
 
     def create_setup(self):
         """function which grabs parameters from UI and inserts Setup1 according to them"""
-        max_num_passes = int(self.number_passes.Value)
-        percent_error = float(self.percentage_error.Value)
+        max_num_passes = int(transformer_definition["setup_definition"]["number_passes"])
+        percent_error = float(transformer_definition["setup_definition"]["percentage_error"])
 
-        adapt_freq = self.adaptive_frequency.Value
+        adapt_freq = transformer_definition["setup_definition"]["adaptive_frequency"]
         frequency = str(adapt_freq) + 'kHz'
 
-        start_sweep_freq = (str(self.start_frequency.Value) +
-                            str(self.start_frequency_unit.Value))
+        sweep = transformer_definition["setup_definition"]["frequency_sweep_definition"]
+        if sweep["frequency_sweep"]:
+            start_frequency = str(sweep["start_frequency"])
+            start_frequency_unit = str(sweep["start_frequency_unit"])
+            stop_frequency = str(sweep["stop_frequency"])
+            stop_frequency_unit = str(sweep["stop_frequency_unit"])
 
-        stop_sweep_freq = (str(self.stop_frequency.Value) +
-                           str(self.stop_frequency_unit.Value))
+            start_sweep_freq = str(start_frequency) + start_frequency_unit
+            stop_sweep_freq = str(stop_frequency) + stop_frequency_unit
+            samples = int(sweep["samples"])
 
-        samples = int(self.samples.Value)
-
-        if self.frequency_sweep.Value:
-            if self.scale.Value == 'Linear':
+            if sweep["scale"] == 'Linear':
                 self.insert_setup(max_num_passes, percent_error, frequency, True,
                                   'LinearCount', start_sweep_freq, stop_sweep_freq, samples)
             else:
@@ -1340,7 +1369,7 @@ class TransformerClass(Step1, Step2, Step3):
 
     def create_region(self, x_zero_region):
         """Create vacuum region with offset specified by user"""
-        offset = int(self.step3.Properties["define_setup/offset"].Value)
+        offset = int(float(transformer_definition["setup_definition"]["offset"]))
 
         x_offset = 0 if x_zero_region else offset
 
@@ -1437,7 +1466,7 @@ class TransformerClass(Step1, Step2, Step3):
         :return:
         """
         oDefinitionManager = self.project.GetDefinitionManager()
-        core_material = self.core_material.Value
+        core_material = transformer_definition["setup_definition"]["core_material"]
         # check if material not yet defined
         if not oDefinitionManager.DoesMaterialExist("Material_" + core_material):
             cord_list = ["NAME:Coordinates"]
@@ -1650,14 +1679,25 @@ class TransformerClass(Step1, Step2, Step3):
 
     def setup_analysis_click(self, _sender="", _args=""):
         """
-        Run the process of model creation and setup
+        When user clicks Setup Analysis on page 3
         :param _sender:
         :param _args:
         :return:
         """
         self.collect_ui_data_step3()
+        self.setup_analysis()
+        self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag("setup_analysis_button", False)
+        self.step3.UserInterface.GetComponent("define_windings_button").SetEnabledFlag("define_windings_button", False)
+        self.step3.UserInterface.GetComponent("define_connections_button").SetEnabledFlag(
+            "define_connections_button", False
+        )
+
+    def setup_analysis(self):
+        """
+        Run the process of model creation and setup
+        """
         self.create_model()
-        coil_material = self.coil_material.Value + "_temperature"
+        coil_material = transformer_definition["setup_definition"]["coil_material"] + "_temperature"
 
         layers_list = []
         layer_sections_list = []
@@ -1674,7 +1714,8 @@ class TransformerClass(Step1, Step2, Step3):
                 core_list.append(each_obj)
 
         self.create_new_materials(coil_material)
-        self.assign_material(','.join(core_list), '"Material_' + self.core_material.Value + '"')
+        self.assign_material(','.join(core_list),
+                             '"Material_' + transformer_definition["setup_definition"]["core_material"] + '"')
         self.assign_material(','.join(layers_list), '"' + coil_material + '"')
 
         if coil_material == 'Copper_temperature':
@@ -1682,8 +1723,8 @@ class TransformerClass(Step1, Step2, Step3):
         else:
             self.change_color(layers_list, rgb=(132, 135, 137))
 
-        if self.include_bobbin.Value:
-            if self.layer_type.Value == 'Wound':
+        if transformer_definition["winding_definition"]["include_bobbin"]:
+            if transformer_definition["winding_definition"]["layer_type"] == 'Wound':
                 self.assign_material('Bobbin', '"polyamide"')
             else:
                 boards = ','.join(self.editor.GetMatchedObjectName("Board*"))
@@ -1726,11 +1767,11 @@ class TransformerClass(Step1, Step2, Step3):
                 terminals.append(sheet)
 
         # if user selects to enable bobbin on boards we need to cut them, if not empty list
-        bobbin_list = self.editor.GetMatchedObjectName("Bobbin")
-        boards_list = self.editor.GetMatchedObjectName("Board*")
+        bobbin_list = list(self.editor.GetMatchedObjectName("Bobbin"))
+        boards_list = list(self.editor.GetMatchedObjectName("Board*"))  # a tuple when call from Unittests
 
         x_zero_region = False
-        if not self.full_model.Value:
+        if not transformer_definition["setup_definition"]["full_model"]:
             self.split_geom(core_list + layers_and_skins + bobbin_list + boards_list)
 
             # if terminals were created on the wrong side mirror them to be inside of the conductor
@@ -1753,13 +1794,9 @@ class TransformerClass(Step1, Step2, Step3):
 
         self.write_json_data()
 
-        self.project.SaveAs(os.path.join(self.project_path.Value, self.design_name + '.aedt'), True)
+        self.project.SaveAs(os.path.join(transformer_definition["setup_definition"]["project_path"],
+                                         self.design_name + '.aedt'), True)
         self.analysis_set = True
-        self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag("setup_analysis_button", False)
-        self.step3.UserInterface.GetComponent("define_windings_button").SetEnabledFlag("define_windings_button", False)
-        self.step3.UserInterface.GetComponent("define_connections_button").SetEnabledFlag(
-            "define_connections_button", False
-        )
         oDesktop.EnableAutoSave(self.flag_auto_save)
 
     def create_model(self):
@@ -1767,8 +1804,8 @@ class TransformerClass(Step1, Step2, Step3):
         Generate Transformer geometry
         :return:
         """
-        time_now = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        self.design_name = 'Transformer_' + time_now
+        time_now = datetime.datetime.now().strftime('%y%m%d_%H_%M_%S')
+        self.design_name = 'ETK_' + time_now
 
         self.project.InsertDesign("Maxwell 3D", self.design_name, "EddyCurrent", "")
         self.design = self.project.SetActiveDesign(self.design_name)
@@ -1795,9 +1832,10 @@ class TransformerClass(Step1, Step2, Step3):
         self.flag_auto_save = oDesktop.GetAutoSaveEnabled()
         oDesktop.EnableAutoSave(False)
 
-        draw_class = all_cores[self.core_type.Value](args)
-        if self.core_type.Value in cores_arguments:
-            draw_class.draw_geometry(self.core_type.Value)
+        core_type = transformer_definition["core_dimensions"]["core_type"]
+        draw_class = all_cores[core_type](args)
+        if core_type in cores_arguments:
+            draw_class.draw_geometry(core_type)
         else:
             draw_class.draw_geometry()
 
@@ -1961,17 +1999,19 @@ class TransformerClass(Step1, Step2, Step3):
         Create Maxwell Circuit
         :return:
         """
-        if self.excitation_strategy.Value == "Voltage":
+        setup_def = transformer_definition["setup_definition"]
+        if setup_def["excitation_strategy"] == "Voltage":
             current = 0
-            voltage = self.voltage.Value
+            voltage = setup_def["voltage"]
         else:
             voltage = 0
-            current = self.voltage.Value
+            current = setup_def["voltage"]
 
-        self.circuit = Circuit(self.defined_connections_dict, self.project, self.design_name,
+        self.circuit = Circuit(setup_def["connections_definition"],
+                               self.project, self.design_name,
                                current=current, voltage=voltage,
-                               resistance_list=transformer_definition["setup_definition"]["side_loads"],
-                               frequency=self.adaptive_frequency.Value)
+                               resistance_list=setup_def["side_loads"],
+                               frequency=setup_def["adaptive_frequency"])
         self.circuit.create()
         self.project.SetActiveDesign(self.design_name)
 
@@ -1980,7 +2020,8 @@ class TransformerClass(Step1, Step2, Step3):
         Export circuit from Maxwell Circuit design and import into Maxwell Eddy Current
         :return:
         """
-        circuit_path = os.path.join(self.project.GetPath(), self.design_name + "_circuit.sph")
+        circuit_path = os.path.join(transformer_definition["setup_definition"]["project_path"],
+                                    self.design_name + "_circuit.sph")
         self.circuit.design.ExportNetlist("", circuit_path)
 
         self.module_boundary_setup.EditExternalCircuit(circuit_path, [], [], [], [])  # import circuit
