@@ -234,8 +234,8 @@ class Step1(object):
         update_ui(self.step1)
 
     def callback_step1(self):
-        check_core_dimensions(self.step1)
         self.collect_ui_data_step1()
+        check_core_dimensions(transformer_definition)
 
     def show_core_img(self):
         """invoked to change image and core dimensions when supplier or core type changed"""
@@ -260,7 +260,7 @@ class Step1(object):
         :return:
         """
         self.supplier.Options.Clear()
-        for key in sorted(self.cores_database.keys()):
+        for key in sorted(self.cores_database.keys(), key=lambda x: x.lower()):
             self.supplier.Options.Add(key)
 
         self.supplier.Value = self.supplier.Options[0]
@@ -2007,11 +2007,12 @@ class TransformerClass(Step1, Step2, Step3):
             voltage = 0
             current = setup_def["voltage"]
 
+        frequency_khz = float(setup_def["adaptive_frequency"]) * 1000
         self.circuit = Circuit(setup_def["connections_definition"],
                                self.project, self.design_name,
                                current=current, voltage=voltage,
                                resistance_list=setup_def["side_loads"],
-                               frequency=setup_def["adaptive_frequency"])
+                               frequency=frequency_khz)
         self.circuit.create()
         self.project.SetActiveDesign(self.design_name)
 

@@ -1,6 +1,9 @@
 #
 # copyright 2021, ANSYS Inc. Software is released under GNU license
 #
+import math
+
+
 def segmentation_angle_check(step, prop):
     if not (0 <= float(prop.Value) < 20):
         prop.Value = 0
@@ -63,6 +66,7 @@ def validate_resistance(step, prop):
             table.Value[xml_path + '/' + prop.Name][i] = 1e-6
             return add_error_message(str(prop.Caption) + ' must be greater than zero!')
 
+
 def validate_aedt_version():
     """Raise error message for unsupported versions"""
     if float(oDesktop.GetVersion()[:-2]) < 2021.1:
@@ -71,17 +75,17 @@ def validate_aedt_version():
         raise UserErrorMessageException(error)
 
 
-def check_core_dimensions(step):
+def check_core_dimensions(transformer_definition):
     validate_aedt_version()
 
-    D_1 = float(step.Properties["core_properties/core_type/D_1"].Value)
-    D_2 = float(step.Properties["core_properties/core_type/D_2"].Value)
-    D_3 = float(step.Properties["core_properties/core_type/D_3"].Value)
-    D_4 = float(step.Properties["core_properties/core_type/D_4"].Value)
-    D_5 = float(step.Properties["core_properties/core_type/D_5"].Value)
-    D_6 = float(step.Properties["core_properties/core_type/D_6"].Value)
-    D_7 = float(step.Properties["core_properties/core_type/D_7"].Value)
-    D_8 = float(step.Properties["core_properties/core_type/D_8"].Value)
+    D_1 = float(transformer_definition["core_dimensions"]["D_1"])
+    D_2 = float(transformer_definition["core_dimensions"]["D_2"])
+    D_3 = float(transformer_definition["core_dimensions"]["D_3"])
+    D_4 = float(transformer_definition["core_dimensions"]["D_4"])
+    D_5 = float(transformer_definition["core_dimensions"]["D_5"])
+    D_6 = float(transformer_definition["core_dimensions"]["D_6"])
+    D_7 = float(transformer_definition["core_dimensions"]["D_7"])
+    D_8 = float(transformer_definition["core_dimensions"]["D_8"])
 
     if D_1 == 0:
         raise UserErrorMessageException("Wrong core parameters!" + '\nD_1 cannot be zero')
@@ -96,7 +100,7 @@ def check_core_dimensions(step):
     if D_1 <= D_2:
         raise UserErrorMessageException("Wrong core parameters!" + '\nD_1 must be greater than D_2')
 
-    core_type = step.Properties["core_properties/core_type"].Value
+    core_type = transformer_definition["core_dimensions"]["core_type"]
     if core_type == "E":
         if D_2 <= D_3:
             raise UserErrorMessageException("Wrong core parameters!" + '\nD_2 must be greater than D_3')
