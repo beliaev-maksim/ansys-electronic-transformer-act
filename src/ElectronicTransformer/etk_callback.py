@@ -6,7 +6,7 @@
 #
 #            ACT Written by : Maksim Beliaev (maksim.beliaev@ansys.com)
 #            Tested by: Mark Christini (mark.christini@ansys.com)
-#            Last updated : 26.01.2021
+#            Last updated : 11.03.2021
 import copy
 import datetime
 import json
@@ -1179,6 +1179,10 @@ class TransformerClass(Step1, Step2, Step3):
         For N winding transformer would be N*(N-1)/2 equations"""
 
         transformer_sides = transformer_definition["setup_definition"]["transformer_sides"]
+        if transformer_sides <= 1:
+            add_info_message("Transformer has only one side, skip report for Leakage Inductance")
+            return
+
         list_x = list(range(1, transformer_sides + 1))
         list_y = list_x[:]
 
@@ -1189,13 +1193,10 @@ class TransformerClass(Step1, Step2, Step3):
                 if x != y:
                     coupling_coef = "abs(L(Side_{0},Side_{1}))/sqrt(L(Side_{0},Side_{0})*L(Side_{1},Side_{1}))".format(
                                                                                                                 x, y)
-                    equation = "L(Side_{0},Side_{0})*{1}".format(x, coupling_coef)
+                    equation = "L(Side_{0},Side_{0})*(1-sqr({1}))".format(x, coupling_coef)
                     all_leakages["Leakage_Inductance_{}{}".format(x, y)] = equation
 
             list_y.remove(x)
-
-        if transformer_sides <= 1:
-            all_leakages["Leakage_Inductance_11"] = "L(Side_1,Side_1)"
 
         self.module_report.CreateReport("Leakage Inductance", "EddyCurrent", "Data Table", "Setup1 : LastAdaptive",
                                         [
@@ -1820,7 +1821,7 @@ class TransformerClass(Step1, Step2, Step3):
         self.module_mesh = self.design.GetModule("MeshSetup")
         self.module_fields_reporter = self.design.GetModule("FieldsReporter")
 
-        args = [transformer_definition, self.project, self.design, self.editor]
+        args = [transformer_definition, self.project, self.design, self.editor, oDesktop]
         all_cores = {'E': ECore, 'EI': EICore, 'U': UCore, 'UI': UICore,
                      'PQ': PQCore, 'ETD': ETDCore, 'EQ': ETDCore,
                      'EC': ETDCore, 'RM': RMCore, 'EP': EPCore,
