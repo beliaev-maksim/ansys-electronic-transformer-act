@@ -13,9 +13,7 @@
         "D_7": "0.8", 
         "D_8": "1.8", 
         "airgap": {
-            "define_airgap": true, 
-            "airgap_on_leg": "Center", 
-            "airgap_value": "0.1"
+            "define_airgap": false
         }
     }, 
     "winding_definition": {
@@ -81,8 +79,8 @@
     "setup_definition": {
         "core_material": "3F3", 
         "coil_material": "Copper", 
-        "adaptive_frequency": "500.0",
-        "draw_skin_layers": true,
+        "adaptive_frequency": "500.0", 
+        "draw_skin_layers": true, 
         "percentage_error": "1.0", 
         "number_passes": 5, 
         "transformer_sides": 4, 
@@ -96,7 +94,7 @@
         "voltage": "1.0", 
         "offset": "50.0", 
         "full_model": false, 
-        "project_path": "C:/Files/", 
+        "project_path": "D:/Files/", 
         "frequency_sweep_definition": {
             "frequency_sweep": true, 
             "start_frequency": "1.0", 

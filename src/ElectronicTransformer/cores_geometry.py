@@ -2,7 +2,7 @@
 import math
 
 
-class Cores(object):
+class CommonMethods(object):
     """
         all sub classes for core creation will inherit from here basic parameters from GUI and
         take all functions for primitive creation like create_box, create_polyhedron, move, rename and so on
@@ -10,51 +10,19 @@ class Cores(object):
     CS = 'Global'
 
     def __init__(self, args_list):
-        transformer_definition = args_list[0]
         self.oProject = args_list[1]
         self.oDesign = args_list[2]
         self.oEditor = args_list[3]
+        self.oDesktop = args_list[4]
 
-        # Draw in Base Core
-        self.dim_d1 = float(transformer_definition["core_dimensions"]["D_1"])
-        self.dim_d2 = float(transformer_definition["core_dimensions"]["D_2"])
-        self.dim_d3 = float(transformer_definition["core_dimensions"]["D_3"])
-        self.dim_d4 = float(transformer_definition["core_dimensions"]["D_4"])
-        self.dim_d5 = float(transformer_definition["core_dimensions"]["D_5"])
-        self.dim_d6 = float(transformer_definition["core_dimensions"]["D_6"])
-        self.dim_d7 = float(transformer_definition["core_dimensions"]["D_7"])
-        self.dim_d8 = float(transformer_definition["core_dimensions"]["D_8"])
+    def add_info_message(self, msg):
+        self.oDesktop.AddMessage("", "", 0, "ACT:" + str(msg))
 
-        self.segmentation_angle = transformer_definition["core_dimensions"]["segmentation_angle"]
-        self.segments_number = 0 if self.segmentation_angle == 0 else int(360/self.segmentation_angle)
+    def add_warning_message(self, msg):
+        self.oDesktop.AddMessage("", "", 1, "ACT:" + str(msg))
 
-        self.airgap_side = 0
-        self.airgap_center = 0
-        self.airgap_both = 0
-
-        airgap = transformer_definition["core_dimensions"]["airgap"]
-        if airgap["define_airgap"]:
-            airgap_size = float(airgap["airgap_value"])/2.0
-            if airgap["airgap_on_leg"] == 'Center':
-                self.airgap_center = airgap_size
-            elif airgap["airgap_on_leg"] == 'Side':
-                self.airgap_side = airgap_size
-            else:
-                self.airgap_both = airgap_size
-
-        self.layer_type = transformer_definition["winding_definition"]["layer_type"]
-        self.layer_spacing = float(transformer_definition["winding_definition"]["layer_spacing"])
-        self.top_bottom_margin = float(transformer_definition["winding_definition"]["top_margin"])
-        self.side_margin = float(transformer_definition["winding_definition"]["side_margin"])
-        self.include_bobbin = transformer_definition["winding_definition"]["include_bobbin"]
-        self.bobbin_thickness = float(transformer_definition["winding_definition"]["bobbin_board_thickness"])
-        self.conductor_type = transformer_definition["winding_definition"]["conductor_type"]
-        
-        self.winding_parameters_dict = transformer_definition["winding_definition"]["layers_definition"]
-
-        self.draw_skin = transformer_definition["setup_definition"]["draw_skin_layers"]
-        self.frequency = float(transformer_definition["setup_definition"]["adaptive_frequency"]) * 1000  # scale to Hz
-        self.coil_material = transformer_definition["setup_definition"]["coil_material"]
+    def add_error_message(self, msg):
+        self.oDesktop.AddMessage("", "", 2, "ACT:" + str(msg))
 
     def create_polyline(self, points, segments, name, covered=True, closed=True, color='(165 42 42)'):
         created_name = self.oEditor.CreatePolyline(
@@ -81,7 +49,7 @@ class Cores(object):
                 "Flags:=", "",
                 "Color:=", color,
                 "Transparency:=", 0,
-                "PartCoordinateSystem:=", Cores.CS,
+                "PartCoordinateSystem:=", CommonMethods.CS,
                 "UDMId:=", "",
                 "MaterialValue:=", '"ferrite"',
                 "SurfaceMaterialValue:=", "\"\"",
@@ -122,7 +90,7 @@ class Cores(object):
                 "Flags:=", "",
                 "Color:=", color,
                 "Transparency:=", 0,
-                "PartCoordinateSystem:=", Cores.CS,
+                "PartCoordinateSystem:=", CommonMethods.CS,
                 "UDMId:=", "",
                 "MaterialValue:=", '"ferrite"',
                 "SurfaceMaterialValue:=", "\"\"",
@@ -149,7 +117,7 @@ class Cores(object):
                         "Flags:=", "",
                         "Color:=", "(143 175 143)",
                         "Transparency:=", 0,
-                        "PartCoordinateSystem:=", Cores.CS,
+                        "PartCoordinateSystem:=", CommonMethods.CS,
                         "UDMId:=", "",
                         "MaterialValue:=", "\"vacuum\"",
                         "SurfaceMaterialValue:=", "\"\"",
@@ -177,7 +145,7 @@ class Cores(object):
                 "Flags:=", "",
                 "Color:=", color,
                 "Transparency:=", 0,
-                "PartCoordinateSystem:=", Cores.CS,
+                "PartCoordinateSystem:=", CommonMethods.CS,
                 "UDMId:=", "",
                 "MaterialValue:=", '"ferrite"',
                 "SurfaceMaterialValue:=", "\"\"",
@@ -204,7 +172,7 @@ class Cores(object):
                 "Flags:=", "",
                 "Color:=", "(143 175 143)",
                 "Transparency:=", 0,
-                "PartCoordinateSystem:=", Cores.CS,
+                "PartCoordinateSystem:=", CommonMethods.CS,
                 "UDMId:=", "",
                 "MaterialValue:=", "\"vacuum\"",
                 "SurfaceMaterialValue:=", "\"\"",
@@ -399,15 +367,56 @@ class Cores(object):
         return segment
 
 
-class ECore(Cores):
+class BaseCore(CommonMethods):
+    """
+    All cores share same attributes and winding definition
+    """
+
     def __init__(self, args_list):
-        super(ECore, self).__init__(args_list)
-        self.core_length = self.dim_d1
-        self.core_width = self.dim_d6
-        self.core_height = self.dim_d4
-        self.side_leg_width = (self.dim_d1 - self.dim_d2)/2
-        self.center_leg_width = self.dim_d3
-        self.slot_depth = self.dim_d5
+        super(BaseCore, self).__init__(args_list)
+
+        transformer_definition = args_list[0]
+
+        # Draw in Base Core
+        self.dim_d1 = float(transformer_definition["core_dimensions"]["D_1"])
+        self.dim_d2 = float(transformer_definition["core_dimensions"]["D_2"])
+        self.dim_d3 = float(transformer_definition["core_dimensions"]["D_3"])
+        self.dim_d4 = float(transformer_definition["core_dimensions"]["D_4"])
+        self.dim_d5 = float(transformer_definition["core_dimensions"]["D_5"])
+        self.dim_d6 = float(transformer_definition["core_dimensions"]["D_6"])
+        self.dim_d7 = float(transformer_definition["core_dimensions"]["D_7"])
+        self.dim_d8 = float(transformer_definition["core_dimensions"]["D_8"])
+
+        self.segmentation_angle = transformer_definition["core_dimensions"]["segmentation_angle"]
+        self.segments_number = 0 if self.segmentation_angle == 0 else int(360/self.segmentation_angle)
+
+        self.airgap_side = 0
+        self.airgap_center = 0
+        self.airgap_both = 0
+
+        airgap = transformer_definition["core_dimensions"]["airgap"]
+        if airgap["define_airgap"]:
+            airgap_size = float(airgap["airgap_value"])/2.0
+            if airgap["airgap_on_leg"] == 'Center':
+                self.airgap_center = airgap_size
+            elif airgap["airgap_on_leg"] == 'Side':
+                self.airgap_side = airgap_size
+            else:
+                self.airgap_both = airgap_size
+
+        self.layer_type = transformer_definition["winding_definition"]["layer_type"]
+        self.layer_spacing = float(transformer_definition["winding_definition"]["layer_spacing"])
+        self.top_bottom_margin = float(transformer_definition["winding_definition"]["top_margin"])
+        self.side_margin = float(transformer_definition["winding_definition"]["side_margin"])
+        self.include_bobbin = transformer_definition["winding_definition"]["include_bobbin"]
+        self.bobbin_thickness = float(transformer_definition["winding_definition"]["bobbin_board_thickness"])
+        self.conductor_type = transformer_definition["winding_definition"]["conductor_type"]
+
+        self.winding_parameters_dict = transformer_definition["winding_definition"]["layers_definition"]
+
+        self.draw_skin = transformer_definition["setup_definition"]["draw_skin_layers"]
+        self.frequency = float(transformer_definition["setup_definition"]["adaptive_frequency"])*1000  # scale to Hz
+        self.coil_material = transformer_definition["setup_definition"]["coil_material"]
 
     def draw_winding(self, dim_d2, dim_d3, dim_d5, dim_d6, e_coredim_d8=0.0):
         conductor_height = conductor_width = conductor_diameter = segments_number = 0
@@ -417,7 +426,7 @@ class ECore(Cores):
         bobbin_thickness = self.bobbin_thickness
         segmentation_angle = self.segmentation_angle
         winding_parameters_dict = self.winding_parameters_dict
-        slot_height = dim_d5 * 2
+        slot_height = dim_d5*2
 
         if self.layer_type == "Planar":
             margin = top_bottom_margin
@@ -431,24 +440,24 @@ class ECore(Cores):
                     self.draw_board(slot_height, dim_d2, dim_d3,
                                     dim_d6, bobbin_thickness,
                                     z_position=-dim_d5 + margin,
-                                    layer_number=layer_num+1,
+                                    layer_number=layer_num + 1,
                                     e_coredim_d8=e_coredim_d8)
 
                 position_z = -dim_d5 + margin + bobbin_thickness
                 for turn_num in range(num_of_turns):
                     sweep_path_x = (
-                            dim_d3 + 2 * side_margin + ((2 * turn_num + 1) * conductor_width) +
+                            dim_d3 + 2*side_margin + ((2*turn_num + 1)*conductor_width) +
                             (2*turn_num*turn_spacing) + turn_spacing)
 
                     sweep_path_y = (
-                            dim_d6 + 2 * side_margin + ((2 * turn_num + 1) * conductor_width) +
+                            dim_d6 + 2*side_margin + ((2*turn_num + 1)*conductor_width) +
                             (2*turn_num*turn_spacing) + turn_spacing)
 
                     self.create_single_turn(sweep_path_x, sweep_path_y, position_z,
                                             layer_num + 1, fillet_radius=(sweep_path_x - dim_d3)/2,
                                             segmentation_angle=segmentation_angle,
                                             profile_width=conductor_width, profile_height=conductor_height,
-                                            turn_num=turn_num+1)
+                                            turn_num=turn_num + 1)
 
                 margin += layer_spacing + conductor_height + bobbin_thickness
         else:
@@ -480,22 +489,22 @@ class ECore(Cores):
                 fillet_radius = (sweep_path_x - dim_d3)/2
 
                 if self.conductor_type == 'Rectangular':
-                    conductor_z_position += -conductor_height/2.0
+                    conductor_z_position -= conductor_height
                     move_vec = 2*insulation_thickness + conductor_height
                     names = self.create_single_turn(sweep_path_x, sweep_path_y, conductor_z_position,
-                                                    layer_num+1, fillet_radius, segmentation_angle,
+                                                    layer_num + 1, fillet_radius, segmentation_angle,
                                                     profile_width=conductor_width, profile_height=conductor_height)
                     margin += layer_spacing + conductor_width + 2*insulation_thickness
                 else:
-                    conductor_z_position += -conductor_diameter/2.0
+                    conductor_z_position -= conductor_diameter/2.0
                     move_vec = 2*insulation_thickness + conductor_diameter
-                    names = self.create_single_turn(sweep_path_x, sweep_path_y, conductor_z_position, layer_num+1,
+                    names = self.create_single_turn(sweep_path_x, sweep_path_y, conductor_z_position, layer_num + 1,
                                                     fillet_radius, segmentation_angle,
                                                     profile_diameter=conductor_diameter,
                                                     profile_segments_num=segments_number)
 
                     margin += layer_spacing + conductor_diameter + 2*insulation_thickness
-                
+
                 if num_of_turns > 1:
                     self.duplicate_along_line(names, z=-move_vec, num_clones=num_of_turns)
 
@@ -504,7 +513,7 @@ class ECore(Cores):
                            profile_height=0.0, profile_diameter=0.0, profile_segments_num=8, turn_num=0):
 
         wire_offset = (profile_height or 0.0)/2
-        path_name = self.create_sweep_path(sweep_path_x, sweep_path_y, position_z_final+wire_offset, fillet_radius,
+        path_name = self.create_sweep_path(sweep_path_x, sweep_path_y, position_z_final + wire_offset, fillet_radius,
                                            layer_number, segmentation_angle, turn_num)
 
         profile_name = 'Layer{}'.format(layer_number)
@@ -513,7 +522,7 @@ class ECore(Cores):
 
         object_names = []
         if self.draw_skin:
-            self.create_skin_layers(profile_name, object_names, position_z_final+wire_offset, profile_height,
+            self.create_skin_layers(profile_name, object_names, position_z_final + wire_offset, profile_height,
                                     profile_width, sweep_path_x, profile_segments_num, profile_diameter)
 
         if self.conductor_type == 'Rectangular':
@@ -620,7 +629,7 @@ class ECore(Cores):
                 object_names.append(profile_name)
 
         if skin_depth < 0.02*dimension:
-            add_warning_message("Skin layer is too thin, it is recommended to use Impedance Boundary")
+            self.add_warning_message("Skin layer is too thin, it is recommended to use Impedance Boundary")
 
     def create_sweep_path(self, sweep_path_x, sweep_path_y, position_z, fillet_radius,
                           layer_number, segmentation_angle=0, turn_num=0):
@@ -712,13 +721,13 @@ class ECore(Cores):
 
         y_size = dim_d6 + (dim_d2 - dim_d3)
         self.create_box(-dim_d2/2 + e_coredim_d8, -y_size/2, -slot_height/2,
-                        dim_d2 - 2 * e_coredim_d8, y_size, bobbin_thickness, 'Bobbin', '(255, 248, 157)')
+                        dim_d2 - 2*e_coredim_d8, y_size, bobbin_thickness, 'Bobbin', '(255, 248, 157)')
 
         self.create_box(-dim_d2/2 + e_coredim_d8, -y_size/2, slot_height/2,
-                        dim_d2 - 2 * e_coredim_d8, y_size, -bobbin_thickness, 'BobT2')
+                        dim_d2 - 2*e_coredim_d8, y_size, -bobbin_thickness, 'BobT2')
 
         self.create_box(-dim_d3/2 - bobbin_thickness, -dim_d6/2 - bobbin_thickness, -slot_height/2,
-                        dim_d3 + 2 * bobbin_thickness, dim_d6 + 2 * bobbin_thickness, slot_height, 'BobT3')
+                        dim_d3 + 2*bobbin_thickness, dim_d6 + 2*bobbin_thickness, slot_height, 'BobT3')
 
         self.unite('Bobbin,BobT2,BobT3')
 
@@ -743,13 +752,24 @@ class ECore(Cores):
                    layer_number, e_coredim_d8=0.0):
         y_size = dim_d6 + (dim_d2 - dim_d3)
         self.create_box(-dim_d2/2 + e_coredim_d8, -y_size/2, z_position,
-                        dim_d2 - 2 * e_coredim_d8, y_size, board_thickness,
+                        dim_d2 - 2*e_coredim_d8, y_size, board_thickness,
                         'Board_{}'.format(layer_number), '(0, 128, 0)')
 
         # subtract full slot, no need to calculate precisely
         self.create_box(-dim_d3/2, -dim_d6/2, z_position,
                         dim_d3, dim_d6, slot_height, 'BoardSlot_{}'.format(layer_number))
         self.subtract('Board_{}'.format(layer_number), 'BoardSlot_{}'.format(layer_number))
+
+
+class ECore(BaseCore):
+    def __init__(self, args_list):
+        super(ECore, self).__init__(args_list)
+        self.core_length = self.dim_d1
+        self.core_width = self.dim_d6
+        self.core_height = self.dim_d4
+        self.side_leg_width = (self.dim_d1 - self.dim_d2)/2
+        self.center_leg_width = self.dim_d3
+        self.slot_depth = self.dim_d5
 
     def draw_geometry(self):
         self.create_box(-(self.core_length/2), -(self.core_width/2), -self.core_height - self.airgap_both,
@@ -798,26 +818,26 @@ class EICore(ECore):
 
         self.unite('E_Core,Leg1,Leg2,Leg3')
 
-        self.fillet('E_Core', self.dim_d7, -self.dim_d1/2, -self.dim_d6/2, -(self.dim_d4/2) - 2 * self.airgap_both)
-        self.fillet('E_Core', self.dim_d7, -self.dim_d1/2, self.dim_d6/2, -(self.dim_d4/2) - 2 * self.airgap_both)
-        self.fillet('E_Core', self.dim_d7, self.dim_d1/2, -self.dim_d6/2, -(self.dim_d4/2) - 2 * self.airgap_both)
-        self.fillet('E_Core', self.dim_d7, self.dim_d1/2, self.dim_d6/2, -(self.dim_d4/2) - 2 * self.airgap_both)
+        self.fillet('E_Core', self.dim_d7, -self.dim_d1/2, -self.dim_d6/2, -(self.dim_d4/2) - 2*self.airgap_both)
+        self.fillet('E_Core', self.dim_d7, -self.dim_d1/2, self.dim_d6/2, -(self.dim_d4/2) - 2*self.airgap_both)
+        self.fillet('E_Core', self.dim_d7, self.dim_d1/2, -self.dim_d6/2, -(self.dim_d4/2) - 2*self.airgap_both)
+        self.fillet('E_Core', self.dim_d7, self.dim_d1/2, self.dim_d6/2, -(self.dim_d4/2) - 2*self.airgap_both)
 
         # scale airgap by 2 due to no symmetry as in cores like in ECore (where due to mirror operation
         # we double airgap)
-        self.create_box(-self.dim_d1/2, -self.dim_d6/2, 2 * self.airgap_both,
+        self.create_box(-self.dim_d1/2, -self.dim_d6/2, 2*self.airgap_both,
                         self.dim_d1, self.dim_d6, self.dim_d8, 'I_Core')
 
-        self.fillet('I_Core', self.dim_d7, -self.dim_d1/2, -self.dim_d6/2, (self.dim_d8/2) - 2 * self.airgap_both)
-        self.fillet('I_Core', self.dim_d7, -self.dim_d1/2, self.dim_d6/2, (self.dim_d8/2) - 2 * self.airgap_both)
-        self.fillet('I_Core', self.dim_d7, self.dim_d1/2, -self.dim_d6/2, (self.dim_d8/2) - 2 * self.airgap_both)
-        self.fillet('I_Core', self.dim_d7, self.dim_d1/2, self.dim_d6/2, (self.dim_d8/2) - 2 * self.airgap_both)
+        self.fillet('I_Core', self.dim_d7, -self.dim_d1/2, -self.dim_d6/2, (self.dim_d8/2) - 2*self.airgap_both)
+        self.fillet('I_Core', self.dim_d7, -self.dim_d1/2, self.dim_d6/2, (self.dim_d8/2) - 2*self.airgap_both)
+        self.fillet('I_Core', self.dim_d7, self.dim_d1/2, -self.dim_d6/2, (self.dim_d8/2) - 2*self.airgap_both)
+        self.fillet('I_Core', self.dim_d7, self.dim_d1/2, self.dim_d6/2, (self.dim_d8/2) - 2*self.airgap_both)
 
         self.move('E_Core,I_Core', 0, 0, self.dim_d5/2)
 
         self.oEditor.FitAll()
 
-        self.draw_winding(self.dim_d2, self.dim_d3, self.dim_d5/2 + 2 * self.airgap_both, self.dim_d6)
+        self.draw_winding(self.dim_d2, self.dim_d3, self.dim_d5/2 + 2*self.airgap_both, self.dim_d6)
 
 
 class EFDCore(ECore):
@@ -863,29 +883,29 @@ class EFDCore(ECore):
                 "NAME:Attributes",
                 "Name:=", 'CentralLegCS'
             ])
-        Cores.CS = 'CentralLegCS'
+        CommonMethods.CS = 'CentralLegCS'
 
         self.draw_winding(self.dim_d2, self.dim_d3, self.dim_d5, self.dim_d7)
 
 
 class UCore(ECore):
     def draw_geometry(self):
-        self.create_box(-(self.dim_d1 - self.dim_d2) / 4, -(self.dim_d5/2), -self.dim_d3 - self.airgap_both,
+        self.create_box(-(self.dim_d1 - self.dim_d2)/4, -(self.dim_d5/2), -self.dim_d3 - self.airgap_both,
                         self.dim_d1, self.dim_d5, self.dim_d3, 'U_Core_Bottom')
 
-        self.create_box((self.dim_d1 - self.dim_d2) / 4, -self.dim_d5/2, -self.dim_d4 - self.airgap_both,
+        self.create_box((self.dim_d1 - self.dim_d2)/4, -self.dim_d5/2, -self.dim_d4 - self.airgap_both,
                         self.dim_d2, self.dim_d5, self.dim_d4, 'XSlot')
 
         self.subtract('U_Core_Bottom', 'XSlot')
 
         if self.airgap_center > 0:
-            self.create_box(-(self.dim_d1 - self.dim_d2) / 4, -self.dim_d5/2, -self.airgap_center,
+            self.create_box(-(self.dim_d1 - self.dim_d2)/4, -self.dim_d5/2, -self.airgap_center,
                             (self.dim_d1 - self.dim_d2)/2, self.dim_d5, self.airgap_center, 'AgC')
 
             self.subtract('U_Core_Bottom', 'AgC')
 
         if self.airgap_side > 0:
-            self.create_box(self.dim_d2 + (self.dim_d1 - self.dim_d2) / 4, -self.dim_d5/2, -self.airgap_side,
+            self.create_box(self.dim_d2 + (self.dim_d1 - self.dim_d2)/4, -self.dim_d5/2, -self.airgap_side,
                             (self.dim_d1 - self.dim_d2)/2, self.dim_d5, self.airgap_side, 'AgS')
 
             self.subtract('U_Core_Bottom', 'AgS')
@@ -895,7 +915,7 @@ class UCore(ECore):
         self.oEditor.FitAll()
 
         # map U core dimensions to the E core dimensions
-        e_dim_d2 = (self.dim_d1 - self.dim_d2)/2 + 2 * self.dim_d2
+        e_dim_d2 = (self.dim_d1 - self.dim_d2)/2 + 2*self.dim_d2
         e_dim_d3 = (self.dim_d1 - self.dim_d2)/2
         e_dim_d5 = self.dim_d4
         e_dim_d6 = self.dim_d5
@@ -904,40 +924,40 @@ class UCore(ECore):
 
 class UICore(ECore):
     def draw_geometry(self):
-        self.create_box(-(self.dim_d1 - self.dim_d2) / 4, -(self.dim_d5/2), (self.dim_d4/2) - self.dim_d3,
+        self.create_box(-(self.dim_d1 - self.dim_d2)/4, -(self.dim_d5/2), (self.dim_d4/2) - self.dim_d3,
                         self.dim_d1, self.dim_d5, self.dim_d3, 'U_Core')
 
-        self.create_box((self.dim_d1 - self.dim_d2) / 4, -self.dim_d5/2, -self.dim_d4/2,
+        self.create_box((self.dim_d1 - self.dim_d2)/4, -self.dim_d5/2, -self.dim_d4/2,
                         self.dim_d2, self.dim_d5, self.dim_d4, 'XSlot')
 
         self.subtract('U_Core', 'XSlot')
 
         if self.airgap_center > 0:
-            self.create_box((self.dim_d1 - self.dim_d2) / 4, -self.dim_d5/2, (self.dim_d4/2) - 2 * self.airgap_center,
-                            -(self.dim_d1 - self.dim_d2)/2, self.dim_d5, 2 * self.airgap_center, 'AgC')
+            self.create_box((self.dim_d1 - self.dim_d2)/4, -self.dim_d5/2, (self.dim_d4/2) - 2*self.airgap_center,
+                            -(self.dim_d1 - self.dim_d2)/2, self.dim_d5, 2*self.airgap_center, 'AgC')
             self.subtract('U_Core', 'AgC')
 
         if self.airgap_side > 0:
-            self.create_box(self.dim_d2 + (self.dim_d1 - self.dim_d2) / 4, -self.dim_d5/2,
-                            (self.dim_d4/2) - 2 * self.airgap_side,
-                            (self.dim_d1 - self.dim_d2)/2, self.dim_d5, 2 * self.airgap_side, 'AgS')
+            self.create_box(self.dim_d2 + (self.dim_d1 - self.dim_d2)/4, -self.dim_d5/2,
+                            (self.dim_d4/2) - 2*self.airgap_side,
+                            (self.dim_d1 - self.dim_d2)/2, self.dim_d5, 2*self.airgap_side, 'AgS')
             self.subtract('U_Core', 'AgS')
 
-        self.create_box(-(self.dim_d1 - self.dim_d2) / 4 + (self.dim_d1 - self.dim_d6)/2, -self.dim_d7/2,
-                        (self.dim_d4/2) + 2 * self.airgap_both,
+        self.create_box(-(self.dim_d1 - self.dim_d2)/4 + (self.dim_d1 - self.dim_d6)/2, -self.dim_d7/2,
+                        (self.dim_d4/2) + 2*self.airgap_both,
                         self.dim_d6, self.dim_d7, self.dim_d8, 'I_Core')
 
         self.oEditor.FitAll()
 
         # map U core dimensions to the E core dimensions
-        e_dim_d2 = (self.dim_d1 - self.dim_d2)/2 + 2 * self.dim_d2
+        e_dim_d2 = (self.dim_d1 - self.dim_d2)/2 + 2*self.dim_d2
         e_dim_d3 = (self.dim_d1 - self.dim_d2)/2
         e_dim_d5 = self.dim_d4
         e_dim_d6 = self.dim_d5
         self.draw_winding(e_dim_d2, e_dim_d3, e_dim_d5/2 + 2*self.airgap_both, e_dim_d6)
 
 
-class PQCore(ECore):
+class PQCore(BaseCore):
     def __init__(self, args_list):
         super(PQCore, self).__init__(args_list)
         # map PQ core dimensions to the E core dimensions
@@ -980,7 +1000,7 @@ class PQCore(ECore):
                              dim_d2, bobbin_thickness, self.segments_number, 'Bob_bottom')
 
         self.create_cylinder(0, 0, bobbin_thickness - (slot_height/2.0),
-                             dim_d3 + 2 * bobbin_thickness, slot_height - 2 * bobbin_thickness,
+                             dim_d3 + 2*bobbin_thickness, slot_height - 2*bobbin_thickness,
                              self.segments_number, 'Bob_central')
 
         self.unite('Bobbin,Bob_bottom,Bob_central')
@@ -1001,14 +1021,14 @@ class PQCore(ECore):
 
         self.subtract('Board_{}'.format(layer_number), 'BoardSlot_{}'.format(layer_number))
 
-    def draw_geometry(self):
+    def draw_geometry(self, core_name=None):
         self.create_box(-self.dim_d1/2, -self.dim_d8/2, -(self.dim_d4/2) - self.airgap_both,
                         (self.dim_d1 - self.dim_d6)/2, self.dim_d8, (self.dim_d4/2) - self.airgap_side,
                         'PQ_Core_Bottom')
 
-        leg_connection = math.sqrt(((self.dim_d3/2) ** 2) - ((self.dim_d7/2) ** 2))
-        vertices1 = [[-self.dim_d6/2, - 0.4 * self.dim_d8, -(self.dim_d4/2) - self.airgap_both],
-                     [-self.dim_d6/2, 0.4 * self.dim_d8, -(self.dim_d4/2) - self.airgap_both],
+        leg_connection = math.sqrt(((self.dim_d3/2)**2) - ((self.dim_d7/2)**2))
+        vertices1 = [[-self.dim_d6/2, - 0.4*self.dim_d8, -(self.dim_d4/2) - self.airgap_both],
+                     [-self.dim_d6/2, 0.4*self.dim_d8, -(self.dim_d4/2) - self.airgap_both],
                      [-self.dim_d7/2, + leg_connection, -(self.dim_d4/2) - self.airgap_both],
                      [-self.dim_d7/2, - leg_connection, -(self.dim_d4/2) - self.airgap_both]]
         vertices1.append(vertices1[0])
@@ -1037,9 +1057,8 @@ class PQCore(ECore):
         self.draw_winding(self.e_dim_d2, self.e_dim_d3, self.e_dim_d5, self.e_dim_d6)
 
 
-# ETDCore inherit from PQCore functions DrawWdg, CreateSingleTurn, draw_bobbin
 class ETDCore(PQCore):
-    def draw_geometry(self, core_name):
+    def draw_geometry(self, core_name=None):
         self.create_box(-(self.dim_d1/2), -(self.dim_d6/2), -self.dim_d4 - self.airgap_both,
                         self.dim_d1, self.dim_d6, self.dim_d4 - self.airgap_side,
                         core_name + '_Core_Bottom')
@@ -1066,10 +1085,9 @@ class ETDCore(PQCore):
         self.draw_winding(self.e_dim_d2, self.e_dim_d3, self.dim_d5, self.e_dim_d6)
 
 
-# RMCore inherit from PQCore functions DrawWdg, CreateSingleTurn, draw_bobbin
 class RMCore(PQCore):
-    def draw_geometry(self):
-        dia = self.dim_d7 / math.sqrt(2)
+    def draw_geometry(self, core_name=None):
+        dia = self.dim_d7/math.sqrt(2)
 
         vertices1 = [[-self.dim_d1/2, (dia - (self.dim_d1/2)), -self.airgap_side - self.airgap_both]]
         vertices1.append([-(dia/2), (dia/2), -self.airgap_side - self.airgap_both])
@@ -1111,12 +1129,11 @@ class RMCore(PQCore):
         self.draw_winding(self.e_dim_d2, self.e_dim_d3, self.e_dim_d5, self.e_dim_d6)
 
 
-# depending on bobbin we can inherit bobbin, createturn, drawwdg from PQCore. speak with JMark
 class EPCore(PQCore):
-    def draw_geometry(self, core_type='EP'):
+    def draw_geometry(self, core_name='EP'):
         self.create_box(-(self.dim_d1/2), -(self.dim_d6/2), -self.dim_d4/2 - self.airgap_both,
                         self.dim_d1, self.dim_d6, self.dim_d4/2 - self.airgap_side,
-                        core_type + '_Core_Bottom')
+                        core_name + '_Core_Bottom')
 
         self.create_cylinder(0, (self.dim_d6/2) - self.dim_d7, -self.dim_d5/2 - self.airgap_both,
                              self.dim_d2, self.dim_d5/2, self.segments_number, 'XCyl1')
@@ -1125,23 +1142,23 @@ class EPCore(PQCore):
                         self.dim_d2, self.dim_d7, self.dim_d5/2, 'Box2')
 
         self.unite('Box2,XCyl1')
-        self.subtract(core_type + '_Core_Bottom', 'Box2')
+        self.subtract(core_name + '_Core_Bottom', 'Box2')
 
         self.create_cylinder(0, (self.dim_d6/2) - self.dim_d7, -self.dim_d5/2 - self.airgap_both,
                              self.dim_d3, self.dim_d5/2, self.segments_number, 'XCyl2')
 
-        self.unite(core_type + '_Core_Bottom,XCyl2')
-        self.move(core_type + '_Core_Bottom', 0, (-self.dim_d6/2.0) + self.dim_d7, 0)
+        self.unite(core_name + '_Core_Bottom,XCyl2')
+        self.move(core_name + '_Core_Bottom', 0, (-self.dim_d6/2.0) + self.dim_d7, 0)
 
-        self.duplicate_mirror(core_type + '_Core_Bottom', 0, 0, 1)
-        self.rename(core_type + '_Core_Bottom_1', core_type + '_Core_Top')
+        self.duplicate_mirror(core_name + '_Core_Bottom', 0, 0, 1)
+        self.rename(core_name + '_Core_Bottom_1', core_name + '_Core_Top')
 
         self.oEditor.FitAll()
         self.draw_winding(self.e_dim_d2, self.e_dim_d3, self.e_dim_d5, self.e_dim_d6)
 
 
 class PCore(PQCore):
-    def draw_geometry(self, core_name):
+    def draw_geometry(self, core_name=None):
         if core_name == 'PH':
             self.dim_d4 *= 2
             self.dim_d5 *= 2
