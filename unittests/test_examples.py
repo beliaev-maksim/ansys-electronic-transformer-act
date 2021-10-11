@@ -7,7 +7,7 @@ from pyaedt.maxwell import Maxwell3d
 
 import src.ElectronicTransformer.etk_callback as etk
 
-AEDT_VERSION = "2021.2"
+AEDT_VERSION = "2022.1"
 
 
 class BaseAEDT(unittest.TestCase):
