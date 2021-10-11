@@ -40,7 +40,7 @@ def atoi(letter):
 
 
 def natural_keys(text):
-    return [atoi(c) for c in re.split(r'(\d+)', text)]
+    return [atoi(c) for c in re.split(r"(\d+)", text)]
 
 
 def setup_button(step, comp_name, caption, position, callback, active=True, style=None):
@@ -56,11 +56,11 @@ def setup_button(step, comp_name, caption, position, callback, active=True, styl
 
 def help_button_clicked(_sender, _args):
     """when user clicks Help button HTML page will be opened in standard web browser"""
-    webopen(str(ExtAPI.Extension.InstallDir) + '/help/help.html')
+    webopen(str(ExtAPI.Extension.InstallDir) + "/help/help.html")
 
 
 def update_ui(step):
-    """Refresh UI data """
+    """Refresh UI data"""
     step.UserInterface.GetComponent("Properties").UpdateData()
     step.UserInterface.GetComponent("Properties").Refresh()
 
@@ -83,6 +83,7 @@ def verify_input_data(function):
     :param function: function to populate ui
     :return: None
     """
+
     def check(*args):
         try:
             function(*args)
@@ -91,6 +92,7 @@ def verify_input_data(function):
             return add_error_message(msg)
         except KeyError as e:
             return add_error_message("Please specify parameter:{} in input file".format(e))
+
     return check
 
 
@@ -114,7 +116,7 @@ class Step1(object):
             "D_5": self.step1.Properties["core_properties/core_type/D_5"],
             "D_6": self.step1.Properties["core_properties/core_type/D_6"],
             "D_7": self.step1.Properties["core_properties/core_type/D_7"],
-            "D_8": self.step1.Properties["core_properties/core_type/D_8"]
+            "D_8": self.step1.Properties["core_properties/core_type/D_8"],
         }
 
         self.define_airgap = self.step1.Properties["core_properties/define_airgap"]
@@ -156,7 +158,7 @@ class Step1(object):
         :return: None
         """
         global transformer_definition
-        file_filter = 'Input Files(*.json;{0})|*.json;{0}'.format(ext_filter)
+        file_filter = "Input Files(*.json;{0})|*.json;{0}".format(ext_filter)
         path = ExtAPI.UserInterface.UIRenderer.ShowFileOpenDialog(file_filter, default_path)
 
         if path is None:
@@ -176,29 +178,35 @@ class Step1(object):
                 match_line = re.match("Expecting object: line (.*) column", str(e))
                 if match_line:
                     add_error_message(
-                        'Please verify that all data in file is covered by double quotes "" ' +
-                        '(integers and floats can be both covered or uncovered)')
+                        'Please verify that all data in file is covered by double quotes "" '
+                        + "(integers and floats can be both covered or uncovered)"
+                    )
                 else:
                     match_line = re.match("Expecting property name: line (.*) column", str(e))
                     if match_line:
-                        add_error_message("Please verify that there is no empty argument in the file. "
-                                          "Cannot be two commas in a row without argument in between")
+                        add_error_message(
+                            "Please verify that there is no empty argument in the file. "
+                            "Cannot be two commas in a row without argument in between"
+                        )
                     else:
                         # so smth unexpected
                         return add_error_message(e)
 
-                return add_error_message("Please correct following line: {} in file: {}".format(
-                                                                                            match_line.group(1), path))
+                return add_error_message(
+                    "Please correct following line: {} in file: {}".format(match_line.group(1), path)
+                )
         self.populate_ui_data_step1()
 
     def refresh_step1(self):
         """create buttons and HTML data for first step"""
         setup_button(self.step1, "read_data_button", "Read Settings File", ButtonPositionType.Left, self.read_data)
         setup_button(self.step1, "open_examples_button", "Open Examples", ButtonPositionType.Left, self.open_examples)
-        setup_button(self.step1, "open_library_button", "Custom Library", ButtonPositionType.Center, self.open_custom_lib)
+        setup_button(
+            self.step1, "open_library_button", "Custom Library", ButtonPositionType.Center, self.open_custom_lib
+        )
         setup_button(self.step1, "github_button", "Contribute on GitHub", ButtonPositionType.Center, self.github)
         setup_button(self.step1, "help_button", "Help", ButtonPositionType.Center, help_button_clicked, style="blue")
-        self.personal_lib_path = os.path.join(oDesktop.GetPersonalLibDirectory(), 'ElectronicTransformer')
+        self.personal_lib_path = os.path.join(oDesktop.GetPersonalLibDirectory(), "ElectronicTransformer")
 
         if not transformer_definition:
             self.read_core_dimensions()
@@ -239,16 +247,16 @@ class Step1(object):
 
     def show_core_img(self):
         """invoked to change image and core dimensions when supplier or core type changed"""
-        if self.core_type.Value not in ['EP', 'ER', 'PQ', 'RM']:
+        if self.core_type.Value not in ["EP", "ER", "PQ", "RM"]:
             width = 300
             height = 200
         else:
             width = 275
             height = 360
 
-        html_data = '<img width="{}" height="{}" src="file:///{}/images/{}Core.png"/>'.format(width, height,
-                                                                                          ExtAPI.Extension.InstallDir,
-                                                                                          self.core_type.Value)
+        html_data = '<img width="{}" height="{}" src="file:///{}/images/{}Core.png"/>'.format(
+            width, height, ExtAPI.Extension.InstallDir, self.core_type.Value
+        )
 
         report = self.step1.UserInterface.GetComponent("coreImage")
         report.SetHtmlContent(html_data)
@@ -327,12 +335,14 @@ class Step1(object):
     def collect_ui_data_step1(self):
         """collect data from all steps, write this data to dictionary"""
         # step1
-        transformer_definition["core_dimensions"] = OrderedDict([
-            ("segmentation_angle", self.segmentation_angle.Value),
-            ("supplier", self.supplier.Value),
-            ("core_type", self.core_type.Value),
-            ("core_model", self.core_model.Value)
-        ])
+        transformer_definition["core_dimensions"] = OrderedDict(
+            [
+                ("segmentation_angle", self.segmentation_angle.Value),
+                ("supplier", self.supplier.Value),
+                ("core_type", self.core_type.Value),
+                ("core_model", self.core_model.Value),
+            ]
+        )
 
         for i in range(1, 9):
             if self.core_dimensions["D_" + str(i)].Visible:
@@ -342,9 +352,9 @@ class Step1(object):
 
             transformer_definition["core_dimensions"]["D_" + str(i)] = d_value
 
-        transformer_definition["core_dimensions"]["airgap"] = OrderedDict([
-            ("define_airgap", bool(self.define_airgap.Value))  # need to specify boolean due to bug 324104
-        ])
+        transformer_definition["core_dimensions"]["airgap"] = OrderedDict(
+            [("define_airgap", bool(self.define_airgap.Value))]  # need to specify boolean due to bug 324104
+        )
         if self.define_airgap.Value:
             transformer_definition["core_dimensions"]["airgap"]["airgap_on_leg"] = self.airgap_on_leg.Value
             transformer_definition["core_dimensions"]["airgap"]["airgap_value"] = str(self.airgap_value.Value)
@@ -380,7 +390,7 @@ class Step2(object):
         self.table_layers.Properties["conductor_height"].Value = 0.2
         self.table_layers.Properties["turns_number"].Value = 2
         self.table_layers.Properties["insulation_thickness"].Value = 0.05
-        self.table_layers.Properties["layer"].Value = 'Layer_1'
+        self.table_layers.Properties["layer"].Value = "Layer_1"
         self.table_layers.SaveActiveRow()
 
         self.table_layers_circles.AddRow()
@@ -388,7 +398,7 @@ class Step2(object):
         self.table_layers_circles.Properties["segments_number"].Value = 8
         self.table_layers_circles.Properties["turns_number"].Value = 2
         self.table_layers_circles.Properties["insulation_thickness"].Value = 0.05
-        self.table_layers_circles.Properties["layer"].Value = 'Layer_1'
+        self.table_layers_circles.Properties["layer"].Value = "Layer_1"
         self.table_layers_circles.SaveActiveRow()
 
     def refresh_step2(self):
@@ -417,10 +427,10 @@ class Step2(object):
         self.winding_prop.Properties["conductor_type"].Value = winding_def["conductor_type"]
 
         if self.conductor_type.Value == "Circular":
-            xml_path_to_table = 'winding_properties/conductor_type/table_layers_circles'
+            xml_path_to_table = "winding_properties/conductor_type/table_layers_circles"
             list_of_prop = ["conductor_diameter", "segments_number", "turns_number", "insulation_thickness"]
         else:
-            xml_path_to_table = 'winding_properties/conductor_type/table_layers'
+            xml_path_to_table = "winding_properties/conductor_type/table_layers"
             list_of_prop = ["conductor_width", "conductor_height", "turns_number", "insulation_thickness"]
 
         table = self.step2.Properties[xml_path_to_table]
@@ -432,8 +442,10 @@ class Step2(object):
             try:
                 layer_dict = winding_def["layers_definition"]["layer_" + str(i)]
             except KeyError:
-                return add_error_message("Number of layers does not correspond to defined parameters." +
-                                         "Please specify parameters for each layer")
+                return add_error_message(
+                    "Number of layers does not correspond to defined parameters."
+                    + "Please specify parameters for each layer"
+                )
 
             table.AddRow()
             for prop in list_of_prop:
@@ -444,7 +456,7 @@ class Step2(object):
                 else:
                     table.Properties[prop].Value = float(layer_dict[prop])
 
-            table.Properties["layer"].Value = 'Layer_' + str(i)
+            table.Properties["layer"].Value = "Layer_" + str(i)
             table.SaveActiveRow()
 
         self.change_captions(need_refresh=False)
@@ -466,7 +478,7 @@ class Step2(object):
         Read material definition dictionary from json file
         :return:
         """
-        lib_path = os.path.join(oDesktop.GetPersonalLibDirectory(), 'ElectronicTransformer')
+        lib_path = os.path.join(oDesktop.GetPersonalLibDirectory(), "ElectronicTransformer")
         materials_json = os.path.join(lib_path, "material_properties.json")
         if not os.path.isfile(materials_json):
             # file does not exist, copy it from root location
@@ -488,7 +500,7 @@ class Step2(object):
         for mat, mat_definition in self.materials.items():
             for prop in ["conductivity", "cm", "x", "y", "density", "mu(freq)"]:
                 if prop not in mat_definition:
-                    msg = 'Property {} is not specified for material {}'.format(prop, mat)
+                    msg = "Property {} is not specified for material {}".format(prop, mat)
                     raise UserErrorMessageException(msg)
 
     @staticmethod
@@ -509,18 +521,25 @@ class Step2(object):
         # step 2
         winding_definition = OrderedDict()
 
-        for prop in ["layer_type", "number_of_layers", "layer_spacing", "bobbin_board_thickness", "top_margin",
-                     "side_margin", "conductor_type"]:
+        for prop in [
+            "layer_type",
+            "number_of_layers",
+            "layer_spacing",
+            "bobbin_board_thickness",
+            "top_margin",
+            "side_margin",
+            "conductor_type",
+        ]:
             winding_definition[prop] = str(self.winding_prop.Properties[prop].Value)
 
         winding_definition["include_bobbin"] = bool(self.include_bobbin.Value)
 
         winding_definition["layers_definition"] = OrderedDict()
         if self.conductor_type.Value == "Circular":
-            xml_path_to_table = 'winding_properties/conductor_type/table_layers_circles'
+            xml_path_to_table = "winding_properties/conductor_type/table_layers_circles"
             list_of_prop = ["conductor_diameter", "segments_number", "insulation_thickness"]
         else:
-            xml_path_to_table = 'winding_properties/conductor_type/table_layers'
+            xml_path_to_table = "winding_properties/conductor_type/table_layers"
             list_of_prop = ["conductor_width", "conductor_height", "insulation_thickness"]
 
         table = self.step2.Properties[xml_path_to_table]
@@ -542,28 +561,29 @@ class Step2(object):
         if self.bobbin_board_thickness == 0 and self.include_bobbin:
             raise UserErrorMessageException("Include board/bobbin is checked but thickness is 0")
 
-        if self.layer_type == 'Planar' and self.bobbin_board_thickness == 0 and self.layer_spacing == 0:
+        if self.layer_type == "Planar" and self.bobbin_board_thickness == 0 and self.layer_spacing == 0:
             raise UserErrorMessageException(
-                "For planar transformer Board thickness and Layer spacing cannot be equal 0 at once")
+                "For planar transformer Board thickness and Layer spacing cannot be equal 0 at once"
+            )
 
     def change_captions(self, need_refresh=True):
         """change captions depending on Wound or Planar transformer"""
-        if self.layer_type.Value == 'Planar':
-            self.bobbin_board_thickness.Caption = 'Board thickness:'
-            self.include_bobbin.Caption = 'Include board in geometry:'
-            self.top_margin.Caption = 'Bottom Margin'
+        if self.layer_type.Value == "Planar":
+            self.bobbin_board_thickness.Caption = "Board thickness:"
+            self.include_bobbin.Caption = "Include board in geometry:"
+            self.top_margin.Caption = "Bottom Margin"
 
-            self.table_layers.Properties["insulation_thickness"].Caption = 'Turn Spacing'
+            self.table_layers.Properties["insulation_thickness"].Caption = "Turn Spacing"
 
-            self.conductor_type.Value = 'Rectangular'
+            self.conductor_type.Value = "Rectangular"
             self.conductor_type.ReadOnly = True
 
-        elif self.layer_type.Value == 'Wound':
-            self.bobbin_board_thickness.Caption = 'Bobbin thickness:'
-            self.include_bobbin.Caption = 'Include bobbin in geometry:'
-            self.top_margin.Caption = 'Top Margin'
+        elif self.layer_type.Value == "Wound":
+            self.bobbin_board_thickness.Caption = "Bobbin thickness:"
+            self.include_bobbin.Caption = "Include bobbin in geometry:"
+            self.top_margin.Caption = "Top Margin"
 
-            self.table_layers.Properties["insulation_thickness"].Caption = 'Insulation thickness'
+            self.table_layers.Properties["insulation_thickness"].Caption = "Insulation thickness"
 
             self.conductor_type.ReadOnly = False
 
@@ -586,7 +606,7 @@ class Step2(object):
             add_error_message("Number of layers should be greater or equal than 1")
             return False
 
-        if self.conductor_type.Value == 'Rectangular':
+        if self.conductor_type.Value == "Rectangular":
             xml_path_to_table = "winding_properties/conductor_type/table_layers"
             list_of_prop = ["conductor_width", "conductor_height", "turns_number", "insulation_thickness"]
         else:
@@ -605,7 +625,7 @@ class Step2(object):
                 for prop in list_of_prop:
                     table.Properties[prop].Value = table.Value[xml_path_to_table + "/" + prop][row_num - 1]
 
-                table.Properties["layer"].Value = 'Layer_' + str(i)
+                table.Properties["layer"].Value = "Layer_" + str(i)
                 table.SaveActiveRow()
 
 
@@ -665,17 +685,35 @@ class Step3(object):
         """
         setup_button(self.step3, "help_button", "Help", ButtonPositionType.Right, help_button_clicked, style="blue")
 
-        setup_button(self.step3, "analyze_button", "Analyze", ButtonPositionType.Center, self.analyze_click,
-                     active=False)
+        setup_button(
+            self.step3, "analyze_button", "Analyze", ButtonPositionType.Center, self.analyze_click, active=False
+        )
 
-        setup_button(self.step3, "setup_analysis_button", "Setup Analysis", ButtonPositionType.Center,
-                     self.setup_analysis_click, active=False)
+        setup_button(
+            self.step3,
+            "setup_analysis_button",
+            "Setup Analysis",
+            ButtonPositionType.Center,
+            self.setup_analysis_click,
+            active=False,
+        )
 
-        setup_button(self.step3, "define_windings_button", "Define Windings", ButtonPositionType.Center,
-                     self.define_windings_click)
+        setup_button(
+            self.step3,
+            "define_windings_button",
+            "Define Windings",
+            ButtonPositionType.Center,
+            self.define_windings_click,
+        )
 
-        setup_button(self.step3, "define_connections_button", "Define Connections", ButtonPositionType.Center,
-                     self.define_connection_click, active=False)
+        setup_button(
+            self.step3,
+            "define_connections_button",
+            "Define Connections",
+            ButtonPositionType.Center,
+            self.define_connection_click,
+            active=False,
+        )
 
         self.analysis_set = False
         self.project = oDesktop.GetActiveProject()
@@ -718,8 +756,9 @@ class Step3(object):
             )
             if self.defined_connections_dict:
                 self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag("analyze_button", True)
-                self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag("setup_analysis_button",
-                                                                                              True)
+                self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag(
+                    "setup_analysis_button", True
+                )
 
     @verify_input_data
     def populate_ui_data_step3(self):
@@ -750,7 +789,7 @@ class Step3(object):
             for i in range(1, int(self.transformer_sides.Value) + 1):
                 self.table_resistance.AddRow()
                 self.table_resistance.Properties["side"].Value = str(i)
-                self.table_resistance.Properties["resistance"].Value = setup_def_dict["side_loads"][i-1]
+                self.table_resistance.Properties["resistance"].Value = setup_def_dict["side_loads"][i - 1]
                 self.table_resistance.SaveActiveRow()
         except IndexError:
             return add_error_message("Number of sides does not correspond to side load (resistances) parameters")
@@ -794,21 +833,23 @@ class Step3(object):
 
     def collect_ui_data_step3(self):
         """collect data from UI, write this data to dictionary"""
-        transformer_definition["setup_definition"] = OrderedDict([
-            ("core_material", self.core_material.Value),
-            ("coil_material", self.coil_material.Value),
-            ("adaptive_frequency", str(self.adaptive_frequency.Value)),
-            ("draw_skin_layers", bool(self.draw_skin_layers.Value)),
-            ("percentage_error", str(self.percentage_error.Value)),
-            ("number_passes", self.number_passes.Value),
-            ("transformer_sides", self.transformer_sides.Value),
-            ("side_loads", []),
-            ("excitation_strategy", self.excitation_strategy.Value),
-            ("voltage", str(self.voltage.Value)),
-            ("offset", str(self.offset.Value)),
-            ("full_model", bool(self.full_model.Value)),
-            ("project_path", self.project_path.Value),
-        ])
+        transformer_definition["setup_definition"] = OrderedDict(
+            [
+                ("core_material", self.core_material.Value),
+                ("coil_material", self.coil_material.Value),
+                ("adaptive_frequency", str(self.adaptive_frequency.Value)),
+                ("draw_skin_layers", bool(self.draw_skin_layers.Value)),
+                ("percentage_error", str(self.percentage_error.Value)),
+                ("number_passes", self.number_passes.Value),
+                ("transformer_sides", self.transformer_sides.Value),
+                ("side_loads", []),
+                ("excitation_strategy", self.excitation_strategy.Value),
+                ("voltage", str(self.voltage.Value)),
+                ("offset", str(self.offset.Value)),
+                ("full_model", bool(self.full_model.Value)),
+                ("project_path", self.project_path.Value),
+            ]
+        )
 
         freq_dict = OrderedDict([("frequency_sweep", bool(self.frequency_sweep.Value))])
         if self.frequency_sweep.Value:
@@ -834,6 +875,7 @@ class TransformerClass(Step1, Step2, Step3):
     """Main class which serves to manipulate Step classes. We initialize these classes from current class.
     Invoke all functions from each step here.
     Class TransformerClass will inherit all functions from classes Step1, Step2, Step3 including all callback actions"""
+
     def __init__(self, step):
         self.step1 = step
 
@@ -874,8 +916,9 @@ class TransformerClass(Step1, Step2, Step3):
         Save transformer definition to the file
         :return: None
         """
-        write_path = os.path.join(transformer_definition["setup_definition"]["project_path"],
-                                  self.design_name + '_parameters.json')
+        write_path = os.path.join(
+            transformer_definition["setup_definition"]["project_path"], self.design_name + "_parameters.json"
+        )
         with open(write_path, "w") as output_f:
             json.dump(transformer_definition, output_f, indent=4)
 
@@ -886,20 +929,23 @@ class TransformerClass(Step1, Step2, Step3):
         :return:
         """
         self.editor.Mirror(
-            [
-                "NAME:Selections",
-                "Selections:="		, objects,
-                "NewPartsModelFlag:="	, "Model"
-            ],
+            ["NAME:Selections", "Selections:=", objects, "NewPartsModelFlag:=", "Model"],
             [
                 "NAME:MirrorParameters",
-                "MirrorBaseX:="		, "0mm",
-                "MirrorBaseY:="		, "0mm",
-                "MirrorBaseZ:="		, "0mm",
-                "MirrorNormalX:="	, "1mm",
-                "MirrorNormalY:="	, "0mm",
-                "MirrorNormalZ:="	, "0mm"
-            ])
+                "MirrorBaseX:=",
+                "0mm",
+                "MirrorBaseY:=",
+                "0mm",
+                "MirrorBaseZ:=",
+                "0mm",
+                "MirrorNormalX:=",
+                "1mm",
+                "MirrorNormalY:=",
+                "0mm",
+                "MirrorNormalZ:=",
+                "0mm",
+            ],
+        )
 
     def create_field_plot(self, quantity, folder, adapt_freq, object_list):
         """Create filed overlay on the surface of the objects"""
@@ -908,38 +954,65 @@ class TransformerClass(Step1, Step2, Step3):
         self.module_fields_reporter.CreateFieldPlot(
             [
                 "NAME:" + quantity,
-                "SolutionName:=", "Setup1 : LastAdaptive",
-                "UserSpecifyName:=", 0,
-                "UserSpecifyFolder:=", 0,
-                "QuantityName:=", quantity,
-                "PlotFolder:="	, folder,
-                "StreamlinePlot:="	, False,
-                "AdjacentSidePlot:="	, False,
-                "FullModelPlot:="	, False,
-                "IntrinsicVar:="	, "Freq=\'{}kHz\' Phase=\'0deg\'".format(adapt_freq),
-                "PlotGeomInfo:="	, [1, "Surface", "FacesList", len(object_list)] + ids_list,
-                "FilterBoxes:="		, [0],
+                "SolutionName:=",
+                "Setup1 : LastAdaptive",
+                "UserSpecifyName:=",
+                0,
+                "UserSpecifyFolder:=",
+                0,
+                "QuantityName:=",
+                quantity,
+                "PlotFolder:=",
+                folder,
+                "StreamlinePlot:=",
+                False,
+                "AdjacentSidePlot:=",
+                False,
+                "FullModelPlot:=",
+                False,
+                "IntrinsicVar:=",
+                "Freq='{}kHz' Phase='0deg'".format(adapt_freq),
+                "PlotGeomInfo:=",
+                [1, "Surface", "FacesList", len(object_list)] + ids_list,
+                "FilterBoxes:=",
+                [0],
                 [
                     "NAME:PlotOnSurfaceSettings",
-                    "Filled:="		, False,
-                    "IsoValType:="		, "Fringe",
-                    "SmoothShade:="		, True,
-                    "AddGrid:="		, False,
-                    "MapTransparency:="	, True,
-                    "Refinement:="		, 0,
-                    "Transparency:="	, 0,
-                    "SmoothingLevel:="	, 0,
+                    "Filled:=",
+                    False,
+                    "IsoValType:=",
+                    "Fringe",
+                    "SmoothShade:=",
+                    True,
+                    "AddGrid:=",
+                    False,
+                    "MapTransparency:=",
+                    True,
+                    "Refinement:=",
+                    0,
+                    "Transparency:=",
+                    0,
+                    "SmoothingLevel:=",
+                    0,
                     [
                         "NAME:Arrow3DSpacingSettings",
-                        "ArrowUniform:="	, True,
-                        "ArrowSpacing:="	, 0,
-                        "MinArrowSpacing:="	, 0,
-                        "MaxArrowSpacing:="	, 0
+                        "ArrowUniform:=",
+                        True,
+                        "ArrowSpacing:=",
+                        0,
+                        "MinArrowSpacing:=",
+                        0,
+                        "MaxArrowSpacing:=",
+                        0,
                     ],
-                    "GridColor:="		, [255, 255, 255]
+                    "GridColor:=",
+                    [255, 255, 255],
                 ],
-                "EnableGaussianSmoothing:=", False
-            ], "Field")
+                "EnableGaussianSmoothing:=",
+                False,
+            ],
+            "Field",
+        )
 
     def define_windings_click(self, _sender, _args):
         """
@@ -965,9 +1038,7 @@ class TransformerClass(Step1, Step2, Step3):
             # user made changes
             self.defined_layers_dict = copy.deepcopy(self.windings_def_form.defined_layers_dict)
             self.defined_connections_dict = {}
-            self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag(
-                "analyze_button", False
-            )
+            self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag("analyze_button", False)
             self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag(
                 "setup_analysis_button", False
             )
@@ -1005,7 +1076,7 @@ class TransformerClass(Step1, Step2, Step3):
 
         # create winding for each layer for further assignment in circuit
         for i in range(int(transformer_definition["winding_definition"]["number_of_layers"])):
-            self.create_winding("Layer_" + str(i+1), "External")
+            self.create_winding("Layer_" + str(i + 1), "External")
 
         for section in layer_sections_list:
             layer = section.split("_")[0]
@@ -1015,12 +1086,18 @@ class TransformerClass(Step1, Step2, Step3):
             self.module_boundary_setup.AssignCoilTerminal(
                 [
                     "NAME:" + section,
-                    "Objects:=", [section],
-                    "ParentBndID:=", "Layer_" + layer_num,
-                    "Conductor number:=", "1",
-                    "Winding:="	, "Layer_" + layer_num,
-                    "Point out of terminal:=", point_terminal
-                ])
+                    "Objects:=",
+                    [section],
+                    "ParentBndID:=",
+                    "Layer_" + layer_num,
+                    "Conductor number:=",
+                    "1",
+                    "Winding:=",
+                    "Layer_" + layer_num,
+                    "Point out of terminal:=",
+                    point_terminal,
+                ]
+            )
 
     def create_winding(self, name, winding_type, current=0.0, resistance=0.0, inductance=0.0, voltage=0.0):
         """
@@ -1036,31 +1113,32 @@ class TransformerClass(Step1, Step2, Step3):
         self.module_boundary_setup.AssignWindingGroup(
             [
                 "NAME:" + name,
-                "Type:=", winding_type,
-                "IsSolid:=", True,
-                "Current:=", str(current) + "A",
-                "Resistance:="	, str(resistance) + "ohm",
-                "Inductance:="		, str(inductance) + "uH",
-                "Voltage:="		, str(voltage) + "V",
-                "ParallelBranchesNum:="	, "1",
-                "Phase:="		, "0deg"
-            ])
+                "Type:=",
+                winding_type,
+                "IsSolid:=",
+                True,
+                "Current:=",
+                str(current) + "A",
+                "Resistance:=",
+                str(resistance) + "ohm",
+                "Inductance:=",
+                str(inductance) + "uH",
+                "Voltage:=",
+                str(voltage) + "V",
+                "ParallelBranchesNum:=",
+                "1",
+                "Phase:=",
+                "0deg",
+            ]
+        )
 
     def assign_matrix_winding(self):
         """Function to assign RL matrix to a winding group"""
         matrix_entry = ["NAME:MatrixEntry"]
         for i in range(1, int(transformer_definition["winding_definition"]["number_of_layers"]) + 1):
-            matrix_entry.append([
-                 "NAME:MatrixEntry",
-                 "Source:=", "Layer_" + str(i),
-                 "NumberOfTurns:=", "1"
-             ])
+            matrix_entry.append(["NAME:MatrixEntry", "Source:=", "Layer_" + str(i), "NumberOfTurns:=", "1"])
 
-        self.module_parameter_setup.AssignMatrix(
-            ["NAME:Matrix1",
-             matrix_entry,
-             ["NAME:MatrixGroup"]
-             ])
+        self.module_parameter_setup.AssignMatrix(["NAME:Matrix1", matrix_entry, ["NAME:MatrixGroup"]])
 
         self.reduce_matrix()
 
@@ -1072,12 +1150,8 @@ class TransformerClass(Step1, Step2, Step3):
         for i in range(int(transformer_definition["winding_definition"]["number_of_layers"])):
             # this loop is only required in 2021R1 and below. There is a bug in matrix reduction IDs, so we reserve some
             self.module_parameter_setup.AssignForce(
-                [
-                    "NAME:Force1",
-                    "Reference CS:=", "Global",
-                    "Is Virtual:=", True,
-                    "Objects:="	, ["Layer1_1"]
-                ])
+                ["NAME:Force1", "Reference CS:=", "Global", "Is Virtual:=", True, "Objects:=", ["Layer1_1"]]
+            )
             self.module_parameter_setup.DeleteParameters(["Force1"])
 
         def reduce(target_dict):
@@ -1093,12 +1167,11 @@ class TransformerClass(Step1, Step2, Step3):
                     reduction_type = "Series" if "S" in key[:1] else "Parallel"
                     name = key.split("_", maxsplit=1)[1] if "Side" in key else key
 
-                    self.module_parameter_setup.AddReduceOp("Matrix1", "ReduceMatrix1",
-                                                            [
-                                                                "NAME:" + name,
-                                                                "Type:=", "Join in " + reduction_type,
-                                                                "Sources:=", new_red_str
-                                                            ])
+                    self.module_parameter_setup.AddReduceOp(
+                        "Matrix1",
+                        "ReduceMatrix1",
+                        ["NAME:" + name, "Type:=", "Join in " + reduction_type, "Sources:=", new_red_str],
+                    )
                     reduction_list.append(key)
                 else:
                     reduction_list.append("Layer_" + key)
@@ -1119,19 +1192,11 @@ class TransformerClass(Step1, Step2, Step3):
                     "NAME:AllTabs",
                     [
                         "NAME:Maxwell3D",
-                        [
-                            "NAME:PropServers",
-                            "BoundarySetup:" + layer
-                        ],
-                        [
-                            "NAME:ChangedProps",
-                            [
-                                "NAME:Name",
-                                "Value:=", "Side_" + side_num
-                            ]
-                        ]
-                    ]
-                ])
+                        ["NAME:PropServers", "BoundarySetup:" + layer],
+                        ["NAME:ChangedProps", ["NAME:Name", "Value:=", "Side_" + side_num]],
+                    ],
+                ]
+            )
 
             # also rename component in circuit
             comp = self.circuit.get_comp_by_name(layer)[0]
@@ -1156,9 +1221,9 @@ class TransformerClass(Step1, Step2, Step3):
         for i in range(1, 9):
             dimension_list.append(float(transformer_definition["core_dimensions"]["D_" + str(i)]))
 
-        mesh_op_sz = max(dimension_list)/20.0
+        mesh_op_sz = max(dimension_list) / 20.0
         self.assign_length_op(core_list, mesh_op_sz, "core")
-        self.assign_length_op(layers_list, mesh_op_sz/2, "layers")
+        self.assign_length_op(layers_list, mesh_op_sz / 2, "layers")
 
     def excitation_strategy_change(self):
         if self.excitation_strategy.Value == "Voltage":
@@ -1167,12 +1232,15 @@ class TransformerClass(Step1, Step2, Step3):
             self.voltage.Caption = "Current [A]"
 
     def create_loss_report(self):
-        self.module_report.CreateReport("Core and Solid Loss", "EddyCurrent", "Data Table", "Setup1 : LastAdaptive", [],
-                                        ["Freq:=", ["All"]],
-                                        [
-                                          "X Component:=", "Freq",
-                                          "Y Component:=", ["CoreLoss", "SolidLoss"]
-                                        ])
+        self.module_report.CreateReport(
+            "Core and Solid Loss",
+            "EddyCurrent",
+            "Data Table",
+            "Setup1 : LastAdaptive",
+            [],
+            ["Freq:=", ["All"]],
+            ["X Component:=", "Freq", "Y Component:=", ["CoreLoss", "SolidLoss"]],
+        )
 
     def calculate_leakage(self):
         """Create equations to calculate leakage inductance.
@@ -1192,25 +1260,22 @@ class TransformerClass(Step1, Step2, Step3):
             for y in list_y:
                 if x != y:
                     coupling_coef = "abs(L(Side_{0},Side_{1}))/sqrt(L(Side_{0},Side_{0})*L(Side_{1},Side_{1}))".format(
-                                                                                                                x, y)
+                        x, y
+                    )
                     equation = "L(Side_{0},Side_{0})*(1-sqr({1}))".format(x, coupling_coef)
                     all_leakages["Leakage_Inductance_{}{}".format(x, y)] = equation
 
             list_y.remove(x)
 
-        self.module_report.CreateReport("Leakage Inductance", "EddyCurrent", "Data Table", "Setup1 : LastAdaptive",
-                                        [
-                                            "Context:=", "Matrix1",
-                                            "PointCount:="	, 1001,
-                                            "Matrix:="		, "ReduceMatrix1"
-                                        ],
-                                        [
-                                            "Freq:="		, ["All"]
-                                        ],
-                                        [
-                                            "X Component:="		, "Freq",
-                                            "Y Component:="		, list(all_leakages.values())
-                                        ])
+        self.module_report.CreateReport(
+            "Leakage Inductance",
+            "EddyCurrent",
+            "Data Table",
+            "Setup1 : LastAdaptive",
+            ["Context:=", "Matrix1", "PointCount:=", 1001, "Matrix:=", "ReduceMatrix1"],
+            ["Freq:=", ["All"]],
+            ["X Component:=", "Freq", "Y Component:=", list(all_leakages.values())],
+        )
 
         for key, val in all_leakages.items():
             self.module_report.ChangeProperty(
@@ -1218,37 +1283,21 @@ class TransformerClass(Step1, Step2, Step3):
                     "NAME:AllTabs",
                     [
                         "NAME:Trace",
-                        [
-                            "NAME:PropServers",
-                            "Leakage Inductance:" + val
-                        ],
-                        [
-                            "NAME:ChangedProps",
-                            [
-                                "NAME:Specify Name",
-                                "Value:="	, True
-                            ]
-                        ]
-                    ]
-                ])
+                        ["NAME:PropServers", "Leakage Inductance:" + val],
+                        ["NAME:ChangedProps", ["NAME:Specify Name", "Value:=", True]],
+                    ],
+                ]
+            )
             self.module_report.ChangeProperty(
                 [
                     "NAME:AllTabs",
                     [
                         "NAME:Trace",
-                        [
-                            "NAME:PropServers",
-                            "Leakage Inductance:" + val
-                        ],
-                        [
-                            "NAME:ChangedProps",
-                            [
-                                "NAME:Name",
-                                "Value:=", key
-                            ]
-                        ]
-                    ]
-                ])
+                        ["NAME:PropServers", "Leakage Inductance:" + val],
+                        ["NAME:ChangedProps", ["NAME:Name", "Value:=", key]],
+                    ],
+                ]
+            )
 
             # change format to scientific
             self.module_report.ChangeProperty(
@@ -1256,19 +1305,11 @@ class TransformerClass(Step1, Step2, Step3):
                     "NAME:AllTabs",
                     [
                         "NAME:Data Filter",
-                        [
-                            "NAME:PropServers",
-                            "Leakage Inductance:{}:Curve1".format(key)
-                        ],
-                        [
-                            "NAME:ChangedProps",
-                            [
-                                "NAME:Number Format",
-                                "Value:="	, "Scientific"
-                            ]
-                        ]
-                    ]
-                ])
+                        ["NAME:PropServers", "Leakage Inductance:{}:Curve1".format(key)],
+                        ["NAME:ChangedProps", ["NAME:Number Format", "Value:=", "Scientific"]],
+                    ],
+                ]
+            )
 
     def enable_thermal(self, solids):
         """function to turn on feedback for thermal coupling"""
@@ -1278,27 +1319,34 @@ class TransformerClass(Step1, Step2, Step3):
         self.design.SetObjectTemperature(
             [
                 "NAME:TemperatureSettings",
-                "IncludeTemperatureDependence:=", True,
-                "EnableFeedback:=", True,
-                "Temperatures:=", solids
-            ])
+                "IncludeTemperatureDependence:=",
+                True,
+                "EnableFeedback:=",
+                True,
+                "Temperatures:=",
+                solids,
+            ]
+        )
 
     def split_geom(self, list_to_split):
         self.editor.Split(
-            [
-                "NAME:Selections",
-                "Selections:="	, ",".join(list_to_split),
-                "NewPartsModelFlag:="	, "Model"
-            ],
+            ["NAME:Selections", "Selections:=", ",".join(list_to_split), "NewPartsModelFlag:=", "Model"],
             [
                 "NAME:SplitToParameters",
-                "SplitPlane:="		, "YZ",
-                "WhichSide:="		, "NegativeOnly",
-                "ToolType:="		, "PlaneTool",
-                "ToolEntityID:="	, -1,
-                "SplitCrossingObjectsOnly:=", False,
-                "DeleteInvalidObjects:=", True
-            ])
+                "SplitPlane:=",
+                "YZ",
+                "WhichSide:=",
+                "NegativeOnly",
+                "ToolType:=",
+                "PlaneTool",
+                "ToolEntityID:=",
+                -1,
+                "SplitCrossingObjectsOnly:=",
+                False,
+                "DeleteInvalidObjects:=",
+                True,
+            ],
+        )
 
     def create_setup(self):
         """function which grabs parameters from UI and inserts Setup1 according to them"""
@@ -1306,7 +1354,7 @@ class TransformerClass(Step1, Step2, Step3):
         percent_error = float(transformer_definition["setup_definition"]["percentage_error"])
 
         adapt_freq = transformer_definition["setup_definition"]["adaptive_frequency"]
-        frequency = str(adapt_freq) + 'kHz'
+        frequency = str(adapt_freq) + "kHz"
 
         sweep = transformer_definition["setup_definition"]["frequency_sweep_definition"]
         if sweep["frequency_sweep"]:
@@ -1319,12 +1367,28 @@ class TransformerClass(Step1, Step2, Step3):
             stop_sweep_freq = str(stop_frequency) + stop_frequency_unit
             samples = int(sweep["samples"])
 
-            if sweep["scale"] == 'Linear':
-                self.insert_setup(max_num_passes, percent_error, frequency, True,
-                                  'LinearCount', start_sweep_freq, stop_sweep_freq, samples)
+            if sweep["scale"] == "Linear":
+                self.insert_setup(
+                    max_num_passes,
+                    percent_error,
+                    frequency,
+                    True,
+                    "LinearCount",
+                    start_sweep_freq,
+                    stop_sweep_freq,
+                    samples,
+                )
             else:
-                self.insert_setup(max_num_passes, percent_error, frequency, True,
-                                  'LogScale', start_sweep_freq, stop_sweep_freq, samples)
+                self.insert_setup(
+                    max_num_passes,
+                    percent_error,
+                    frequency,
+                    True,
+                    "LogScale",
+                    start_sweep_freq,
+                    stop_sweep_freq,
+                    samples,
+                )
         else:
             self.insert_setup(max_num_passes, percent_error, frequency, False)
 
@@ -1341,32 +1405,29 @@ class TransformerClass(Step1, Step2, Step3):
         self.module_mesh.AssignLengthOp(
             [
                 "NAME:Length_" + name,
-                "RefineInside:=", True,
-                "Enabled:=", True,
-                "Objects:=", objects,
-                "RestrictElem:=", False,
-                "NumMaxElem:=", "1000",
-                "RestrictLength:=", True,
-                "MaxLength:=", str(size) + "mm"
-            ])
+                "RefineInside:=",
+                True,
+                "Enabled:=",
+                True,
+                "Objects:=",
+                objects,
+                "RestrictElem:=",
+                False,
+                "NumMaxElem:=",
+                "1000",
+                "RestrictLength:=",
+                True,
+                "MaxLength:=",
+                str(size) + "mm",
+            ]
+        )
 
     def create_object_from_face(self, objects, listID):
         self.editor.CreateObjectFromFaces(
-            [
-                "NAME:Selections",
-                "Selections:=", objects,
-                "NewPartsModelFlag:=", "Model"
-            ],
-            [
-                "NAME:Parameters",
-                [
-                    "NAME:BodyFromFaceToParameters",
-                    "FacesToDetach:=", listID
-                ]
-            ],
-            [
-                "CreateGroupsForNewObjects:=", False
-            ])
+            ["NAME:Selections", "Selections:=", objects, "NewPartsModelFlag:=", "Model"],
+            ["NAME:Parameters", ["NAME:BodyFromFaceToParameters", "FacesToDetach:=", listID]],
+            ["CreateGroupsForNewObjects:=", False],
+        )
 
     def create_region(self, x_zero_region):
         """Create vacuum region with offset specified by user"""
@@ -1377,30 +1438,51 @@ class TransformerClass(Step1, Step2, Step3):
         self.editor.CreateRegion(
             [
                 "NAME:RegionParameters",
-                "+XPaddingType:=", "Percentage Offset",
-                "+XPadding:=", x_offset,
-                "-XPaddingType:=", "Percentage Offset",
-                "-XPadding:=", offset,
-                "+YPaddingType:=", "Percentage Offset",
-                "+YPadding:=", offset,
-                "-YPaddingType:=", "Percentage Offset",
-                "-YPadding:=", offset,
-                "+ZPaddingType:=", "Percentage Offset",
-                "+ZPadding:=", offset,
-                "-ZPaddingType:=", "Percentage Offset",
-                "-ZPadding:=", offset
+                "+XPaddingType:=",
+                "Percentage Offset",
+                "+XPadding:=",
+                x_offset,
+                "-XPaddingType:=",
+                "Percentage Offset",
+                "-XPadding:=",
+                offset,
+                "+YPaddingType:=",
+                "Percentage Offset",
+                "+YPadding:=",
+                offset,
+                "-YPaddingType:=",
+                "Percentage Offset",
+                "-YPadding:=",
+                offset,
+                "+ZPaddingType:=",
+                "Percentage Offset",
+                "+ZPadding:=",
+                offset,
+                "-ZPaddingType:=",
+                "Percentage Offset",
+                "-ZPadding:=",
+                offset,
             ],
             [
                 "NAME:Attributes",
-                "Name:=", "Region",
-                "Flags:=", "Wireframe#",
-                "Color:=", "(255 0 0)",
-                "Transparency:=", 0,
-                "PartCoordinateSystem:=", "Global",
-                "UDMId:=", "",
-                "MaterialValue:=", "\"vacuum\"",
-                "SolveInside:=", True
-            ])
+                "Name:=",
+                "Region",
+                "Flags:=",
+                "Wireframe#",
+                "Color:=",
+                "(255 0 0)",
+                "Transparency:=",
+                0,
+                "PartCoordinateSystem:=",
+                "Global",
+                "UDMId:=",
+                "",
+                "MaterialValue:=",
+                '"vacuum"',
+                "SolveInside:=",
+                True,
+            ],
+        )
 
     def change_color(self, selection, rgb=(255, 255, 255)):
         """
@@ -1410,16 +1492,15 @@ class TransformerClass(Step1, Step2, Step3):
         :return:
         """
         self.editor.ChangeProperty(
-            ["NAME:AllTabs", ["NAME:Geometry3DAttributeTab",
-                              ["NAME:PropServers"] + selection,
-                              ["NAME:ChangedProps",
-                               [
-                                   "NAME:Color",
-                                   "R:=", rgb[0],
-                                   "G:=", rgb[1],
-                                   "B:=", rgb[2]
-                               ]
-                               ]]])
+            [
+                "NAME:AllTabs",
+                [
+                    "NAME:Geometry3DAttributeTab",
+                    ["NAME:PropServers"] + selection,
+                    ["NAME:ChangedProps", ["NAME:Color", "R:=", rgb[0], "G:=", rgb[1], "B:=", rgb[2]]],
+                ],
+            ]
+        )
 
     def create_terminal_sections(self, layer_list, layer_sections_list, layers_sections_delete_list):
         """
@@ -1432,33 +1513,27 @@ class TransformerClass(Step1, Step2, Step3):
         # only for EFD core not to get an error due to section of winding
         if "CentralLegCS" in self.editor.GetCoordinateSystems():
             self.editor.SetWCS(
-                [
-                    "NAME:SetWCS Parameter",
-                    "Working Coordinate System:=", "CentralLegCS",
-                    "RegionDepCSOk:=", False
-                ])
+                ["NAME:SetWCS Parameter", "Working Coordinate System:=", "CentralLegCS", "RegionDepCSOk:=", False]
+            )
 
         self.editor.Section(
-            [
-                "NAME:Selections",
-                "Selections:=", ','.join(layer_list),
-                "NewPartsModelFlag:=", "Model"
-            ],
+            ["NAME:Selections", "Selections:=", ",".join(layer_list), "NewPartsModelFlag:=", "Model"],
             [
                 "NAME:SectionToParameters",
-                "CreateNewObjects:=", True,
-                "SectionPlane:=", "ZX",
-                "SectionCrossObject:=", False
-            ])
+                "CreateNewObjects:=",
+                True,
+                "SectionPlane:=",
+                "ZX",
+                "SectionCrossObject:=",
+                False,
+            ],
+        )
 
         self.editor.SeparateBody(
-            [
-                "NAME:Selections",
-                "Selections:=", ','.join(layer_sections_list),
-                "NewPartsModelFlag:=", "Model"
-            ])
+            ["NAME:Selections", "Selections:=", ",".join(layer_sections_list), "NewPartsModelFlag:=", "Model"]
+        )
 
-        self.editor.Delete(["NAME:Selections", "Selections:=", ','.join(layers_sections_delete_list)])
+        self.editor.Delete(["NAME:Selections", "Selections:=", ",".join(layers_sections_delete_list)])
 
     def create_new_materials(self, coil_material):
         """
@@ -1474,159 +1549,216 @@ class TransformerClass(Step1, Step2, Step3):
 
             permeability = self.materials[core_material]["mu(freq)"]
             for coordinate_pair in permeability:
-                cord_list.append(["NAME:Coordinate",
-                                  "X:=", coordinate_pair[0],
-                                  "Y:=", coordinate_pair[1]])
+                cord_list.append(["NAME:Coordinate", "X:=", coordinate_pair[0], "Y:=", coordinate_pair[1]])
 
             self.project.AddDataset(["NAME:$Mu_" + core_material, cord_list])
 
             oDefinitionManager.AddMaterial(
                 [
                     "NAME:Material_" + core_material,
-                    "CoordinateSystemType:=", "Cartesian",
-                    "BulkOrSurfaceType:=", 1,
-                    [
-                        "NAME:PhysicsTypes",
-                        "set:=", ["Electromagnetic", "Thermal", "Structural"]
-                    ],
+                    "CoordinateSystemType:=",
+                    "Cartesian",
+                    "BulkOrSurfaceType:=",
+                    1,
+                    ["NAME:PhysicsTypes", "set:=", ["Electromagnetic", "Thermal", "Structural"]],
                     ["NAME:AttachedData"],
                     ["NAME:ModifierData"],
-                    "permeability:=", "pwl($Mu_" + core_material + ",Freq)",
-                    "conductivity:=", self.materials[core_material]["conductivity"],
-                    [
-                        "NAME:core_loss_type",
-                        "property_type:=", "ChoiceProperty",
-                        "Choice:=", "Power Ferrite"
-                    ],
-                    "core_loss_cm:=", self.materials[core_material]["cm"],
-                    "core_loss_x:=", self.materials[core_material]["x"],
-                    "core_loss_y:=", self.materials[core_material]["y"],
-                    "core_loss_kdc:=", "0",
-                    "thermal_conductivity:=", "5",
-                    "mass_density:=", self.materials[core_material]["density"],
-                    "specific_heat:=", "750",
-                    "thermal_expansion_coeffcient:=", "1e-05"
-                ])
+                    "permeability:=",
+                    "pwl($Mu_" + core_material + ",Freq)",
+                    "conductivity:=",
+                    self.materials[core_material]["conductivity"],
+                    ["NAME:core_loss_type", "property_type:=", "ChoiceProperty", "Choice:=", "Power Ferrite"],
+                    "core_loss_cm:=",
+                    self.materials[core_material]["cm"],
+                    "core_loss_x:=",
+                    self.materials[core_material]["x"],
+                    "core_loss_y:=",
+                    self.materials[core_material]["y"],
+                    "core_loss_kdc:=",
+                    "0",
+                    "thermal_conductivity:=",
+                    "5",
+                    "mass_density:=",
+                    self.materials[core_material]["density"],
+                    "specific_heat:=",
+                    "750",
+                    "thermal_expansion_coeffcient:=",
+                    "1e-05",
+                ]
+            )
 
         # check if winding material exists
         if coil_material == "Copper_temperature" and not oDefinitionManager.DoesMaterialExist(coil_material):
             oDefinitionManager.AddMaterial(
                 [
                     "NAME:" + coil_material,
-                    "CoordinateSystemType:=", "Cartesian",
-                    "BulkOrSurfaceType:=", 1,
-                    [
-                        "NAME:PhysicsTypes",
-                        "set:=", ["Electromagnetic", "Thermal", "Structural"]
-                    ],
+                    "CoordinateSystemType:=",
+                    "Cartesian",
+                    "BulkOrSurfaceType:=",
+                    1,
+                    ["NAME:PhysicsTypes", "set:=", ["Electromagnetic", "Thermal", "Structural"]],
                     [
                         "NAME:ModifierData",
                         [
                             "NAME:ThermalModifierData",
-                            "modifier_data:=", "thermal_modifier_data",
+                            "modifier_data:=",
+                            "thermal_modifier_data",
                             [
                                 "NAME:all_thermal_modifiers",
                                 [
                                     "NAME:one_thermal_modifier",
-                                    "Property::=", "conductivity",
-                                    "Index::=", 0,
-                                    "prop_modifier:=", "thermal_modifier",
-                                    "use_free_form:=", True,
-                                    "free_form_value:=", "1 / (1 + 0.0039 * (Temp - 22))"
-                                ]
-                            ]
-                        ]
+                                    "Property::=",
+                                    "conductivity",
+                                    "Index::=",
+                                    0,
+                                    "prop_modifier:=",
+                                    "thermal_modifier",
+                                    "use_free_form:=",
+                                    True,
+                                    "free_form_value:=",
+                                    "1 / (1 + 0.0039 * (Temp - 22))",
+                                ],
+                            ],
+                        ],
                     ],
-                    "permeability:=", "0.999991",
-                    "conductivity:=", "58000000",
-                    "thermal_conductivity:=", "400",
-                    "mass_density:=", "8933",
-                    "specific_heat:=", "385",
-                    "youngs_modulus:=", "120000000000",
-                    "poissons_ratio:=", "0.38",
-                    "thermal_expansion_coeffcient:=", "1.77e-05"
-                ])
+                    "permeability:=",
+                    "0.999991",
+                    "conductivity:=",
+                    "58000000",
+                    "thermal_conductivity:=",
+                    "400",
+                    "mass_density:=",
+                    "8933",
+                    "specific_heat:=",
+                    "385",
+                    "youngs_modulus:=",
+                    "120000000000",
+                    "poissons_ratio:=",
+                    "0.38",
+                    "thermal_expansion_coeffcient:=",
+                    "1.77e-05",
+                ]
+            )
 
-        elif (coil_material == "Aluminum_temperature" and
-              not oDefinitionManager.DoesMaterialExist(coil_material)):
+        elif coil_material == "Aluminum_temperature" and not oDefinitionManager.DoesMaterialExist(coil_material):
             oDefinitionManager.AddMaterial(
                 [
                     "NAME:" + coil_material,
-                    "CoordinateSystemType:=", "Cartesian",
-                    "BulkOrSurfaceType:=", 1,
-                    [
-                        "NAME:PhysicsTypes",
-                        "set:=", ["Electromagnetic", "Thermal", "Structural"]
-                    ],
+                    "CoordinateSystemType:=",
+                    "Cartesian",
+                    "BulkOrSurfaceType:=",
+                    1,
+                    ["NAME:PhysicsTypes", "set:=", ["Electromagnetic", "Thermal", "Structural"]],
                     [
                         "NAME:ModifierData",
                         [
                             "NAME:ThermalModifierData",
-                            "modifier_data:=", "thermal_modifier_data",
+                            "modifier_data:=",
+                            "thermal_modifier_data",
                             [
                                 "NAME:all_thermal_modifiers",
                                 [
                                     "NAME:one_thermal_modifier",
-                                    "Property::=", "conductivity",
-                                    "Index::=", 0,
-                                    "prop_modifier:=", "thermal_modifier",
-                                    "use_free_form:=", True,
-                                    "free_form_value:=", "1 / (1 + 0.0039 * (Temp - 22))"
-                                ]
-                            ]
-                        ]
+                                    "Property::=",
+                                    "conductivity",
+                                    "Index::=",
+                                    0,
+                                    "prop_modifier:=",
+                                    "thermal_modifier",
+                                    "use_free_form:=",
+                                    True,
+                                    "free_form_value:=",
+                                    "1 / (1 + 0.0039 * (Temp - 22))",
+                                ],
+                            ],
+                        ],
                     ],
-                    "permeability:=", "1.000021",
-                    "conductivity:=", "38000000",
-                    "thermal_conductivity:=", "237.5",
-                    "mass_density:=", "2689",
-                    "specific_heat:=", "951",
-                    "youngs_modulus:=", "69000000000",
-                    "poissons_ratio:=", "0.31",
-                    "thermal_expansion_coeffcient:=", "2.33e-05"
-                ])
+                    "permeability:=",
+                    "1.000021",
+                    "conductivity:=",
+                    "38000000",
+                    "thermal_conductivity:=",
+                    "237.5",
+                    "mass_density:=",
+                    "2689",
+                    "specific_heat:=",
+                    "951",
+                    "youngs_modulus:=",
+                    "69000000000",
+                    "poissons_ratio:=",
+                    "0.31",
+                    "thermal_expansion_coeffcient:=",
+                    "2.33e-05",
+                ]
+            )
 
     def assign_material(self, selection, material):
         self.editor.AssignMaterial(
-            [
-                "NAME:Selections",
-                "Selections:=", selection
-            ],
-            [
-                "NAME:Attributes",
-                "MaterialValue:=", material,
-                "SolveInside:=", True
-            ])
+            ["NAME:Selections", "Selections:=", selection],
+            ["NAME:Attributes", "MaterialValue:=", material, "SolveInside:=", True],
+        )
 
-    def insert_setup(self, max_num_passes, percent_error, frequency, has_sweep,
-                     sweep_type='', start_sweep_freq='', stop_sweep_freq='', samples=''):
+    def insert_setup(
+        self,
+        max_num_passes,
+        percent_error,
+        frequency,
+        has_sweep,
+        sweep_type="",
+        start_sweep_freq="",
+        stop_sweep_freq="",
+        samples="",
+    ):
         """Function to create an analysis setup"""
 
-        self.module_analysis.InsertSetup("EddyCurrent",
-                                         [
-                                                "NAME:Setup1",
-                                                "Enabled:=", True,
-                                                "MaximumPasses:=", max_num_passes,
-                                                "MinimumPasses:=", 2,
-                                                "MinimumConvergedPasses:=", 1,
-                                                "PercentRefinement:=", 30,
-                                                "SolveFieldOnly:=", False,
-                                                "PercentError:=", percent_error,
-                                                "SolveMatrixAtLast:=", True,
-                                                "PercentError:=", percent_error,
-                                                "UseIterativeSolver:=", False,
-                                                "RelativeResidual:=", 0.0001,
-                                                "ComputeForceDensity:=", False,
-                                                "ComputePowerLoss:=", False,
-                                                "Frequency:=", frequency,
-                                                "HasSweepSetup:=", has_sweep,
-                                                "SweepSetupType:=", sweep_type,
-                                                "StartValue:=", start_sweep_freq,
-                                                "StopValue:=", stop_sweep_freq,
-                                                "Samples:=", samples,
-                                                "SaveAllFields:=", True,
-                                                "UseHighOrderShapeFunc:=", False
-                                         ])
+        self.module_analysis.InsertSetup(
+            "EddyCurrent",
+            [
+                "NAME:Setup1",
+                "Enabled:=",
+                True,
+                "MaximumPasses:=",
+                max_num_passes,
+                "MinimumPasses:=",
+                2,
+                "MinimumConvergedPasses:=",
+                1,
+                "PercentRefinement:=",
+                30,
+                "SolveFieldOnly:=",
+                False,
+                "PercentError:=",
+                percent_error,
+                "SolveMatrixAtLast:=",
+                True,
+                "PercentError:=",
+                percent_error,
+                "UseIterativeSolver:=",
+                False,
+                "RelativeResidual:=",
+                0.0001,
+                "ComputeForceDensity:=",
+                False,
+                "ComputePowerLoss:=",
+                False,
+                "Frequency:=",
+                frequency,
+                "HasSweepSetup:=",
+                has_sweep,
+                "SweepSetupType:=",
+                sweep_type,
+                "StartValue:=",
+                start_sweep_freq,
+                "StopValue:=",
+                stop_sweep_freq,
+                "Samples:=",
+                samples,
+                "SaveAllFields:=",
+                True,
+                "UseHighOrderShapeFunc:=",
+                False,
+            ],
+        )
 
     def check_sides(self, manual=False):
         """
@@ -1638,9 +1770,7 @@ class TransformerClass(Step1, Step2, Step3):
             self.step3.UserInterface.GetComponent("define_connections_button").SetEnabledFlag(
                 "define_connections_button", False
             )
-            self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag(
-                "analyze_button", False
-            )
+            self.step3.UserInterface.GetComponent("analyze_button").SetEnabledFlag("analyze_button", False)
             self.step3.UserInterface.GetComponent("setup_analysis_button").SetEnabledFlag(
                 "setup_analysis_button", False
             )
@@ -1705,7 +1835,7 @@ class TransformerClass(Step1, Step2, Step3):
         layers_sections_delete_list = []
         core_list = []
 
-        obj_list = self.editor.GetObjectsInGroup('Solids')  # get solids to avoid terminals and skin layers
+        obj_list = self.editor.GetObjectsInGroup("Solids")  # get solids to avoid terminals and skin layers
         for each_obj in obj_list:
             if "Layer" in each_obj:
                 layers_list.append(each_obj)
@@ -1715,20 +1845,21 @@ class TransformerClass(Step1, Step2, Step3):
                 core_list.append(each_obj)
 
         self.create_new_materials(coil_material)
-        self.assign_material(','.join(core_list),
-                             '"Material_' + transformer_definition["setup_definition"]["core_material"] + '"')
-        self.assign_material(','.join(layers_list), '"' + coil_material + '"')
+        self.assign_material(
+            ",".join(core_list), '"Material_' + transformer_definition["setup_definition"]["core_material"] + '"'
+        )
+        self.assign_material(",".join(layers_list), '"' + coil_material + '"')
 
-        if coil_material == 'Copper_temperature':
+        if coil_material == "Copper_temperature":
             self.change_color(layers_list, rgb=(255, 128, 64))
         else:
             self.change_color(layers_list, rgb=(132, 135, 137))
 
         if transformer_definition["winding_definition"]["include_bobbin"]:
-            if transformer_definition["winding_definition"]["layer_type"] == 'Wound':
-                self.assign_material('Bobbin', '"polyamide"')
+            if transformer_definition["winding_definition"]["layer_type"] == "Wound":
+                self.assign_material("Bobbin", '"polyamide"')
             else:
-                boards = ','.join(self.editor.GetMatchedObjectName("Board*"))
+                boards = ",".join(self.editor.GetMatchedObjectName("Board*"))
                 self.assign_material(boards, '"polyamide"')
 
         adapt_freq = self.create_setup()
@@ -1748,12 +1879,8 @@ class TransformerClass(Step1, Step2, Step3):
         eddy_list = ["NAME:EddyEffectVector"]
         for layer in layers_list:
             eddy_list.append(
-                [
-                    "NAME:Data",
-                    "Object Name:=", layer,
-                    "Eddy Effect:=", True,
-                    "Displacement Current:=", True
-                ])
+                ["NAME:Data", "Object Name:=", layer, "Eddy Effect:=", True, "Displacement Current:=", True]
+            )
         self.module_boundary_setup.SetEddyEffect(["NAME:Eddy Effect Setting", eddy_list])
 
         self.assign_mesh(layers_list, core_list)
@@ -1795,8 +1922,9 @@ class TransformerClass(Step1, Step2, Step3):
 
         self.write_json_data()
 
-        self.project.SaveAs(os.path.join(transformer_definition["setup_definition"]["project_path"],
-                                         self.design_name + '.aedt'), True)
+        self.project.SaveAs(
+            os.path.join(transformer_definition["setup_definition"]["project_path"], self.design_name + ".aedt"), True
+        )
         self.analysis_set = True
         oDesktop.EnableAutoSave(self.flag_auto_save)
 
@@ -1805,8 +1933,8 @@ class TransformerClass(Step1, Step2, Step3):
         Generate Transformer geometry
         :return:
         """
-        time_now = datetime.datetime.now().strftime('%y%m%d_%H_%M_%S')
-        self.design_name = 'ETK_' + time_now
+        time_now = datetime.datetime.now().strftime("%y%m%d_%H_%M_%S")
+        self.design_name = "ETK_" + time_now
 
         self.project.InsertDesign("Maxwell 3D", self.design_name, "EddyCurrent", "")
         self.design = self.project.SetActiveDesign(self.design_name)
@@ -1822,13 +1950,25 @@ class TransformerClass(Step1, Step2, Step3):
         self.module_fields_reporter = self.design.GetModule("FieldsReporter")
 
         args = [transformer_definition, self.project, self.design, self.editor, oDesktop]
-        all_cores = {'E': ECore, 'EI': EICore, 'U': UCore, 'UI': UICore,
-                     'PQ': PQCore, 'ETD': ETDCore, 'EQ': ETDCore,
-                     'EC': ETDCore, 'RM': RMCore, 'EP': EPCore,
-                     'EFD': EFDCore, 'ER': ETDCore, 'P': PCore,
-                     'PT': PCore, 'PH': PCore}
+        all_cores = {
+            "E": ECore,
+            "EI": EICore,
+            "U": UCore,
+            "UI": UICore,
+            "PQ": PQCore,
+            "ETD": ETDCore,
+            "EQ": ETDCore,
+            "EC": ETDCore,
+            "RM": RMCore,
+            "EP": EPCore,
+            "EFD": EFDCore,
+            "ER": ETDCore,
+            "P": PCore,
+            "PT": PCore,
+            "PH": PCore,
+        }
 
-        cores_arguments = ['EC', 'ETD', 'EQ', 'ER', 'P', 'PT', 'PH']
+        cores_arguments = ["EC", "ETD", "EQ", "ER", "P", "PT", "PH"]
 
         self.flag_auto_save = oDesktop.GetAutoSaveEnabled()
         oDesktop.EnableAutoSave(False)
@@ -1854,90 +1994,120 @@ class TransformerClass(Step1, Step2, Step3):
         layer_spacing = self.layer_spacing.Value
 
         # ---- start checking for wound ---- #
-        if self.layer_type.Value == 'Wound':
+        if self.layer_type.Value == "Wound":
             # ---- Check possible width for wound---- #
-            if self.conductor_type.Value == 'Rectangular':
-                xml_path_to_table = 'winding_properties/conductor_type/table_layers'
+            if self.conductor_type.Value == "Rectangular":
+                xml_path_to_table = "winding_properties/conductor_type/table_layers"
                 table = self.step2.Properties[xml_path_to_table]
                 # take sum of layer dimensions where one layer is: Width + 2 * Insulation
-                maximum_layer = sum(
-                    [
-                        table.Value[xml_path_to_table + '/conductor_width'][i] +
-                        # do not forget that insulation is on both sides
-                        2 * table.Value[xml_path_to_table + '/insulation_thickness'][i] +
-                        layer_spacing  # since number of layers - 1 for spacing)
-                        for i in range(len(table.Value[xml_path_to_table + '/layer']))
-                    ]
-                ) - layer_spacing
+                maximum_layer = (
+                    sum(
+                        [
+                            table.Value[xml_path_to_table + "/conductor_width"][i] +
+                            # do not forget that insulation is on both sides
+                            2 * table.Value[xml_path_to_table + "/insulation_thickness"][i]
+                            + layer_spacing  # since number of layers - 1 for spacing)
+                            for i in range(len(table.Value[xml_path_to_table + "/layer"]))
+                        ]
+                    )
+                    - layer_spacing
+                )
 
             else:
                 # conductor type: Circular
-                xml_path_to_table = 'winding_properties/conductor_type/table_layers_circles'
+                xml_path_to_table = "winding_properties/conductor_type/table_layers_circles"
                 table = self.step2.Properties[xml_path_to_table]
-                maximum_layer = sum(
-                    [
-                        (table.Value[xml_path_to_table + '/conductor_diameter'][i] +
-                         2 * table.Value[xml_path_to_table + '/insulation_thickness'][i] + layer_spacing)
-                        for i in range(len(table.Value[xml_path_to_table + '/layer']))
-                    ]
-                ) - layer_spacing
+                maximum_layer = (
+                    sum(
+                        [
+                            (
+                                table.Value[xml_path_to_table + "/conductor_diameter"][i]
+                                + 2 * table.Value[xml_path_to_table + "/insulation_thickness"][i]
+                                + layer_spacing
+                            )
+                            for i in range(len(table.Value[xml_path_to_table + "/layer"]))
+                        ]
+                    )
+                    - layer_spacing
+                )
 
             # do not forget that windings are laying on both sides of the core
             maximum_possible_width = 2 * (bobbin_board_thickness + side_margin + maximum_layer)
 
             # ---- Check possible height for wound---- #
-            if self.conductor_type.Value == 'Rectangular':
-                xml_path_to_table = 'winding_properties/conductor_type/table_layers'
+            if self.conductor_type.Value == "Rectangular":
+                xml_path_to_table = "winding_properties/conductor_type/table_layers"
                 table = self.step2.Properties[xml_path_to_table]
                 # max value from each layer: (Height + 2 * Insulation) * number of layers
                 maximum_layer = max(
                     [
-                        ((table.Value[xml_path_to_table + '/conductor_height'][i] +
-                          # do not forget that insulation is on both sides
-                          2 * table.Value[xml_path_to_table + '/insulation_thickness'][i]) *
-                         table.Value[xml_path_to_table + '/turns_number'][i])
-                        for i in range(len(table.Value[xml_path_to_table + '/layer']))
+                        (
+                            (
+                                table.Value[xml_path_to_table + "/conductor_height"][i]
+                                +
+                                # do not forget that insulation is on both sides
+                                2 * table.Value[xml_path_to_table + "/insulation_thickness"][i]
+                            )
+                            * table.Value[xml_path_to_table + "/turns_number"][i]
+                        )
+                        for i in range(len(table.Value[xml_path_to_table + "/layer"]))
                     ]
                 )
 
-            elif self.conductor_type.Value == 'Circular':
-                xml_path_to_table = 'winding_properties/conductor_type/table_layers_circles'
+            elif self.conductor_type.Value == "Circular":
+                xml_path_to_table = "winding_properties/conductor_type/table_layers_circles"
                 table = self.step2.Properties[xml_path_to_table]
                 maximum_layer = max(
                     [
-                        ((table.Value[xml_path_to_table + '/conductor_diameter'][i] +
-                          2 * table.Value[xml_path_to_table + '/insulation_thickness'][i]) *
-                         table.Value[xml_path_to_table + '/turns_number'][i])
-                        for i in range(len(table.Value[xml_path_to_table + '/layer']))
+                        (
+                            (
+                                table.Value[xml_path_to_table + "/conductor_diameter"][i]
+                                + 2 * table.Value[xml_path_to_table + "/insulation_thickness"][i]
+                            )
+                            * table.Value[xml_path_to_table + "/turns_number"][i]
+                        )
+                        for i in range(len(table.Value[xml_path_to_table + "/layer"]))
                     ]
                 )
 
-            maximum_possible_height = (2 * bobbin_board_thickness + top_margin + maximum_layer)
+            maximum_possible_height = 2 * bobbin_board_thickness + top_margin + maximum_layer
         # ---- Wound type limit found ---- #
 
         else:
             # layer type: Planar
-            xml_path_to_table = 'winding_properties/conductor_type/table_layers'
+            xml_path_to_table = "winding_properties/conductor_type/table_layers"
             table = self.step2.Properties[xml_path_to_table]
             # ---- Check width for planar---- #
             maximum_layer = max(
                 [
-                    ((table.Value[xml_path_to_table + '/conductor_width'][i] +
-                      # in this case it is turn spacing (no need to x2)
-                      table.Value[xml_path_to_table + '/insulation_thickness'][i]) *
-                     table.Value[xml_path_to_table + '/turns_number'][i])
-                    for i in range(len(table.Value[xml_path_to_table + '/layer']))
+                    (
+                        (
+                            table.Value[xml_path_to_table + "/conductor_width"][i]
+                            +
+                            # in this case it is turn spacing (no need to x2)
+                            table.Value[xml_path_to_table + "/insulation_thickness"][i]
+                        )
+                        * table.Value[xml_path_to_table + "/turns_number"][i]
+                    )
+                    for i in range(len(table.Value[xml_path_to_table + "/layer"]))
                 ]
             )
-            maximum_possible_width = (2 * maximum_layer + 2 * side_margin)
+            maximum_possible_width = 2 * maximum_layer + 2 * side_margin
 
             # ---- Check Height for planar ---- #
-            maximum_layer = sum(
-                [
-                    (table.Value[xml_path_to_table + '/conductor_height'][i] + bobbin_board_thickness + layer_spacing)
-                    for i in range(len(table.Value[xml_path_to_table + '/layer']))
-                ]
-            ) - layer_spacing
+            maximum_layer = (
+                sum(
+                    [
+                        (
+                            table.Value[xml_path_to_table + "/conductor_height"][i]
+                            + bobbin_board_thickness
+                            + layer_spacing
+                        )
+                        for i in range(len(table.Value[xml_path_to_table + "/layer"]))
+                    ]
+                )
+                - layer_spacing
+            )
 
             maximum_possible_height = maximum_layer + top_margin
             # ---- Planar type limit found ---- #
@@ -1981,19 +2151,11 @@ class TransformerClass(Step1, Step2, Step3):
                 "NAME:AllTabs",
                 [
                     "NAME:Maxwell3D",
-                    [
-                        "NAME:PropServers",
-                        "Design Settings"
-                    ],
-                    [
-                        "NAME:ChangedProps",
-                        [
-                            "NAME:Symmetry/Multiplier",
-                            "Value:="	, "2"
-                        ]
-                    ]
-                ]
-            ])
+                    ["NAME:PropServers", "Design Settings"],
+                    ["NAME:ChangedProps", ["NAME:Symmetry/Multiplier", "Value:=", "2"]],
+                ],
+            ]
+        )
 
     def create_circuit(self):
         """
@@ -2009,11 +2171,15 @@ class TransformerClass(Step1, Step2, Step3):
             current = setup_def["voltage"]
 
         frequency_khz = float(setup_def["adaptive_frequency"]) * 1000
-        self.circuit = Circuit(setup_def["connections_definition"],
-                               self.project, self.design_name,
-                               current=current, voltage=voltage,
-                               resistance_list=setup_def["side_loads"],
-                               frequency=frequency_khz)
+        self.circuit = Circuit(
+            setup_def["connections_definition"],
+            self.project,
+            self.design_name,
+            current=current,
+            voltage=voltage,
+            resistance_list=setup_def["side_loads"],
+            frequency=frequency_khz,
+        )
         self.circuit.create()
         self.project.SetActiveDesign(self.design_name)
 
@@ -2022,8 +2188,9 @@ class TransformerClass(Step1, Step2, Step3):
         Export circuit from Maxwell Circuit design and import into Maxwell Eddy Current
         :return:
         """
-        circuit_path = os.path.join(transformer_definition["setup_definition"]["project_path"],
-                                    self.design_name + "_circuit.sph")
+        circuit_path = os.path.join(
+            transformer_definition["setup_definition"]["project_path"], self.design_name + "_circuit.sph"
+        )
         self.circuit.design.ExportNetlist("", circuit_path)
 
         self.module_boundary_setup.EditExternalCircuit(circuit_path, [], [], [], [])  # import circuit

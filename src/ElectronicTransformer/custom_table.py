@@ -16,6 +16,7 @@ from Ansys.UI.Toolkit import *
 from Ansys.UI.Toolkit.Drawing import *
 from Ansys.Utilities import *
 
+
 class TabularDataEditor:
     DialogName = "TabularDataDialog"
     ComponentName = "TabularDataEditorDialog"
@@ -70,7 +71,7 @@ class TabularDataEditor:
         component.WidthValue = 100
         component.HeightType = Ansys.ACT.Interfaces.UserInterface.ComponentLengthType.Percentage
         component.HeightValue = 100
-        component.CustomJSFile = r'file:///' + str(ExtAPI.Extension.InstallDir) + r'\custom_table.js'
+        component.CustomJSFile = r"file:///" + str(ExtAPI.Extension.InstallDir) + r"\custom_table.js"
         component.ComponentType = "tabularDataComponent"
         layout.Components.Add(component)
 

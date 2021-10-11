@@ -3,8 +3,16 @@ import copy
 
 
 class Circuit:
-    def __init__(self, winding_connection, oProject, design_name, voltage=None, current=None, resistance_list=None,
-                 frequency=None):
+    def __init__(
+        self,
+        winding_connection,
+        oProject,
+        design_name,
+        voltage=None,
+        current=None,
+        resistance_list=None,
+        frequency=None,
+    ):
         """
         :param winding_connection: dictionary with windings and corresponding connections definition
         :param oProject: aedt project object
@@ -31,7 +39,7 @@ class Circuit:
     @property
     def new_id(self):
         """
-            Function to generate new ID for wires and circuit components
+        Function to generate new ID for wires and circuit components
         """
         self._id += 1
         return self._id
@@ -44,6 +52,7 @@ class Circuit:
         :param connections: dictionary with connections definition
         :return:
         """
+
         def dict_walk(target_dict, conn_type=""):
             conn_type = conn_type[:1]
             for key, val in target_dict.items():
@@ -80,19 +89,9 @@ class Circuit:
         x *= self.grid_cell_size * 4
         y *= self.grid_cell_size * 3
         component_name = self.editor.CreateComponent(
-            [
-                "NAME:ComponentProps",
-                "Name:="	, name,
-                "Id:="			, str(self.new_id)
-            ],
-            [
-                "NAME:Attributes",
-                "Page:="		, self.page,
-                "X:="			, x,
-                "Y:="			, y,
-                "Angle:="		, angle,
-                "Flip:="		, False
-            ])
+            ["NAME:ComponentProps", "Name:=", name, "Id:=", str(self.new_id)],
+            ["NAME:Attributes", "Page:=", self.page, "X:=", x, "Y:=", y, "Angle:=", angle, "Flip:=", False],
+        )
 
         return component_name
 
@@ -103,20 +102,15 @@ class Circuit:
                 "NAME:AllTabs",
                 [
                     "NAME:PassedParameterTab",
-                    [
-                        "NAME:PropServers",
-                        component_name
-                    ],
+                    ["NAME:PropServers", component_name],
                     [
                         "NAME:ChangedProps",
-                        [
-                            "NAME:" + prop_name,
-                            "OverridingDef:=", True,
-                            "Value:="	, str(prop_value) + netlist_unit
-                        ] + units
-                    ]
-                ]
-            ])
+                        ["NAME:" + prop_name, "OverridingDef:=", True, "Value:=", str(prop_value) + netlist_unit]
+                        + units,
+                    ],
+                ],
+            ]
+        )
 
     def get_comp_by_name(self, name):
         """
@@ -125,18 +119,21 @@ class Circuit:
         :return: list of instance IDs
         """
         result = self.editor.FindElements(
-            [
-                "NAME:SearchProps",
-                "Prop:=", ["name", name, 2]
-            ],
+            ["NAME:SearchProps", "Prop:=", ["name", name, 2]],
             [
                 "NAME:Parameters",
-                "Filter:=", 2,
-                "MatchAll:=", False,
-                "MatchCase:=", False,
-                "SearchSubCkt:=", True,
-                "SearchSelectionOnly:=", False
-            ])
+                "Filter:=",
+                2,
+                "MatchAll:=",
+                False,
+                "MatchCase:=",
+                False,
+                "SearchSubCkt:=",
+                True,
+                "SearchSelectionOnly:=",
+                False,
+            ],
+        )
         return result
 
     def create_winding(self, winding_number, x, y):
@@ -172,15 +169,17 @@ class Circuit:
 
             name = "Maxwell Circuit Elements\\Passive Elements:Res"
             component_name = self.create_component(name, x=1, y=-1, angle=0)
-            self.change_prop(component_name, prop_name="R", prop_value=self.resistance_list[self.page-1],
-                             netlist_unit="Ohm")
+            self.change_prop(
+                component_name, prop_name="R", prop_value=self.resistance_list[self.page - 1], netlist_unit="Ohm"
+            )
             x_init = 2
         elif source_type == "Current":
             self.change_prop(component_name, prop_name="Ia", prop_value=self.current, netlist_unit="A")
             self.change_prop(component_name, prop_name="IFreq", prop_value=self.frequency, netlist_unit="")
         else:
-            self.change_prop(component_name, prop_name="R", prop_value=self.resistance_list[self.page-1],
-                             netlist_unit="Ohm")
+            self.change_prop(
+                component_name, prop_name="R", prop_value=self.resistance_list[self.page - 1], netlist_unit="Ohm"
+            )
 
         self.wire(0, -1, 0, 0)
         self.wire(max_x, -1, max_x, 0)
@@ -190,18 +189,21 @@ class Circuit:
         x = -2
         y = -4
         self.editor.CreateGround(
-            [
-                "NAME:GroundProps",
-                "Id:="		, self.new_id
-            ],
+            ["NAME:GroundProps", "Id:=", self.new_id],
             [
                 "NAME:Attributes",
-                "Page:="		, self.page,
-                "X:="			, x * self.grid_cell_size,
-                "Y:="			, y * self.grid_cell_size,
-                "Angle:="		, 0,
-                "Flip:="		, False
-            ])
+                "Page:=",
+                self.page,
+                "X:=",
+                x * self.grid_cell_size,
+                "Y:=",
+                y * self.grid_cell_size,
+                "Angle:=",
+                0,
+                "Flip:=",
+                False,
+            ],
+        )
 
     def wire(self, x1, y1, x2, y2):
         """
@@ -223,14 +225,15 @@ class Circuit:
         self.editor.CreateWire(
             [
                 "NAME:WireData",
-                "Name:="	, "",
-                "Id:="			, self.new_id,
-                "Points:="		, ["({}, {})".format(x1, y1), "({}, {})".format(x2, y2)]
+                "Name:=",
+                "",
+                "Id:=",
+                self.new_id,
+                "Points:=",
+                ["({}, {})".format(x1, y1), "({}, {})".format(x2, y2)],
             ],
-            [
-                "NAME:Attributes",
-                "Page:="		, self.page
-            ])
+            ["NAME:Attributes", "Page:=", self.page],
+        )
 
     def calc_xy(self, target_dict, conn_type=""):
         """
