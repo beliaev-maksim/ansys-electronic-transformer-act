@@ -11,7 +11,7 @@ defining matrix connections (series or parallel) if required. This solution proc
 ANSYS Simplorer as a Maxwell Dynamic Eddy Current component.  
 
 More information you can find on the [help page][1]  
-Software is distributed under [GNU License](LICENSE)
+Software is distributed under [MIT License](LICENSE)
 
  [1]: src/ElectronicTransformer/help/help.html
  
@@ -20,7 +20,6 @@ Software is distributed under [GNU License](LICENSE)
  Transformer Toolkit v2.0 supports Ansys Electronics Desktop of version 2021R1 and higher
  
  ### Installing ACT
- Note: you can find instruction with pictures in [overview PDF][1]  
  To install the app you need to 
  1. open Electronics Desktop
  2. Navigate to menu _View_ and activate _ACT Extensions_
@@ -28,8 +27,6 @@ Software is distributed under [GNU License](LICENSE)
  4. Select .wbex file that you can downloaded from GitHub Releases page
  5. new ACT will appear in the menu, click on it to activate
  6.  Now you can go oage back and go to Launch Wizard panel
- 
- [1]: doc/ETK_2021R1.pdf
  
  ## Examples
  Tranformer Toolkit ACT is provided with basic examples based on public papers and articles. You can open examples from 
@@ -42,7 +39,7 @@ Software is distributed under [GNU License](LICENSE)
  3. Provide additional default core dimensions or material parameters
  4. Adding new tests that are run against Ansys Official and Pre Releases
  
- Note: current software is distributed under [GNU LICENSE](LICENSE)
+ Note: current software is distributed under [MIT LICENSE](LICENSE)
  
  ### How to contribute
  1. Make a fork of current repository
@@ -51,7 +48,7 @@ Software is distributed under [GNU License](LICENSE)
  4. Push your branch to your fork
  5. Create a Pull Request for merging
  
- Note: all code changes should follow as much as possible PEP8 guideline and all unittests should pass validation
+ Note: all code changes should follow PEP8 guideline and all unittests should pass validation
  
  ### Bugs and Issues
  If you find some bug or wrong data please open an issue on GitHub project page
