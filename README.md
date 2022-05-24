@@ -1,14 +1,14 @@
 ## About
 The Electronic Transformer Extension is a customized solution for electronic transformers.  The ACT provides an 
-easy-to-use interface to draw the geometry and setup a solution for a transformer or inductor.  A database of basic 
+easy-to-use interface to draw the geometry and set up a solution for a transformer or inductor.  A database of basic 
 topologies and materials for the commonly used cores is included in the ACT which allows users to choose the required 
 shape and size of the core. In addition, users can define their own winding strategy using Winding definition panel 
 (Planar or Wound types) which enables automatic creation of all winding turns with rectangular or circular 
-(only for wound type) cross section.
-The ACT allows users to automatically setup an Eddy Current Solution with (or without) a Frequency Sweep Definition. 
+(only for wound type) cross-section.
+The ACT allows users to automatically set up an Eddy Current Solution with (or without) a Frequency Sweep Definition. 
 The ACT considers the frequency dependent core permeability and core loss Steinmetz coefficients. The ACT also allows 
-defining matrix connections (series or parallel) if required. This solution process creates a frequency dependent R/L model which can be imported into 
-ANSYS Simplorer as a Maxwell Dynamic Eddy Current component.  
+defining matrix connections (series or parallel) if required. This solution process creates a frequency dependent R/L 
+model which can be imported into ANSYS Simplorer as a Maxwell Dynamic Eddy Current component.
 
 More information you can find on the [help page][1]  
 Software is distributed under [MIT License](LICENSE)
@@ -21,15 +21,15 @@ Software is distributed under [MIT License](LICENSE)
  
  ### Installing ACT
  To install the app you need to 
- 1. open Electronics Desktop
+ 1. Open Electronics Desktop
  2. Navigate to menu _View_ and activate _ACT Extensions_
  3. Go to Manage Extensions and click "+" sign
- 4. Select .wbex file that you can downloaded from GitHub Releases page
- 5. new ACT will appear in the menu, click on it to activate
- 6.  Now you can go oage back and go to Launch Wizard panel
+ 4. Select .wbex file that you can download from GitHub Releases page
+ 5. New ACT will appear in the menu, click on it to activate
+ 6. Go one page back and go to Launch Wizard panel
  
  ## Examples
- Tranformer Toolkit ACT is provided with basic examples based on public papers and articles. You can open examples from 
+ Transformer Toolkit ACT is provided with basic examples based on public papers and articles. You can open examples from 
  ACT itself by clicking _Open Examples_ button
  
  ## Contribution
