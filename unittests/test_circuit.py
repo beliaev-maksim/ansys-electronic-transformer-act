@@ -1,11 +1,14 @@
 import copy
 import json
 import os
-from unittest import TestCase
 import random
-from AEDTLib.Desktop import Desktop
+from unittest import TestCase
+
+from pyaedt.desktop import Desktop
 
 from src.ElectronicTransformer.circuit import Circuit
+
+AEDT_VERSION = "2022.1"
 
 
 class TestCircuit(TestCase):
@@ -15,10 +18,10 @@ class TestCircuit(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.desktop = Desktop("2021.1")
+        cls.desktop = Desktop(AEDT_VERSION)
         cls.project = cls.desktop._main.oDesktop.NewProject()
-        cls.tests_dir = os.path.abspath(os.path.dirname(__file__))
-        cls.circuit_file = os.path.join(cls.tests_dir, "circuit.sph")
+        tests_dir = os.path.abspath(os.path.dirname(__file__))
+        cls.circuit_file = os.path.join(tests_dir, "circuit.sph")
 
     @classmethod
     def tearDownClass(cls):
@@ -32,8 +35,14 @@ class TestCircuit(TestCase):
 
         conn2 = copy.deepcopy(connections)
         self.windings = {"2": connections, "1": conn2}
-        self.circuit = Circuit(self.windings, self.project, str(random.randint(0, 10000000)),
-                               current=120, resistance_list=[1, 3], frequency=100000)
+        self.circuit = Circuit(
+            self.windings,
+            self.project,
+            str(random.randint(0, 10000000)),
+            current=120,
+            resistance_list=[1, 3],
+            frequency=100000,
+        )
 
     def test_create(self):
         self.circuit.create()

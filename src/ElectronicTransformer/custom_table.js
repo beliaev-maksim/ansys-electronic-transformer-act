@@ -1,4 +1,3 @@
-// copyright 2021, ANSYS Inc. Software is released under GNU license
 define(
 	[
 		'scripts/knockout-3.3.0', 'scripts/ACTComponent.js',

@@ -1,33 +1,36 @@
-#
-# copyright 2021, ANSYS Inc. Software is released under GNU license
-#
-import re
-from abc import ABCMeta, abstractmethod
-import clr
-import ctypes  # lib to get screen resolution
 import copy
+import ctypes  # lib to get screen resolution
+import re
+from abc import ABCMeta
+from abc import abstractmethod
 from collections import OrderedDict
+
+import clr
 
 clr.AddReference("Ans.UI.Toolkit")
 clr.AddReference("Ans.UI.Toolkit.Base")
 clr.AddReference("Ans.Utilities")
 clr.AddReference("Ansys.ACT.Core")
 
-import Ansys
+import Ansys  # noqa: F403
 import Ansys.UI.Toolkit
-
-from Ansys.ACT.Core.UI import *
-from Ansys.ACT.Interfaces import *
-from Ansys.ACT.Core.XmlDataModel import *
-from Ansys.UI.Toolkit import *
-from Ansys.UI.Toolkit.Drawing import *
-from Ansys.Utilities import *
+from Ansys.ACT.Core.UI import *  # noqa: F403
+from Ansys.ACT.Core.XmlDataModel import *  # noqa: F403
+from Ansys.ACT.Interfaces import *  # noqa: F403
+from Ansys.UI.Toolkit import *  # noqa: F403
+from Ansys.UI.Toolkit.Drawing import *  # noqa: F403
+from Ansys.Utilities import *  # noqa: F403
 
 
 def message_box(self, msg):
-    MessageBox.Show(self, msg,
-                    "Error", MessageBoxType.Error,
-                    MessageBoxButtons.OK, MessageBoxDefaultButton.Button1)
+    MessageBox.Show(  # noqa: F405
+        self,
+        msg,
+        "Error",
+        MessageBoxType.Error,  # noqa: F405
+        MessageBoxButtons.OK,  # noqa: F405
+        MessageBoxDefaultButton.Button1,  # noqa: F405
+    )
 
 
 def atoi(letter):
@@ -35,13 +38,14 @@ def atoi(letter):
 
 
 def natural_keys(text):
-    return [atoi(c) for c in re.split(r'(\d+)', text)]
+    return [atoi(c) for c in re.split(r"(\d+)", text)]
 
 
 class WindingFormUI(Ansys.UI.Toolkit.Dialog):
     """
-        Abstract class that represents UI definition of the winding dialog
+    Abstract class that represents UI definition of the winding dialog
     """
+
     __metaclass__ = ABCMeta
 
     def __init__(self):
@@ -79,32 +83,36 @@ class WindingFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # ExLabel
         #
-        self.available_layers_label.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                         Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.available_layers_label.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.available_layers_label.Location = Ansys.UI.Toolkit.Drawing.Point(20, 20)
         self.available_layers_label.Size = Ansys.UI.Toolkit.Drawing.Size(120, 23)
         self.available_layers_label.Text = "Available Layers"
         #
         # Defined Label
         #
-        self.defined_layers_label.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                       Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.defined_layers_label.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.defined_layers_label.Location = Ansys.UI.Toolkit.Drawing.Point(360, 20)
         self.defined_layers_label.Size = Ansys.UI.Toolkit.Drawing.Size(161, 23)
         self.defined_layers_label.Text = "Defined Windings"
         #
         # to side label
         #
-        self.move_to_side_label.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                     Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.move_to_side_label.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.move_to_side_label.Location = Ansys.UI.Toolkit.Drawing.Point(200, 20)
         self.move_to_side_label.Size = Ansys.UI.Toolkit.Drawing.Size(161, 23)
         self.move_to_side_label.Text = "Move to side >"
         #
         # ExcList
         #
-        self.available_layers_listbox.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                           Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.available_layers_listbox.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.available_layers_listbox.Location = Ansys.UI.Toolkit.Drawing.Point(20, 45)
         self.available_layers_listbox.IsMultiSelectable = True
         self.available_layers_listbox.Size = Ansys.UI.Toolkit.Drawing.Size(170, 250)
@@ -112,8 +120,9 @@ class WindingFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # ReduceList
         #
-        self.defined_layers_listbox.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                         Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.defined_layers_listbox.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.defined_layers_listbox.Location = Ansys.UI.Toolkit.Drawing.Point(330, 45)
         self.defined_layers_listbox.IsMultiSelectable = True
         self.defined_layers_listbox.Size = Ansys.UI.Toolkit.Drawing.Size(170, 250)
@@ -121,8 +130,9 @@ class WindingFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # primary
         #
-        self.primary_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                 Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.primary_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.primary_button.Location = Ansys.UI.Toolkit.Drawing.Point(200, 50)
         self.primary_button.Size = Ansys.UI.Toolkit.Drawing.Size(30, 27)
         self.primary_button.Text = "1"
@@ -130,8 +140,9 @@ class WindingFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # secondary
         #
-        self.secondary_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                   Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.secondary_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.secondary_button.Location = Ansys.UI.Toolkit.Drawing.Point(245, 50)
         self.secondary_button.Size = Ansys.UI.Toolkit.Drawing.Size(30, 27)
         self.secondary_button.Text = "2"
@@ -139,8 +150,9 @@ class WindingFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # tertiary
         #
-        self.tertiary_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                  Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.tertiary_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.tertiary_button.Location = Ansys.UI.Toolkit.Drawing.Point(290, 50)
         self.tertiary_button.Size = Ansys.UI.Toolkit.Drawing.Size(30, 27)
         self.tertiary_button.Text = "3"
@@ -148,8 +160,9 @@ class WindingFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # custom
         #
-        self.custom_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.custom_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.custom_button.Location = Ansys.UI.Toolkit.Drawing.Point(200, 90)
         self.custom_button.Size = Ansys.UI.Toolkit.Drawing.Size(70, 27)
         self.custom_button.Text = "Custom:"
@@ -157,15 +170,17 @@ class WindingFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # Drop Down Box
         #
-        self.custom_sides_number.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                      Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.custom_sides_number.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.custom_sides_number.Location = Ansys.UI.Toolkit.Drawing.Point(280, 91)
         self.custom_sides_number.Size = Ansys.UI.Toolkit.Drawing.Size(40, 27)
         #
         # RemoveButton
         #
-        self.remove_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.remove_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.remove_button.Location = Ansys.UI.Toolkit.Drawing.Point(200, 145)
         self.remove_button.Size = Ansys.UI.Toolkit.Drawing.Size(120, 27)
         self.remove_button.Text = "< Remove"
@@ -173,16 +188,18 @@ class WindingFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # all to side label
         #
-        self.all_to_side_label.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                    Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.all_to_side_label.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.all_to_side_label.Location = Ansys.UI.Toolkit.Drawing.Point(200, 195)
         self.all_to_side_label.Size = Ansys.UI.Toolkit.Drawing.Size(161, 23)
         self.all_to_side_label.Text = "Move All to side >>"
         #
         # all to primary
         #
-        self.all_primary_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                     Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.all_primary_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.all_primary_button.Location = Ansys.UI.Toolkit.Drawing.Point(200, 220)
         self.all_primary_button.Size = Ansys.UI.Toolkit.Drawing.Size(30, 27)
         self.all_primary_button.Text = "1"
@@ -190,8 +207,9 @@ class WindingFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # all to secondary
         #
-        self.all_secondary_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                       Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.all_secondary_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.all_secondary_button.Location = Ansys.UI.Toolkit.Drawing.Point(245, 220)
         self.all_secondary_button.Size = Ansys.UI.Toolkit.Drawing.Size(30, 27)
         self.all_secondary_button.Text = "2"
@@ -199,8 +217,9 @@ class WindingFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # all to tertiary
         #
-        self.all_tertiary_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                      Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.all_tertiary_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.all_tertiary_button.Location = Ansys.UI.Toolkit.Drawing.Point(290, 220)
         self.all_tertiary_button.Size = Ansys.UI.Toolkit.Drawing.Size(30, 27)
         self.all_tertiary_button.Text = "3"
@@ -208,8 +227,9 @@ class WindingFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # all custom
         #
-        self.all_custom_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                    Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.all_custom_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.all_custom_button.Location = Ansys.UI.Toolkit.Drawing.Point(200, 260)
         self.all_custom_button.Size = Ansys.UI.Toolkit.Drawing.Size(70, 27)
         self.all_custom_button.Text = "Custom:"
@@ -217,15 +237,17 @@ class WindingFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # Drop Down Box for all custom
         #
-        self.all_custom_sides_number.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                          Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.all_custom_sides_number.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.all_custom_sides_number.Location = Ansys.UI.Toolkit.Drawing.Point(280, 261)
         self.all_custom_sides_number.Size = Ansys.UI.Toolkit.Drawing.Size(40, 27)
         #
         # OK
         #
-        self.ok_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                            Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.ok_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.ok_button.Location = Ansys.UI.Toolkit.Drawing.Point(330, 305)
         self.ok_button.Size = Ansys.UI.Toolkit.Drawing.Size(80, 27)
         self.ok_button.Text = "OK"
@@ -233,8 +255,9 @@ class WindingFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # Cancel
         #
-        self.cancel_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.cancel_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.cancel_button.Location = Ansys.UI.Toolkit.Drawing.Point(420, 305)
         self.cancel_button.Size = Ansys.UI.Toolkit.Drawing.Size(80, 27)
         self.cancel_button.Text = "Cancel"
@@ -265,8 +288,8 @@ class WindingFormUI(Ansys.UI.Toolkit.Dialog):
         self.Controls.Add(self.available_layers_label)
         self.Controls.Add(self.available_layers_listbox)
         self.MaximizeBox = False
-        self.Name = 'WindingDefinition'
-        self.Text = 'Define Windings'
+        self.Name = "WindingDefinition"
+        self.Text = "Define Windings"
 
         self.BeforeClose += Ansys.UI.Toolkit.WindowCloseEventDelegate(self.cancel_clicked)
 
@@ -387,8 +410,8 @@ class WindingForm(WindingFormUI):
     def fill_lists(self):
         """Fill both listboxes on show of window. Fill Layers list if nothing was specified,
         otherwise populate already defined layers from the list"""
-        for i in range(1, self.number_undefined_layers+1):
-            self.available_layers_listbox.Items.Add(('Layer' + str(i)))
+        for i in range(1, self.number_undefined_layers + 1):
+            self.available_layers_listbox.Items.Add(("Layer" + str(i)))
 
         for side, val in self.defined_layers_dict.items():
             for layer in val:
@@ -424,7 +447,7 @@ class WindingForm(WindingFormUI):
         self.custom_sides_number.Visible = side_buttons_visible
 
     def update_all_to_buttons(self):
-        """ disable/enable "All to" buttons if no more items available"""
+        """disable/enable "All to" buttons if no more items available"""
 
         buttons_activated = False if len(self.available_layers_listbox.Items) == 0 else True
 
@@ -446,7 +469,7 @@ class WindingForm(WindingFormUI):
         self.all_custom_sides_number.Visible = buttons_visible
 
     def populate_custom_sides(self):
-        """ Function to update number of sides for Drop Down box according to number
+        """Function to update number of sides for Drop Down box according to number
         of specified sides eg Primary, Secondary, etc"""
 
         if self.number_of_sides <= 3:
@@ -520,7 +543,7 @@ class WindingForm(WindingFormUI):
         layers_to_recover.extend([item.Text for item in all_available_layers_list])
 
         # need custom sort to have 10, 11 after 9 and not after 1
-        layers_to_recover.sort(key=lambda x: '{0:0>20}'.format(x).lower())
+        layers_to_recover.sort(key=lambda x: "{0:0>20}".format(x).lower())
         for layer in layers_to_recover:
             self.available_layers_listbox.Items.Add(layer)
 
@@ -529,7 +552,7 @@ class WindingForm(WindingFormUI):
     def verify_sides_assignment(self, target_dict):
         """function to verify that layers were assigned to each of sides"""
         defined_sides = [int(key) for key in target_dict]
-        result = sorted(defined_sides) == list(range(1, self.number_of_sides+1))
+        result = sorted(defined_sides) == list(range(1, self.number_of_sides + 1))
         return result
 
     def ok_clicked(self, sender, e):
@@ -561,6 +584,7 @@ class ConnectionFormUI(Ansys.UI.Toolkit.Dialog):
     """
     Abstract class that represents UI definition of the connection dialog
     """
+
     __metaclass__ = ABCMeta
 
     def __init__(self):
@@ -590,8 +614,9 @@ class ConnectionFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # Side Label
         #
-        self.side_label.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                             Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.side_label.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.side_label.Location = Ansys.UI.Toolkit.Drawing.Point(20, 23)
         self.side_label.Size = Ansys.UI.Toolkit.Drawing.Size(210, 23)
         self.side_label.Text = "Transformer side:"
@@ -599,8 +624,9 @@ class ConnectionFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # Side DropDown
         #
-        self.side_dropdown.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.side_dropdown.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.side_dropdown.Location = Ansys.UI.Toolkit.Drawing.Point(235, 20)
         self.side_dropdown.Size = Ansys.UI.Toolkit.Drawing.Size(50, 27)
         self.side_dropdown.SelectionChanged += self.side_change
@@ -608,16 +634,18 @@ class ConnectionFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # Connections Label
         #
-        self.connections_label.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                    Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.connections_label.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.connections_label.Location = Ansys.UI.Toolkit.Drawing.Point(20, 70)
         self.connections_label.Size = Ansys.UI.Toolkit.Drawing.Size(200, 23)
         self.connections_label.Text = "Connections:"
         #
         # Connections list
         #
-        self.connections_listbox.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                      Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.connections_listbox.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.connections_listbox.Location = Ansys.UI.Toolkit.Drawing.Point(20, 100)
         self.connections_listbox.IsMultiSelectable = True
         self.connections_listbox.Size = Ansys.UI.Toolkit.Drawing.Size(960, 300)
@@ -625,16 +653,18 @@ class ConnectionFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # Connect Label
         #
-        self.connect_label.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.connect_label.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.connect_label.Location = Ansys.UI.Toolkit.Drawing.Point(20, 413)
         self.connect_label.Size = Ansys.UI.Toolkit.Drawing.Size(110, 23)
         self.connect_label.Text = "Connect:"
         #
         # Serial Button
         #
-        self.serial_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.serial_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.serial_button.Location = Ansys.UI.Toolkit.Drawing.Point(130, 410)
         self.serial_button.Size = Ansys.UI.Toolkit.Drawing.Size(button_x_size, button_y_size)
         self.serial_button.Text = "Serial"
@@ -642,8 +672,9 @@ class ConnectionFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # Parallel Button
         #
-        self.parallel_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                  Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.parallel_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.parallel_button.Location = Ansys.UI.Toolkit.Drawing.Point(270, 410)
         self.parallel_button.Size = Ansys.UI.Toolkit.Drawing.Size(button_x_size, button_y_size)
         self.parallel_button.Text = "Parallel"
@@ -652,8 +683,9 @@ class ConnectionFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # Ungroup Button
         #
-        self.ungroup_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                 Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.ungroup_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.ungroup_button.Location = Ansys.UI.Toolkit.Drawing.Point(410, 410)
         self.ungroup_button.Size = Ansys.UI.Toolkit.Drawing.Size(button_x_size, button_y_size)
         self.ungroup_button.Text = "Ungroup"
@@ -662,8 +694,9 @@ class ConnectionFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # OK Button
         #
-        self.ok_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                            Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.ok_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.ok_button.Location = Ansys.UI.Toolkit.Drawing.Point(650, 450)
         self.ok_button.Size = Ansys.UI.Toolkit.Drawing.Size(button_x_size, button_y_size)
         self.ok_button.Text = "OK"
@@ -671,8 +704,9 @@ class ConnectionFormUI(Ansys.UI.Toolkit.Dialog):
         #
         # Cancel Button
         #
-        self.cancel_button.Font = Ansys.UI.Toolkit.Drawing.Font("Microsoft Sans Serif", 9.75,
-                                                                Ansys.UI.Toolkit.Drawing.FontStyle.Normal)
+        self.cancel_button.Font = Ansys.UI.Toolkit.Drawing.Font(
+            "Microsoft Sans Serif", 9.75, Ansys.UI.Toolkit.Drawing.FontStyle.Normal
+        )
         self.cancel_button.Location = Ansys.UI.Toolkit.Drawing.Point(800, 450)
         self.cancel_button.Size = Ansys.UI.Toolkit.Drawing.Size(button_x_size, button_y_size)
         self.cancel_button.Text = "Cancel"
@@ -699,8 +733,8 @@ class ConnectionFormUI(Ansys.UI.Toolkit.Dialog):
         self.Controls.Add(self.ok_button)
 
         self.MaximizeBox = False
-        self.Name = 'ConnectionDefinition'
-        self.Text = 'Define Connections'
+        self.Name = "ConnectionDefinition"
+        self.Text = "Define Connections"
 
         self.VisibilityChanged += Ansys.UI.Toolkit.EventDelegate(self.on_show)
 
@@ -805,7 +839,7 @@ class ConnectionForm(ConnectionFormUI):
     @property
     def new_id(self):
         """
-            Function to generate new ID for parallel or serial connection dict keys
+        Function to generate new ID for parallel or serial connection dict keys
         """
         self._id += 1
         return self._id
@@ -849,7 +883,7 @@ class ConnectionForm(ConnectionFormUI):
             if isinstance(val, dict):
                 self.connections_listbox.Items.Add((self.dict_to_str(val, conn_type=layer)))
             else:
-                self.connections_listbox.Items.Add(('Layer' + layer))
+                self.connections_listbox.Items.Add(("Layer" + layer))
 
     def dict_to_str(self, conn_dict, conn_type="", str_item=""):
         """

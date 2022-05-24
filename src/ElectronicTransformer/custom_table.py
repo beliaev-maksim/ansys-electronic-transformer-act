@@ -7,14 +7,14 @@ clr.AddReference("Ansys.ACT.Core")
 
 import Ansys
 import Ansys.UI.Toolkit
+from Ansys.ACT.Core.UI import *  # noqa: F403
+from Ansys.ACT.Core.XmlDataModel import *  # noqa: F403
+from Ansys.ACT.Interfaces import *  # noqa: F403
+from Ansys.UI.Toolkit import *  # noqa: F403
+from Ansys.UI.Toolkit.Drawing import *  # noqa: F403
+from Ansys.Utilities import *  # noqa: F403
+from System.Collections.Generic import List  # noqa: F403
 
-from Ansys.ACT.Core.UI import *
-from Ansys.ACT.Interfaces import *
-from Ansys.ACT.Core.XmlDataModel import *
-from System.Collections.Generic import List
-from Ansys.UI.Toolkit import *
-from Ansys.UI.Toolkit.Drawing import *
-from Ansys.Utilities import *
 
 class TabularDataEditor:
     DialogName = "TabularDataDialog"
@@ -48,7 +48,7 @@ class TabularDataEditor:
     def createTabularDialog(self, panel, title, width, height):
         dialog = panel.CreateDialog(TabularDataEditor.DialogName, title, width, height)
 
-        layout_def = LayoutDefinition()
+        layout_def = LayoutDefinition()  # noqa: F405
         layout_def.Extension = None
 
         layout = Ansys.ACT.Core.XmlDataModel.UI.Layout()
@@ -70,7 +70,7 @@ class TabularDataEditor:
         component.WidthValue = 100
         component.HeightType = Ansys.ACT.Interfaces.UserInterface.ComponentLengthType.Percentage
         component.HeightValue = 100
-        component.CustomJSFile = r'file:///' + str(ExtAPI.Extension.InstallDir) + r'\custom_table.js'
+        component.CustomJSFile = r"file:///" + str(ExtAPI.Extension.InstallDir) + r"\custom_table.js"  # noqa: F405
         component.ComponentType = "tabularDataComponent"
         layout.Components.Add(component)
 

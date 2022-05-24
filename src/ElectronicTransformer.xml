@@ -1,4 +1,3 @@
-<!-- copyright 2021, ANSYS Inc. Software is released under GNU license -->
 <extension name="ElectronicTransformer" version="2" minorversion="0" icon="images\logo.jpg" loadasdefault="True">
   <author>ANSYS, Inc.</author>
   <guid shortid="ElectronicsWizard">beb238e5-6315-4602-a3f5-f004e6c02805</guid>

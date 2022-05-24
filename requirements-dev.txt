@@ -1,0 +1,2 @@
+pyaedt==0.3.27
+pre-commit==2.9.3
