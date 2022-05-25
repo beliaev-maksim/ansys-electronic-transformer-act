@@ -17,7 +17,7 @@ Software is distributed under [MIT License](LICENSE)
  
  ## Installation
  ### Supported versions
- Transformer Toolkit v2.0 supports Ansys Electronics Desktop of version 2021R1 and higher
+ Transformer Toolkit v2.1 supports Ansys Electronics Desktop of version 2023R1 and higher
  
  ### Installing ACT
  To install the app you need to 

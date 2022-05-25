@@ -140,7 +140,7 @@ class Step1(object):
         """
         opens GitHub page with project
         """
-        webopen(r"https://github.com/beliaev-maksim/ansys-electronic-transformer-act")
+        webopen(r"https://github.com/ansys/ansys-electronic-transformer-act")
 
     def open_custom_lib(self, _sender, _args):
         """
@@ -1268,9 +1268,7 @@ class TransformerClass(Step1, Step2, Step3):
         for x in list_x:
             for y in list_y:
                 if x != y:
-                    coupling_coef = "abs(L(Side_{0},Side_{1}))/sqrt(L(Side_{0},Side_{0})*L(Side_{1},Side_{1}))".format(
-                        x, y
-                    )
+                    coupling_coef = "CplCoef(Side_{0},Side_{1})".format(x, y)
                     equation = "L(Side_{0},Side_{0})*(1-sqr({1}))".format(x, coupling_coef)
                     all_leakages["Leakage_Inductance_{}{}".format(x, y)] = equation
 

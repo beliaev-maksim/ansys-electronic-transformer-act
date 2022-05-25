@@ -8,7 +8,7 @@ from pyaedt.desktop import Desktop
 
 from src.ElectronicTransformer.circuit import Circuit
 
-AEDT_VERSION = "2022.1"
+AEDT_VERSION = "2023.1"
 
 
 class TestCircuit(TestCase):

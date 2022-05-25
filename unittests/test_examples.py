@@ -1,3 +1,4 @@
+import csv
 import json
 import os
 import shutil
@@ -8,7 +9,7 @@ from pyaedt.maxwell import Maxwell3d
 
 import src.ElectronicTransformer.etk_callback as etk
 
-AEDT_VERSION = "2022.1"
+AEDT_VERSION = "2023.1"
 
 
 class BaseAEDT(unittest.TestCase):
@@ -103,19 +104,19 @@ class BaseAEDT(unittest.TestCase):
 
         reference_path = os.path.join(self.tests_dir, "reference_results", ref_name)
         with open(reference_path) as ref_file, open(self.report_path) as actual_file:
-            next(ref_file)
-            next(actual_file)
+            ref_reader = csv.DictReader(ref_file, dialect="excel-tab")
+            actual_reader = csv.DictReader(actual_file, dialect="excel-tab")
 
-            for line1, line2 in zip(ref_file, actual_file):
-                ref_result = [float(val) for val in line1.split()]
-                actual_result = [float(val) for val in line2.split()]
+            for row_ref, row_actual in zip(ref_reader, actual_reader):
+                for key, ref in row_ref.items():
+                    ref = float(ref)
+                    actual = float(row_actual[key])
 
-                for actual, ref in zip(actual_result, ref_result):
                     self.assertAlmostEqual(
                         actual,
                         ref,
                         delta=ref * 0.02,
-                        msg="Error at frequency {}kHz. Report is {}".format(ref_result[0], actual_result),
+                        msg="Error.\nReference: {}\nActual: {}".format(row_ref, row_actual),
                     )
 
     def compare_loss(self, loss_type, reference_list):

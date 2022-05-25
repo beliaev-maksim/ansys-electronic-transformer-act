@@ -68,8 +68,8 @@ def validate_resistance(step, prop):
 
 def validate_aedt_version():
     """Raise error message for unsupported versions"""
-    if float(oDesktop.GetVersion()[:-2]) < 2021.1:
-        error = "Electronics Desktop Version is unsupported. Please use version 2021R1 or higher"
+    if float(oDesktop.GetVersion()[:-2]) < 2023.1:
+        error = "Electronics Desktop Version is unsupported. Please use version 2023R1 or higher"
         add_error_message(error)
         raise UserErrorMessageException(error)
 
