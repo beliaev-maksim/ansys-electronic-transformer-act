@@ -1,6 +1,6 @@
 <extension name="ElectronicTransformer" version="2" minorversion="1" icon="images\logo.jpg" loadasdefault="True">
   <author>ANSYS, Inc.</author>
-  <guid shortid="ElectronicsWizard">beb238e5-6315-4602-a3f5-f004e6c02805</guid>
+  <guid shortid="ElectronicsWizard">a5703b7b-f58b-4ca8-b889-94d173fb828d</guid>
   <script src="etk_callback.py"/>
   <script src="custom_table.py"/>
   <script src="value_checker.py"/>
